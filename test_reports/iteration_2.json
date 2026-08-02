@@ -1,0 +1,35 @@
+{
+  "summary": "Full backend hardening + regression verification for Zikirhane (Expo/RN, mobile viewport 390x844). Backend: 5 passed, 1 skipped. GET /api/ → 200 {status:ok}, POST /api/status → 404, GET /api/status → 404, /docs and /openapi.json disabled at FastAPI level (direct backend returns 404; through ingress the SPA is served — expected ingress routing, not a backend leak). CORS: FastAPI code correctly sets allow_origins=[] (verified: direct backend emits NO Access-Control-Allow-Origin), but the Kubernetes ingress in front adds 'access-control-allow-origin: *' at the infra layer — not fixable in app code. Mobile app regression PASSED end-to-end: splash → onboarding-skip → home; counter-tap-area increments to 5, undo-button → 4, target-selector opens with target-33/99/100/500 chips all visible, target-99 selects (4/99 label), active-dhikr-selector shows 6 dhikr-pick-* options, reset-button + reset-confirm resets counter, Zikirlerim tab shows tesbihat-card + esma-card; Tesbihat opens (Sübhanallah / 0/33) and survives 120 rapid taps (30ms interval) with NO red-screen crash — previous CRITICAL race is FIXED; Esma renders 74 rows in DOM (virtualized FlatList for 99 items); custom dhikr add via add-dhikr-fab works (dhikr-name-input + save-dhikr-btn); İstatistikler now exposes daily-goal-card, weekly-chart, top-dhikrs-list (previously missing testIDs — FIXED); Ayarlar shows theme-switch (flips dark↔light live), vibration-switch, goal-100 chip. Persistence verified: counter=4 preserved and onboarding NOT re-shown after full page reload. Zero backend/CORS/network related console errors on the mobile app (only Cloudflare cdn-cgi/rum telemetry aborts — unrelated).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "N/A (infra)", "issue": "Kubernetes ingress injects 'access-control-allow-origin: *' for /api/* even though FastAPI middleware has allow_origins=[]. Direct backend (curl http://localhost:8001/api/) correctly returns NO CORS headers. This is an infra-level override outside app code scope."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_backend_hardening.py",
+    "/app/test_reports/pytest/backend_hardening.xml"
+  ],
+  "action_items": [
+    "OPTIONAL/INFRA: The public preview URL returns 'access-control-allow-origin: *' for /api/* due to the Kubernetes ingress layer, even though FastAPI has allow_origins=[]. If strict CORS lockdown is required end-to-end, coordinate with platform/infra to remove the wildcard from ingress annotations — nothing to change in app code."
+  ],
+  "critical_code_review_comments": [
+    "Backend /app/backend/server.py is minimal (52 lines), correctly disables docs_url/redoc_url/openapi_url, uses CORSMiddleware with allow_origins=[], and exposes only GET /api/. No MongoDB usage remains. Clean.",
+    "Previous iteration_1 critical issues verified as FIXED in this iteration: (a) Tesbihat rapid-tap race no longer crashes (120 taps @ 30ms — no red screen); (b) testIDs weekly-chart, top-dhikrs-list, daily-goal-card, theme-switch, vibration-switch, goal-100, add-dhikr-fab, save-dhikr-btn, dhikr-name-input all present and visible."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_backend_hardening.py (new)"
+  ],
+  "success_rate": {"backend": "100% (5/5 executed passed, 1 skipped for infra CORS override)", "frontend": "100% on all requested regression flows"},
+  "seed_data_creation": "Ephemeral: added a 'TEST_Zikir_regress' custom dhikr into AsyncStorage via UI to verify create flow. Cleared via localStorage.clear() at test end.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend surface is now ONE endpoint (GET /api/ → {status:ok}). Any future backend testing should use /app/backend/tests/test_backend_hardening.py as regression baseline. Mobile app is fully offline (AsyncStorage) — DO NOT expect any /api/* calls from the app. Use viewport 390x844; clear state via page.evaluate('localStorage.clear()') + reload. Note testID naming for future scripts: undo-button (not undo-btn), reset-button + reset-confirm, target-selector opens modal with target-{33|99|100|500}, active-dhikr-selector opens modal with dhikr-pick-{id}.",
+  "rca_of_issue": "N/A — no new bugs. Previous Tesbihat race and missing testIDs from iteration_1 have been fixed and re-verified. The only observation is the Kubernetes ingress overriding CORS with a wildcard, which is an infra concern, not a backend code issue."
+}
