@@ -1,24 +1,31 @@
 {
   "expo": {
-    "name": "frontend",
+    "name": "Zikirhane",
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "frontend",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.emergent.dijitaltesbih.td5pbb"
+      "bundleIdentifier": "com.emergent.dijitaltesbih.td5pbb",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#06090E"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.emergent.dijitaltesbih.td5pbb"
+      "package": "com.emergent.dijitaltesbih.td5pbb",
+      "permissions": [
+        "VIBRATE",
+        "WAKE_LOCK"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -33,7 +40,14 @@
           "image": "./assets/images/splash-image.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000000"
+          "backgroundColor": "#06090E"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#C6A664",
+          "defaultChannel": "zikirhane-daily"
         }
       ]
     ],

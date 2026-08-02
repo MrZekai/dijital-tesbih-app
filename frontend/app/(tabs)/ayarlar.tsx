@@ -1,0 +1,524 @@
+// Ayarlar — tema, ses, titreşim, büyük yazı, sade mod, ekran açık, bildirim, günlük hedef.
+
+import { Ionicons } from "@expo/vector-icons";
+import React, { useState } from "react";
+import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import {
+  cancelDailyReminder,
+  requestNotificationPermission,
+  scheduleDailyReminder,
+} from "@/src/lib/notifications";
+import { useStore } from "@/src/lib/store";
+import { fonts, radius, spacing } from "@/src/lib/theme";
+
+const GOAL_PRESETS = [33, 100, 300, 500, 1000];
+
+export default function Ayarlar() {
+  const { theme, state, updateSettings } = useStore();
+  const insets = useSafeAreaInsets();
+  const s = state.settings;
+  const [customGoal, setCustomGoal] = useState("");
+  const [permBlockedAt, setPermBlockedAt] = useState<number | null>(null);
+
+  const onToggleReminder = async (val: boolean) => {
+    if (val) {
+      const p = await requestNotificationPermission();
+      if (!p.granted) {
+        updateSettings({ reminderEnabled: false });
+        if (!p.canAskAgain) {
+          setPermBlockedAt(Date.now());
+        }
+        return;
+      }
+      const ok = await scheduleDailyReminder(s.reminderHour, s.reminderMinute);
+      if (ok) {
+        updateSettings({ reminderEnabled: true });
+      }
+    } else {
+      await cancelDailyReminder();
+      updateSettings({ reminderEnabled: false });
+    }
+  };
+
+  const shiftHour = async (delta: number) => {
+    const nh = (s.reminderHour + delta + 24) % 24;
+    updateSettings({ reminderHour: nh });
+    if (s.reminderEnabled) {
+      await scheduleDailyReminder(nh, s.reminderMinute);
+    }
+  };
+
+  const shiftMinute = async (delta: number) => {
+    const nm = (s.reminderMinute + delta + 60) % 60;
+    updateSettings({ reminderMinute: nm });
+    if (s.reminderEnabled) {
+      await scheduleDailyReminder(s.reminderHour, nm);
+    }
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingTop: insets.top + spacing.lg,
+          paddingBottom: insets.bottom + 120,
+          paddingHorizontal: spacing.xl,
+          gap: spacing.lg,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={[styles.h1, { color: theme.text, fontFamily: fonts.display }]}>
+          Ayarlar
+        </Text>
+
+        {/* Görünüm */}
+        <Section title="Görünüm" theme={theme}>
+          <SettingRow
+            icon="contrast-outline"
+            label="Koyu Tema"
+            theme={theme}
+            testID="setting-theme"
+            right={
+              <Switch
+                value={s.theme === "dark"}
+                onValueChange={(v) => updateSettings({ theme: v ? "dark" : "light" })}
+                trackColor={{ true: theme.gold, false: theme.border }}
+                thumbColor={theme.bg}
+                testID="theme-switch"
+              />
+            }
+          />
+          <SettingRow
+            icon="text-outline"
+            label="Büyük Yazı Modu"
+            theme={theme}
+            testID="setting-bigtext"
+            right={
+              <Switch
+                value={s.bigText}
+                onValueChange={(v) => updateSettings({ bigText: v })}
+                trackColor={{ true: theme.gold, false: theme.border }}
+                thumbColor={theme.bg}
+                testID="bigtext-switch"
+              />
+            }
+          />
+          <SettingRow
+            icon="leaf-outline"
+            label="Sade Kullanım Modu"
+            description="Yaşlı kullanıcılar için kontrolleri gizler, sayaca odaklanır."
+            theme={theme}
+            testID="setting-simple"
+            right={
+              <Switch
+                value={s.simpleMode}
+                onValueChange={(v) => updateSettings({ simpleMode: v })}
+                trackColor={{ true: theme.gold, false: theme.border }}
+                thumbColor={theme.bg}
+                testID="simple-switch"
+              />
+            }
+          />
+        </Section>
+
+        {/* Geri bildirim */}
+        <Section title="Geri Bildirim" theme={theme}>
+          <SettingRow
+            icon="phone-portrait-outline"
+            label="Titreşim"
+            theme={theme}
+            testID="setting-vibration"
+            right={
+              <Switch
+                value={s.vibration}
+                onValueChange={(v) => updateSettings({ vibration: v })}
+                trackColor={{ true: theme.gold, false: theme.border }}
+                thumbColor={theme.bg}
+                testID="vibration-switch"
+              />
+            }
+          />
+          <SettingRow
+            icon="volume-medium-outline"
+            label="Tesbih Tanesi Sesi"
+            description="İsteğe bağlı, çok hafif bir dokunuş sesi."
+            theme={theme}
+            testID="setting-sound"
+            right={
+              <Switch
+                value={s.sound}
+                onValueChange={(v) => updateSettings({ sound: v })}
+                trackColor={{ true: theme.gold, false: theme.border }}
+                thumbColor={theme.bg}
+                testID="sound-switch"
+              />
+            }
+          />
+          <SettingRow
+            icon="sunny-outline"
+            label="Ekranı Açık Tut"
+            description="Ana Sayfa açıkken ekran kapanmasın."
+            theme={theme}
+            testID="setting-keepawake"
+            right={
+              <Switch
+                value={s.keepAwake}
+                onValueChange={(v) => updateSettings({ keepAwake: v })}
+                trackColor={{ true: theme.gold, false: theme.border }}
+                thumbColor={theme.bg}
+                testID="keepawake-switch"
+              />
+            }
+          />
+        </Section>
+
+        {/* Günlük hedef */}
+        <Section title="Günlük Hedef" theme={theme}>
+          <Text style={{ color: theme.textMuted, fontSize: 13, marginBottom: spacing.sm }}>
+            İstatistiklerde ilerleme çubuğunu belirler.
+          </Text>
+          <View style={styles.goalRow}>
+            {GOAL_PRESETS.map((g) => (
+              <Pressable
+                key={g}
+                onPress={() => updateSettings({ dailyGoal: g })}
+                style={[
+                  styles.goalChip,
+                  {
+                    borderColor: s.dailyGoal === g ? theme.gold : theme.border,
+                    backgroundColor:
+                      s.dailyGoal === g ? theme.emeraldDeep : "transparent",
+                  },
+                ]}
+                testID={`goal-${g}`}
+              >
+                <Text
+                  style={{
+                    color: s.dailyGoal === g ? theme.gold : theme.text,
+                    fontSize: 14,
+                    fontWeight: "600",
+                  }}
+                >
+                  {g}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={styles.goalInputRow}>
+            <TextInput
+              value={customGoal}
+              onChangeText={setCustomGoal}
+              keyboardType="number-pad"
+              placeholder="Özel hedef"
+              placeholderTextColor={theme.textSubtle}
+              style={[
+                styles.input,
+                { color: theme.text, borderColor: theme.border },
+              ]}
+              testID="custom-goal-input"
+            />
+            <Pressable
+              onPress={() => {
+                const n = parseInt(customGoal, 10);
+                if (!Number.isNaN(n) && n > 0) {
+                  updateSettings({ dailyGoal: n });
+                  setCustomGoal("");
+                }
+              }}
+              style={[
+                styles.applyBtn,
+                { backgroundColor: theme.gold },
+              ]}
+              testID="apply-goal-btn"
+            >
+              <Text style={{ color: theme.bg, fontWeight: "700" }}>Uygula</Text>
+            </Pressable>
+          </View>
+        </Section>
+
+        {/* Bildirim */}
+        <Section title="Hatırlatıcı" theme={theme}>
+          <SettingRow
+            icon="notifications-outline"
+            label="Günlük Hatırlatma"
+            description="Zikir çekmek için nazik bir günlük hatırlatıcı."
+            theme={theme}
+            testID="setting-reminder"
+            right={
+              <Switch
+                value={s.reminderEnabled}
+                onValueChange={onToggleReminder}
+                trackColor={{ true: theme.gold, false: theme.border }}
+                thumbColor={theme.bg}
+                testID="reminder-switch"
+              />
+            }
+          />
+          {permBlockedAt ? (
+            <View
+              style={{
+                marginTop: 8,
+                padding: spacing.md,
+                borderRadius: radius.md,
+                borderWidth: StyleSheet.hairlineWidth,
+                borderColor: theme.border,
+                backgroundColor: theme.bgElevated,
+              }}
+            >
+              <Text style={{ color: theme.textMuted, fontSize: 13 }}>
+                Bildirim izni engellenmiş. Ayarlardan izin verebilirsiniz.
+              </Text>
+              <Pressable
+                onPress={() => Linking.openSettings()}
+                style={{
+                  marginTop: 8,
+                  alignSelf: "flex-start",
+                  paddingHorizontal: spacing.md,
+                  paddingVertical: 8,
+                  borderRadius: radius.pill,
+                  backgroundColor: theme.gold,
+                }}
+                testID="open-settings-btn"
+              >
+                <Text style={{ color: theme.bg, fontWeight: "700" }}>
+                  Ayarları Aç
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+          {s.reminderEnabled ? (
+            <View style={styles.timeRow}>
+              <Text style={{ color: theme.textMuted, fontSize: 13, flex: 1 }}>
+                Hatırlatma zamanı
+              </Text>
+              <TimeStepper
+                value={s.reminderHour}
+                onDec={() => shiftHour(-1)}
+                onInc={() => shiftHour(1)}
+                theme={theme}
+                testIDPrefix="hour"
+              />
+              <Text style={{ color: theme.text, fontSize: 18, fontWeight: "700" }}>
+                :
+              </Text>
+              <TimeStepper
+                value={s.reminderMinute}
+                onDec={() => shiftMinute(-5)}
+                onInc={() => shiftMinute(5)}
+                theme={theme}
+                testIDPrefix="minute"
+              />
+            </View>
+          ) : null}
+        </Section>
+
+        {/* Uygulama Hakkında */}
+        <Section title="Uygulama" theme={theme}>
+          <View style={styles.rowInfo}>
+            <Text style={{ color: theme.textMuted }}>Sürüm</Text>
+            <Text style={{ color: theme.text }}>1.0.0</Text>
+          </View>
+          <View style={styles.rowInfo}>
+            <Text style={{ color: theme.textMuted }}>Veri Saklama</Text>
+            <Text style={{ color: theme.text }}>Yalnızca Cihaz</Text>
+          </View>
+          <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: spacing.sm }}>
+            Zikirhane çevrimdışı çalışır. Kayıtlarınız yalnızca cihazınızda saklanır ve
+            hiçbir sunucuya gönderilmez.
+          </Text>
+        </Section>
+      </ScrollView>
+    </View>
+  );
+}
+
+function Section({
+  title,
+  children,
+  theme,
+}: {
+  title: string;
+  children: React.ReactNode;
+  theme: any;
+}) {
+  return (
+    <View>
+      <Text
+        style={{
+          color: theme.textMuted,
+          fontSize: 12,
+          letterSpacing: 1.5,
+          textTransform: "uppercase",
+          marginBottom: spacing.sm,
+          paddingLeft: 4,
+        }}
+      >
+        {title}
+      </Text>
+      <View
+        style={{
+          borderRadius: radius.lg,
+          backgroundColor: theme.bgCard,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: theme.border,
+          padding: spacing.md,
+          gap: spacing.md,
+        }}
+      >
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function SettingRow({
+  icon,
+  label,
+  description,
+  right,
+  theme,
+  testID,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  description?: string;
+  right?: React.ReactNode;
+  theme: any;
+  testID?: string;
+}) {
+  return (
+    <View style={styles.settingRow} testID={testID}>
+      <View style={[styles.settingIcon, { backgroundColor: theme.emeraldDeep }]}>
+        <Ionicons name={icon} size={18} color={theme.gold} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ color: theme.text, fontSize: 15, fontWeight: "500" }}>
+          {label}
+        </Text>
+        {description ? (
+          <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: 2 }}>
+            {description}
+          </Text>
+        ) : null}
+      </View>
+      {right}
+    </View>
+  );
+}
+
+function TimeStepper({
+  value,
+  onDec,
+  onInc,
+  theme,
+  testIDPrefix,
+}: {
+  value: number;
+  onDec: () => void;
+  onInc: () => void;
+  theme: any;
+  testIDPrefix: string;
+}) {
+  return (
+    <View style={styles.stepper}>
+      <Pressable
+        onPress={onDec}
+        style={[styles.stepBtn, { borderColor: theme.border }]}
+        testID={`${testIDPrefix}-dec`}
+      >
+        <Ionicons name="chevron-down" size={16} color={theme.gold} />
+      </Pressable>
+      <Text style={{ color: theme.text, fontSize: 18, fontWeight: "700", minWidth: 32, textAlign: "center" }}>
+        {String(value).padStart(2, "0")}
+      </Text>
+      <Pressable
+        onPress={onInc}
+        style={[styles.stepBtn, { borderColor: theme.border }]}
+        testID={`${testIDPrefix}-inc`}
+      >
+        <Ionicons name="chevron-up" size={16} color={theme.gold} />
+      </Pressable>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  h1: {
+    fontSize: 34,
+    fontWeight: "300",
+    letterSpacing: 0.5,
+  },
+  settingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: 4,
+  },
+  settingIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  goalRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  goalChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    minWidth: 60,
+    alignItems: "center",
+  },
+  goalInputRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: spacing.md,
+  },
+  input: {
+    flex: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    fontSize: 15,
+  },
+  applyBtn: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 10,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  timeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: spacing.sm,
+  },
+  stepper: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  stepBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  rowInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+  },
+});

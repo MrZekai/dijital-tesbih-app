@@ -1,0 +1,526 @@
+// Zikirhane global store — React Context + AsyncStorage persistence.
+// Tüm veriler cihaz içinde saklanır (offline).
+
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import { storage } from "@/src/utils/storage";
+
+import { BUILTIN_DHIKRS, type AnyDhikr, type CustomDhikr } from "./dhikrs";
+import { darkTheme, getTheme, lightTheme, type ThemeName, type ThemeTokens } from "./theme";
+
+const KEY = "zikirhane:v1";
+
+export interface DhikrState {
+  count: number;
+  target: number;
+  lastUsedAt: number | null;
+}
+
+export interface DailyLogEntry {
+  // key = YYYY-MM-DD
+  date: string;
+  total: number;
+  perDhikr: Record<string, number>;
+}
+
+export interface Settings {
+  theme: ThemeName;
+  sound: boolean;
+  vibration: boolean;
+  keepAwake: boolean;
+  bigText: boolean;
+  simpleMode: boolean;
+  dailyGoal: number;
+  reminderEnabled: boolean;
+  reminderHour: number;
+  reminderMinute: number;
+  onboardingDone: boolean;
+}
+
+export interface PersistedState {
+  version: 1;
+  activeDhikrId: string;
+  customDhikrs: CustomDhikr[];
+  dhikrStates: Record<string, DhikrState>;
+  totalCount: number;
+  dailyLog: Record<string, DailyLogEntry>;
+  esmaCounters: Record<number, number>;
+  esmaFavorites: number[];
+  settings: Settings;
+  lastActionAt: number | null;
+}
+
+const defaultSettings: Settings = {
+  theme: "dark",
+  sound: false,
+  vibration: true,
+  keepAwake: false,
+  bigText: false,
+  simpleMode: false,
+  dailyGoal: 100,
+  reminderEnabled: false,
+  reminderHour: 20,
+  reminderMinute: 0,
+  onboardingDone: false,
+};
+
+const defaultState = (): PersistedState => {
+  const dhikrStates: Record<string, DhikrState> = {};
+  for (const d of BUILTIN_DHIKRS) {
+    dhikrStates[d.id] = {
+      count: 0,
+      target: d.defaultTarget,
+      lastUsedAt: null,
+    };
+  }
+  return {
+    version: 1,
+    activeDhikrId: "subhanallah",
+    customDhikrs: [],
+    dhikrStates,
+    totalCount: 0,
+    dailyLog: {},
+    esmaCounters: {},
+    esmaFavorites: [],
+    settings: defaultSettings,
+    lastActionAt: null,
+  };
+};
+
+const todayKey = (d: Date = new Date()) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+interface UndoEntry {
+  dhikrId: string;
+  dateKey: string;
+  ts: number;
+}
+
+interface StoreValue {
+  state: PersistedState;
+  theme: ThemeTokens;
+  loaded: boolean;
+  allDhikrs: AnyDhikr[];
+  activeDhikr: AnyDhikr;
+  activeDhikrState: DhikrState;
+  increment: () => { justReachedTarget: boolean };
+  undo: () => boolean;
+  reset: () => void;
+  setActiveDhikr: (id: string) => void;
+  setTargetForActive: (target: number) => void;
+  addCustomDhikr: (input: { name: string; arabic?: string; target: number }) => string;
+  updateCustomDhikr: (
+    id: string,
+    input: { name?: string; arabic?: string; target?: number }
+  ) => void;
+  deleteCustomDhikr: (id: string) => void;
+  incEsma: (no: number) => void;
+  resetEsma: (no: number) => void;
+  toggleEsmaFavorite: (no: number) => void;
+  updateSettings: (patch: Partial<Settings>) => void;
+  finishOnboarding: () => void;
+  resetAllStats: () => void;
+  // stats helpers
+  todayTotal: () => number;
+  weeklyTotals: () => { date: string; total: number }[];
+  monthlyTotal: () => number;
+  topDhikrs: (limit?: number) => { id: string; name: string; count: number }[];
+}
+
+const StoreContext = createContext<StoreValue | null>(null);
+
+const CONTAINER_KEY = "container";
+
+export function StoreProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = useState<PersistedState>(defaultState);
+  const [loaded, setLoaded] = useState(false);
+  const undoStack = useRef<UndoEntry[]>([]);
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load persisted state on boot
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = await storage.getItem(KEY, null);
+        if (raw && typeof raw === "string") {
+          const parsed = JSON.parse(raw) as PersistedState;
+          if (parsed && parsed.version === 1) {
+            // Merge new builtin dhikrs if any missing
+            const merged = { ...parsed };
+            for (const d of BUILTIN_DHIKRS) {
+              if (!merged.dhikrStates[d.id]) {
+                merged.dhikrStates[d.id] = {
+                  count: 0,
+                  target: d.defaultTarget,
+                  lastUsedAt: null,
+                };
+              }
+            }
+            merged.settings = { ...defaultSettings, ...parsed.settings };
+            setState(merged);
+          }
+        }
+      } catch (e) {
+        console.warn("[store] load failed", e);
+      } finally {
+        setLoaded(true);
+      }
+    })();
+  }, []);
+
+  // Debounced persistence
+  useEffect(() => {
+    if (!loaded) return;
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => {
+      storage.setItem(KEY, JSON.stringify(state));
+    }, 200);
+    return () => {
+      if (persistTimer.current) clearTimeout(persistTimer.current);
+    };
+  }, [state, loaded]);
+
+  const setStateSafe = useCallback(
+    (updater: (prev: PersistedState) => PersistedState) => {
+      setState(updater);
+    },
+    []
+  );
+
+  const allDhikrs: AnyDhikr[] = useMemo(
+    () => [...BUILTIN_DHIKRS, ...state.customDhikrs],
+    [state.customDhikrs]
+  );
+
+  const activeDhikr: AnyDhikr =
+    allDhikrs.find((d) => d.id === state.activeDhikrId) || BUILTIN_DHIKRS[0];
+
+  const activeDhikrState: DhikrState =
+    state.dhikrStates[activeDhikr.id] || {
+      count: 0,
+      target: activeDhikr.defaultTarget,
+      lastUsedAt: null,
+    };
+
+  const increment: StoreValue["increment"] = () => {
+    let justReachedTarget = false;
+    setStateSafe((prev) => {
+      const id = prev.activeDhikrId;
+      const cur = prev.dhikrStates[id] || {
+        count: 0,
+        target: 33,
+        lastUsedAt: null,
+      };
+      const nextCount = cur.count + 1;
+      justReachedTarget = nextCount === cur.target;
+      const now = Date.now();
+      const dateKey = todayKey();
+      const prevEntry: DailyLogEntry = prev.dailyLog[dateKey] || {
+        date: dateKey,
+        total: 0,
+        perDhikr: {},
+      };
+      const newEntry: DailyLogEntry = {
+        date: dateKey,
+        total: prevEntry.total + 1,
+        perDhikr: {
+          ...prevEntry.perDhikr,
+          [id]: (prevEntry.perDhikr[id] || 0) + 1,
+        },
+      };
+      undoStack.current.push({ dhikrId: id, dateKey, ts: now });
+      // Keep last 200 entries in undo stack
+      if (undoStack.current.length > 200) undoStack.current.shift();
+      return {
+        ...prev,
+        dhikrStates: {
+          ...prev.dhikrStates,
+          [id]: {
+            count: nextCount,
+            target: cur.target,
+            lastUsedAt: now,
+          },
+        },
+        totalCount: prev.totalCount + 1,
+        dailyLog: { ...prev.dailyLog, [dateKey]: newEntry },
+        lastActionAt: now,
+      };
+    });
+    return { justReachedTarget };
+  };
+
+  const undo: StoreValue["undo"] = () => {
+    const entry = undoStack.current.pop();
+    if (!entry) return false;
+    setStateSafe((prev) => {
+      const cur = prev.dhikrStates[entry.dhikrId];
+      if (!cur || cur.count <= 0) return prev;
+      const dailyEntry = prev.dailyLog[entry.dateKey];
+      const nextDaily: Record<string, DailyLogEntry> = { ...prev.dailyLog };
+      if (dailyEntry) {
+        const perD = { ...dailyEntry.perDhikr };
+        perD[entry.dhikrId] = Math.max(0, (perD[entry.dhikrId] || 0) - 1);
+        nextDaily[entry.dateKey] = {
+          ...dailyEntry,
+          total: Math.max(0, dailyEntry.total - 1),
+          perDhikr: perD,
+        };
+      }
+      return {
+        ...prev,
+        dhikrStates: {
+          ...prev.dhikrStates,
+          [entry.dhikrId]: { ...cur, count: cur.count - 1 },
+        },
+        totalCount: Math.max(0, prev.totalCount - 1),
+        dailyLog: nextDaily,
+      };
+    });
+    return true;
+  };
+
+  const reset: StoreValue["reset"] = () => {
+    setStateSafe((prev) => {
+      const id = prev.activeDhikrId;
+      const cur = prev.dhikrStates[id];
+      if (!cur) return prev;
+      return {
+        ...prev,
+        dhikrStates: {
+          ...prev.dhikrStates,
+          [id]: { ...cur, count: 0 },
+        },
+      };
+    });
+    // Clear undo stack for this dhikr's counts
+    undoStack.current = [];
+  };
+
+  const setActiveDhikr: StoreValue["setActiveDhikr"] = (id) => {
+    setStateSafe((prev) => ({ ...prev, activeDhikrId: id }));
+  };
+
+  const setTargetForActive: StoreValue["setTargetForActive"] = (target) => {
+    setStateSafe((prev) => {
+      const id = prev.activeDhikrId;
+      const cur = prev.dhikrStates[id];
+      if (!cur) return prev;
+      return {
+        ...prev,
+        dhikrStates: {
+          ...prev.dhikrStates,
+          [id]: { ...cur, target: Math.max(1, target) },
+        },
+      };
+    });
+  };
+
+  const addCustomDhikr: StoreValue["addCustomDhikr"] = ({ name, arabic, target }) => {
+    const id = `custom-${Date.now()}`;
+    setStateSafe((prev) => {
+      const newCustom: CustomDhikr = {
+        id,
+        name: name.trim(),
+        arabic: arabic?.trim() || undefined,
+        defaultTarget: target,
+        builtin: false,
+        createdAt: Date.now(),
+      };
+      return {
+        ...prev,
+        customDhikrs: [...prev.customDhikrs, newCustom],
+        dhikrStates: {
+          ...prev.dhikrStates,
+          [id]: { count: 0, target, lastUsedAt: null },
+        },
+      };
+    });
+    return id;
+  };
+
+  const updateCustomDhikr: StoreValue["updateCustomDhikr"] = (id, input) => {
+    setStateSafe((prev) => {
+      const idx = prev.customDhikrs.findIndex((c) => c.id === id);
+      if (idx === -1) return prev;
+      const next = [...prev.customDhikrs];
+      next[idx] = {
+        ...next[idx],
+        name: input.name?.trim() || next[idx].name,
+        arabic:
+          input.arabic !== undefined
+            ? input.arabic.trim() || undefined
+            : next[idx].arabic,
+        defaultTarget: input.target ?? next[idx].defaultTarget,
+      };
+      const curSt = prev.dhikrStates[id];
+      const nextStates = { ...prev.dhikrStates };
+      if (input.target !== undefined && curSt) {
+        nextStates[id] = { ...curSt, target: input.target };
+      }
+      return { ...prev, customDhikrs: next, dhikrStates: nextStates };
+    });
+  };
+
+  const deleteCustomDhikr: StoreValue["deleteCustomDhikr"] = (id) => {
+    setStateSafe((prev) => {
+      const nextStates = { ...prev.dhikrStates };
+      delete nextStates[id];
+      const nextActive =
+        prev.activeDhikrId === id ? "subhanallah" : prev.activeDhikrId;
+      return {
+        ...prev,
+        customDhikrs: prev.customDhikrs.filter((c) => c.id !== id),
+        dhikrStates: nextStates,
+        activeDhikrId: nextActive,
+      };
+    });
+  };
+
+  const incEsma: StoreValue["incEsma"] = (no) => {
+    setStateSafe((prev) => ({
+      ...prev,
+      esmaCounters: { ...prev.esmaCounters, [no]: (prev.esmaCounters[no] || 0) + 1 },
+    }));
+  };
+
+  const resetEsma: StoreValue["resetEsma"] = (no) => {
+    setStateSafe((prev) => ({
+      ...prev,
+      esmaCounters: { ...prev.esmaCounters, [no]: 0 },
+    }));
+  };
+
+  const toggleEsmaFavorite: StoreValue["toggleEsmaFavorite"] = (no) => {
+    setStateSafe((prev) => {
+      const has = prev.esmaFavorites.includes(no);
+      return {
+        ...prev,
+        esmaFavorites: has
+          ? prev.esmaFavorites.filter((n) => n !== no)
+          : [...prev.esmaFavorites, no],
+      };
+    });
+  };
+
+  const updateSettings: StoreValue["updateSettings"] = (patch) => {
+    setStateSafe((prev) => ({
+      ...prev,
+      settings: { ...prev.settings, ...patch },
+    }));
+  };
+
+  const finishOnboarding: StoreValue["finishOnboarding"] = () => {
+    setStateSafe((prev) => ({
+      ...prev,
+      settings: { ...prev.settings, onboardingDone: true },
+    }));
+  };
+
+  const resetAllStats: StoreValue["resetAllStats"] = () => {
+    setStateSafe((prev) => {
+      const nextStates: Record<string, DhikrState> = {};
+      for (const k of Object.keys(prev.dhikrStates)) {
+        nextStates[k] = { ...prev.dhikrStates[k], count: 0 };
+      }
+      return {
+        ...prev,
+        dhikrStates: nextStates,
+        totalCount: 0,
+        dailyLog: {},
+        esmaCounters: {},
+      };
+    });
+    undoStack.current = [];
+  };
+
+  const todayTotal: StoreValue["todayTotal"] = () => {
+    const e = state.dailyLog[todayKey()];
+    return e?.total || 0;
+  };
+
+  const weeklyTotals: StoreValue["weeklyTotals"] = () => {
+    const out: { date: string; total: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const k = todayKey(d);
+      out.push({ date: k, total: state.dailyLog[k]?.total || 0 });
+    }
+    return out;
+  };
+
+  const monthlyTotal: StoreValue["monthlyTotal"] = () => {
+    let sum = 0;
+    for (let i = 0; i < 30; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const k = todayKey(d);
+      sum += state.dailyLog[k]?.total || 0;
+    }
+    return sum;
+  };
+
+  const topDhikrs: StoreValue["topDhikrs"] = (limit = 3) => {
+    return [...allDhikrs]
+      .map((d) => ({
+        id: d.id,
+        name: d.name,
+        count: state.dhikrStates[d.id]?.count || 0,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+  };
+
+  const theme = getTheme(state.settings.theme);
+
+  const value: StoreValue = {
+    state,
+    theme,
+    loaded,
+    allDhikrs,
+    activeDhikr,
+    activeDhikrState,
+    increment,
+    undo,
+    reset,
+    setActiveDhikr,
+    setTargetForActive,
+    addCustomDhikr,
+    updateCustomDhikr,
+    deleteCustomDhikr,
+    incEsma,
+    resetEsma,
+    toggleEsmaFavorite,
+    updateSettings,
+    finishOnboarding,
+    resetAllStats,
+    todayTotal,
+    weeklyTotals,
+    monthlyTotal,
+    topDhikrs,
+  };
+
+  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+}
+
+export function useStore(): StoreValue {
+  const v = useContext(StoreContext);
+  if (!v) throw new Error("useStore must be used inside StoreProvider");
+  return v;
+}
+
+// Convenience
+export const themeExport = { darkTheme, lightTheme };
+export { CONTAINER_KEY };

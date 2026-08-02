@@ -1,30 +1,101 @@
-import { Text, View, StyleSheet, Image } from "react-native";
+// Splash / açılış ekranı — kısa süre gösterilir sonra onboarding veya tabs'a yönlendirir.
 
-const EXPO_PUBLIC_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+import { LinearGradient } from "expo-linear-gradient";
+import { Redirect } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
+
+import { useStore } from "@/src/lib/store";
+import { darkTheme, fonts, spacing } from "@/src/lib/theme";
 
 export default function Index() {
-  console.log(EXPO_PUBLIC_BACKEND_URL, "EXPO_PUBLIC_BACKEND_URL");
+  const { loaded, state } = useStore();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 1400);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (ready && loaded) {
+    if (!state.settings.onboardingDone) return <Redirect href="/onboarding" />;
+    return <Redirect href="/(tabs)" />;
+  }
+
+  const theme = darkTheme;
 
   return (
-    <View style={styles.container}>
-      <Image
-        source={require("../assets/images/app-image.png")}
-        style={styles.image}
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <LinearGradient
+        colors={[theme.emeraldDeep, theme.bg, theme.navy]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
       />
+      <View style={styles.center}>
+        <Animated.View
+          entering={FadeIn.duration(700)}
+          style={[
+            styles.logoCircle,
+            { borderColor: theme.gold, backgroundColor: theme.emeraldDeep },
+          ]}
+          testID="splash-logo"
+        >
+          <View style={[styles.crescent, { borderColor: theme.gold }]} />
+        </Animated.View>
+        <Animated.Text
+          entering={FadeInDown.delay(300).duration(600)}
+          style={[
+            styles.name,
+            { color: theme.gold, fontFamily: fonts.display },
+          ]}
+        >
+          Zikirhane
+        </Animated.Text>
+        <Animated.Text
+          entering={FadeInDown.delay(600).duration(600)}
+          style={[styles.slogan, { color: theme.textMuted }]}
+        >
+          Her Dokunuşta Huzur
+        </Animated.Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+  center: {
     flex: 1,
-    backgroundColor: "#0c0c0c",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.lg,
+  },
+  logoCircle: {
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
   },
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "contain",
+  crescent: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 4,
+    borderRightColor: "transparent",
+    borderBottomColor: "transparent",
+    transform: [{ rotate: "45deg" }],
+  },
+  name: {
+    fontSize: 44,
+    fontWeight: "300",
+    letterSpacing: 2,
+  },
+  slogan: {
+    fontSize: 16,
+    letterSpacing: 1.2,
   },
 });

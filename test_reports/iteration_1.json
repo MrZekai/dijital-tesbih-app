@@ -1,0 +1,79 @@
+{
+  "summary": "Frontend-only smoke of Zikirhane Expo web preview (mobile viewport 390x844). Most core flows work: splash → onboarding (skip + 3-step next) → home, big tap-anywhere counter, undo, reset-with-confirm, target picker (33/99/100/500), dhikr picker (6 built-ins), home toggles (vibration/sound/keepawake), Zikirlerim tab (Namaz Sonrası + Esma cards + dhikr list), Esma detail tap/count/fav/reset, custom-dhikr create (visible in list with edit/delete testIDs), İstatistikler daily goal card + reset-all, Ayarlar all switches + goal chips + custom goal + theme toggle (dark↔light applies live), AsyncStorage persistence works (counter 4 preserved and onboarding not re-shown after reload). Turkish UI renders correctly, no red screens on happy paths, no missing tabs. One CRITICAL bug found: Tesbihat crashes with 'Cannot read properties of undefined (reading target)' at app/tesbihat.tsx:75 when transitioning between steps under fast taps — race condition causes stepIdx to exceed STEPS bounds. Several expected testIDs are missing (weekly-chart, top-dhikrs-list, dhikr-target-input, dhikr-transliteration-input, esma-fav-chip). Deprecated packages detected: none (expo-av/expo-barcode-scanner/expo-background-fetch not used).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Tesbihat screen",
+        "issue": "Red-screen crash: 'Cannot read properties of undefined (reading target)' at app/tesbihat.tsx:75. Occurs when transitioning from step 2 → 3 (or reaching the final step) because setStepIdx((i)=>i+1) can fire twice when the user taps rapidly at the boundary: the tap handler checks the stale `step.target` in a closure while count>=target, so stepIdx overshoots to 3 and STEPS[3] is undefined. Reference: /app/frontend/app/tesbihat.tsx:46-69, 75.",
+        "testID": "tesbihat-tap",
+        "priority": "CRITICAL"
+      },
+      {
+        "component": "İstatistikler",
+        "issue": "Expected testID 'weekly-chart' not found on the 'Son 7 Gün' chart card. Chart renders visually, but automation/tests can't target it. Reference: /app/frontend/app/(tabs)/istatistikler.tsx",
+        "testID": "weekly-chart",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "İstatistikler",
+        "issue": "Expected testID 'top-dhikrs-list' not found on the 'En Sık Yapılan Zikirler' list. List renders visually. Reference: /app/frontend/app/(tabs)/istatistikler.tsx",
+        "testID": "top-dhikrs-list",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "Custom dhikr modal",
+        "issue": "Expected testIDs 'dhikr-target-input' and 'dhikr-transliteration-input' not present. The custom-target input exists visually ('Özel hedef' TextInput next to 'Uygula') but has no testID; transliteration field appears to be missing entirely. Reference: /app/frontend/app/custom-dhikr.tsx",
+        "testID": "dhikr-target-input, dhikr-transliteration-input",
+        "priority": "MEDIUM"
+      },
+      {
+        "component": "Esmaül Hüsna list",
+        "issue": "Expected testID 'esma-fav-chip' not found on the 'Favoriler (N)' filter chip (chip renders visually and is clickable via text). Reference: /app/frontend/app/esma.tsx",
+        "testID": "esma-fav-chip",
+        "priority": "LOW"
+      },
+      {
+        "component": "Esmaül Hüsna search",
+        "issue": "Searching 'Rahman' returns 0 rows because names are stored with diacritics ('Er-Rahmân'). Search should normalize/strip diacritics (â→a, î→i, û→u, ş→s, ğ→g, ç→c) for Turkish transliteration UX. Reference: /app/frontend/app/esma.tsx",
+        "testID": "esma-search",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Custom dhikr modal",
+        "issues": ["'Zikri Kaydet' button appears low-contrast/disabled until name is entered — no visible enabled/disabled state cue beyond opacity; consider explicit disabled styling + testID='save-dhikr-btn' disabled attribute"]
+      },
+      {
+        "screen": "Home",
+        "issues": ["Console warns 'The wake lock with tag zikirhane-home has not activated yet' when toggling keepawake off quickly — harmless on web but noisy"]
+      }
+    ],
+    "react_native_issues": [
+      {"component": "Home / global", "issue": "Deprecation warning: 'shadow*' style props are deprecated. Use 'boxShadow'. Search for shadowColor/shadowOffset/shadowOpacity/shadowRadius across the app. Reference: multiple files (styles)."},
+      {"component": "Home counter overlay", "issue": "Deprecation warning: props.pointerEvents is deprecated. Use style.pointerEvents. Reference: /app/frontend/app/(tabs)/index.tsx:167 (Animated.View pointerEvents=\"none\")."},
+      {"component": "Reanimated animations", "issue": "Console warning: 'useNativeDriver is not supported because the native animated module is missing. Falling back to JS-based animation.' This is expected on web preview but flag any legacy Animated API usage — prefer reanimated worklets to silence."}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "FIX CRITICAL: Guard Tesbihat onTap against overshoot. Either (a) also gate the transition on `stepIdx < STEPS.length - 1` inside a functional setStepIdx using its previous value and set count synchronously (no setTimeout), or (b) set a local `transitioning` ref/state at boundary and early-return further taps until state updates. Currently double-fires can push stepIdx to 3.",
+    "Add missing testIDs: weekly-chart (İstatistikler 'Son 7 Gün'), top-dhikrs-list (İstatistikler 'En Sık Yapılan Zikirler'), dhikr-target-input & dhikr-transliteration-input (custom-dhikr), esma-fav-chip (esma favoriler chip).",
+    "Add diacritic-insensitive search for Esmaül Hüsna (normalize both query and name to lowercased ASCII before matching).",
+    "Replace deprecated 'shadow*' style props with 'boxShadow' string; replace pointerEvents prop with style.pointerEvents on Animated.View in home."
+  ],
+  "critical_code_review_comments": [
+    "app/tesbihat.tsx onTap has a classic stale-closure race: at boundary next>=step.target, setCount(next) + setTimeout(setStepIdx(i=>i+1)+setCount(0)) is not atomic — subsequent rapid taps re-enter with an updated count but stale stepIdx and re-schedule setStepIdx increment. Move all transition state into a single reducer or use a ref to lock further taps until transition completes.",
+    "app/(tabs)/index.tsx:167 uses `pointerEvents='none'` prop instead of style — React Native web deprecated this.",
+    "app/(tabs)/istatistikler.tsx and app/custom-dhikr.tsx are missing testIDs promised in the PRD (weekly-chart, top-dhikrs-list, dhikr-target-input, dhikr-transliteration-input) — makes automated regression brittle."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only)", "frontend": "~80% (11/14 flows pass; tesbihat crashes, esma search normalization missing, some testIDs missing)"},
+  "seed_data_creation": "None. Session-created 'TEST_Zikir' custom dhikr was added to AsyncStorage via UI to verify list update.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Use viewport 390x844. Preview URL: https://dijital-tesbih.preview.emergentagent.com. Each fresh browser context starts with onboarding — click [data-testid='onboarding-skip'] or 3× [data-testid='onboarding-next']. Reset persistent state via page.evaluate(\"localStorage.clear()\") + reload. When retesting Tesbihat, tap rapidly (30ms interval) through all three 33-count steps — the crash reproduces on the 2→3 boundary consistently. Deprecated packages: none used.",
+  "rca_of_issue": "Tesbihat crash — RCA: In /app/frontend/app/tesbihat.tsx onTap (lines 46-69), when the counter reaches step.target the code calls setCount(next) synchronously and schedules setStepIdx((i)=>i+1)+setCount(0) via setTimeout(350ms). React batches state so `count` and `stepIdx` do not both flip at the same time. If the user taps again during the 350ms window, the handler runs with the OLD `step` (via closure) and OLD stepIdx (not yet incremented). Since count is already at target, next>=step.target is true, and `stepIdx < STEPS.length - 1` is still true, so ANOTHER setStepIdx((i)=>i+1) is scheduled. After both timeouts resolve, stepIdx becomes 3 → STEPS[3] undefined → step.target throws at line 75. Reproduction: navigate to Tesbihat, tap counter 33+ times fast; crash appears at 2→3 boundary. Mitigation: gate the boundary with a transitioning ref, e.g., `if (transitioningRef.current) return;` set to true before scheduling the timeout and false inside the timeout after both setStepIdx and setCount(0). Alternatively, drop the setTimeout and transition synchronously: setStepIdx(prev => prev < STEPS.length - 1 ? prev + 1 : prev); setCount(0)."
+}
