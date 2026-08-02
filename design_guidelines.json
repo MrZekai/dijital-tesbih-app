@@ -1,0 +1,185 @@
+{
+  "app_name": "Zikirhane: Zikirmatik Tesbih",
+  "personality": "6 Glass / Luxe DARK",
+  "personality_one_liner": "A cinematic, elegant, and peaceful digital tasbih built with deep emerald, navy, and soft gold accents, emphasizing spiritual focus and premium craftsmanship.",
+  "color": {
+    "surface": "#06090E",
+    "onSurface": "#F4F1E1",
+    "surfaceSecondary": "#111A22",
+    "onSurfaceSecondary": "#DCD8C8",
+    "surfaceTertiary": "#1C2A36",
+    "onSurfaceTertiary": "#C2BCA8",
+    "surfaceInverse": "#E8E2D2",
+    "onSurfaceInverse": "#06090E",
+    "brand": "#C6A664",
+    "brandPrimary": "#C6A664",
+    "onBrandPrimary": "#06090E",
+    "brandSecondary": "#0D2B1D",
+    "onBrandSecondary": "#F4F1E1",
+    "brandTertiary": "#16402D",
+    "onBrandTertiary": "#F4F1E1",
+    "success": "#2D5A3F",
+    "onSuccess": "#F4F1E1",
+    "warning": "#B8860B",
+    "onWarning": "#06090E",
+    "error": "#6B2727",
+    "onError": "#F4F1E1",
+    "info": "#1C3A5A",
+    "onInfo": "#F4F1E1",
+    "border": "#233342",
+    "borderStrong": "#C6A664",
+    "divider": "#16222D"
+  },
+  "typography": {
+    "displayFontFamily": "Cormorant Garamond",
+    "textFontFamily": "Geist",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24,
+      "3xl": 32,
+      "counter": 120
+    }
+  },
+  "spacing": {
+    "rule": "Generous, breathing vertical rhythm. Central elements should have ample negative space to emphasize focus and calmness.",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "1",
+  "navigation": "bottom_tabs",
+  "icon_set": "Ionicons",
+  "glassmorphism": {
+    "enabled": "true",
+    "do's": [
+      "Use frosted glass (expo-blur) for the bottom tab bar and floating action controls.",
+      "Apply subtle glass overlays on Dhikr cards to give them a premium, layered feel.",
+      "Use glass headers when content scrolls behind them."
+    ],
+    "dont's": [
+      "Do not blur the main counter area; it must remain hyper-readable.",
+      "Do not overuse blur on dense text areas like the Esmaül Hüsna lists."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "haptics": {
+    "counter_tap": "light",
+    "target_reached": "success",
+    "reset": "medium",
+    "tab_switch": "selection"
+  },
+  "screens": [
+    {
+      "name": "Splash & Onboarding",
+      "purpose": "Set a peaceful, premium tone with the slogan 'Her Dokunuşta Huzur'.",
+      "states": {
+        "loading": "Fade in gold logo on dark emerald/navy gradient background",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "Full screen dark emerald-to-navy background. Gold logo (Cormorant Garamond) centered. 3-step onboarding using full-bleed dark abstract imagery with gradient-to-dark scrim, large gold serif headings, and a sticky glass CTA at the bottom."
+    },
+    {
+      "name": "Home (Ana Sayfa)",
+      "purpose": "The main dhikr counter. Must be readable, distraction-free, and one-handed.",
+      "states": {
+        "loading": "Fade-in central counter.",
+        "empty": "Counter at 0 with subtle pulse.",
+        "error": "N/A"
+      },
+      "layout": "Almost the entire screen acts as a touchable area (flex: 1). Large, elegant serif counter (~120pt) vertically and horizontally centered. Wrapped in a subtle, animated circular ring (simulating tasbih beads). Top: Current Dhikr name and target progress (e.g., 24/33). Bottom right/left: Floating glass pills for Undo, Reset, Sound, and Vibrate toggles."
+    },
+    {
+      "name": "Zikirlerim & Namaz Sonrası Tesbihat",
+      "purpose": "List of ready dhikrs and the auto-transitioning post-prayer mode.",
+      "states": {
+        "loading": "Skeleton glass cards.",
+        "empty": "Elegant illustration of a tasbih with text 'Henüz özel zikir eklenmedi'.",
+        "error": "Error text with retry."
+      },
+      "layout": "Top section: A featured, large glass card for 'Namaz Sonrası Tesbihat' (33x3 auto transition mode) with a rich emerald gradient. Below: A 2-column or list layout of ready dhikrs (Sübhanallah, Elhamdülillah, vb.) showing Arabic and Turkish titles. Floating '+' button (FAB) in gold for custom dhikrs."
+    },
+    {
+      "name": "Esmaül Hüsna",
+      "purpose": "Beautifully formatted 99 Names of Allah with meanings and individual counters.",
+      "states": {
+        "loading": "List skeleton.",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "List view. Each row has a circular index/number, the Name in Arabic (elegant serif), Turkish spelling, and a brief meaning. Tapping a row opens a bottom sheet with a dedicated counter for that specific Name."
+    },
+    {
+      "name": "İstatistikler (Stats)",
+      "purpose": "Track daily, weekly, and all-time dhikr progress.",
+      "states": {
+        "loading": "Skeleton charts.",
+        "empty": "Message: 'Zikir geçmişiniz burada görünecek.'",
+        "error": "Failed to load data."
+      },
+      "layout": "Top half: A sleek, dark dashboard with gold accent numbers showing total counts and streaks. Bottom half: A bar chart (using simple view widths or a lightweight SVG) showing the last 7 days of activity."
+    },
+    {
+      "name": "Ayarlar (Settings)",
+      "purpose": "App preferences including theme, haptics, and accessibility.",
+      "states": {
+        "loading": "N/A",
+        "empty": "N/A",
+        "error": "N/A"
+      },
+      "layout": "Standard list layout with glass rows. Toggles for Sound, Vibration, Big Text Mode, Simple Mode, and Light/Dark Theme override."
+    }
+  ],
+  "images": {
+    "onboarding_bg_1": {
+      "url": "https://images.pexels.com/photos/29607829/pexels-photo-29607829.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "dark": "https://images.pexels.com/photos/29607829/pexels-photo-29607829.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Dark geometric dome with gold calligraphy"
+    },
+    "onboarding_bg_2": {
+      "url": "https://images.unsplash.com/photo-1573765727997-e02883182ba7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHwxfHxJc2xhbWljJTIwYXJjaCUyMHBhdHRlcm58ZW58MHx8fHwxNzg1NzA3ODUwfDA&ixlib=rb-4.1.0&q=85",
+      "dark": "https://images.unsplash.com/photo-1573765727997-e02883182ba7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHwxfHxJc2xhbWljJTIwYXJjaCUyMHBhdHRlcm58ZW58MHx8fHwxNzg1NzA3ODUwfDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Islamic arch pattern"
+    },
+    "empty_tasbih": {
+      "url": "https://images.unsplash.com/photo-1742219335029-951834824ed2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA0MTJ8MHwxfHNlYXJjaHwxfHxUYXNiaWglMjBiZWFkcyUyMGRhcmslMjBhZXN0aGV0aWN8ZW58MHx8fHwxNzg1NzA3ODUwfDA&ixlib=rb-4.1.0&q=85",
+      "dark": "https://images.unsplash.com/photo-1742219335029-951834824ed2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA0MTJ8MHwxfHNlYXJjaHwxfHxUYXNiaWglMjBiZWFkcyUyMGRhcmslMjBhZXN0aGV0aWN8ZW58MHx8fHwxNzg1NzA3ODUwfDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Hand holding dark tasbih beads"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Design entirely using the 'Glass / Luxe DARK' personality. The background should be a deeply rich dark navy/emerald tone (#06090E to #0D2B1D) with striking soft gold accents (#C6A664).",
+    "CRITICAL: The Home screen's counter MUST be the dominant element. Use a massive font size (~120pt) with the Cormorant Garamond serif font to evoke a premium Islamic calligraphy feel.",
+    "Make the entire background of the Home screen act as a massive touch target (`Pressable` with `flex: 1`). Do not restrict the tapping area to a small button.",
+    "Ensure 'Namaz Sonrası Tesbihat' mode functions by auto-transitioning to the next phrase when the count reaches 33. The UI should smoothly indicate this shift.",
+    "Implement light haptics on every counter tap, and a 'success' haptic when a target (33, 99, etc.) is reached.",
+    "For the Esmaül Hüsna list, use elegant typography. Show Arabic script prominently alongside the Turkish meaning. Ensure the text isn't cramped.",
+    "Use `expo-linear-gradient` to create a soft, rich emerald-to-navy fade on featured cards and the splash screen.",
+    "Always apply a gradient-to-dark scrim over background images (like in onboarding) to ensure text readability.",
+    "Do not use generic blue/purple AI colors. Stick strictly to the defined Emerald, Navy, Black, and Gold palette."
+  ]
+}
