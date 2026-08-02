@@ -71,8 +71,7 @@ export function TesbihRing({
 
   return (
     <View
-      pointerEvents="none"
-      style={[styles.container, { width: size, height: size }]}
+      style={[styles.container, { width: size, height: size, pointerEvents: "none" }]}
     >
       <Animated.View
         style={[

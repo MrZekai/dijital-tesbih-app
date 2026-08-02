@@ -164,10 +164,9 @@ export default function Home() {
               progress={progress}
             />
             <Animated.View
-              pointerEvents="none"
               style={[
                 styles.glowRing,
-                { width: size * 0.9, height: size * 0.9, borderRadius: size * 0.45, borderColor: theme.gold },
+                { width: size * 0.9, height: size * 0.9, borderRadius: size * 0.45, borderColor: theme.gold, pointerEvents: "none" },
                 glowAnim,
               ]}
             />
@@ -195,9 +194,12 @@ export default function Home() {
       <View
         style={[
           styles.controls,
-          { bottom: insets.bottom + 84, paddingHorizontal: spacing.xl },
+          {
+            bottom: insets.bottom + 84,
+            paddingHorizontal: spacing.xl,
+            pointerEvents: "box-none",
+          },
         ]}
-        pointerEvents="box-none"
       >
         <View style={styles.controlsRow}>
           <ControlPill

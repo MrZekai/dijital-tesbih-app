@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   FadeIn,
@@ -32,6 +32,7 @@ export default function Tesbihat() {
   const [stepIdx, setStepIdx] = useState(0);
   const [count, setCount] = useState(0);
   const [done, setDone] = useState(false);
+  const transitioningRef = useRef(false);
 
   const scale = useSharedValue(1);
   const step = STEPS[stepIdx];
@@ -45,27 +46,30 @@ export default function Tesbihat() {
 
   const onTap = () => {
     if (done) return;
-    const next = count + 1;
+    if (transitioningRef.current) return;
     scale.value = withSequence(
       withTiming(0.94, { duration: 80 }),
       withTiming(1, { duration: 160 })
     );
-    if (next >= step.target) {
-      doHaptic(true);
-      if (stepIdx < STEPS.length - 1) {
-        setTimeout(() => {
-          setStepIdx((i) => i + 1);
-          setCount(0);
-        }, 350);
-        setCount(next);
+    setCount((prev) => {
+      const next = prev + 1;
+      if (next >= step.target) {
+        doHaptic(true);
+        if (stepIdx < STEPS.length - 1) {
+          transitioningRef.current = true;
+          setTimeout(() => {
+            setStepIdx((i) => Math.min(STEPS.length - 1, i + 1));
+            setCount(0);
+            transitioningRef.current = false;
+          }, 350);
+        } else {
+          setDone(true);
+        }
       } else {
-        setCount(next);
-        setDone(true);
+        doHaptic(false);
       }
-    } else {
-      doHaptic(false);
-      setCount(next);
-    }
+      return next;
+    });
   };
 
   const anim = useAnimatedStyle(() => ({

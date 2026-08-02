@@ -108,7 +108,7 @@ export default function Istatistikler() {
           <Text style={[styles.cardTitle, { color: theme.text }]}>
             Son 7 Gün
           </Text>
-          <View style={styles.chart}>
+          <View style={styles.chart} testID="weekly-chart">
             {week.map((d, i) => {
               const day = new Date(d.date);
               const dow = (day.getDay() + 6) % 7; // Mon=0
@@ -140,6 +140,7 @@ export default function Istatistikler() {
             styles.card,
             { backgroundColor: theme.bgCard, borderColor: theme.border },
           ]}
+          testID="top-dhikrs-list"
         >
           <Text style={[styles.cardTitle, { color: theme.text }]}>
             En Sık Yapılan Zikirler

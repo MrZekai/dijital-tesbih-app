@@ -40,12 +40,18 @@ export default function EsmaScreen() {
     if (filter === "favorites") {
       list = list.filter((e) => state.esmaFavorites.includes(e.no));
     }
-    const q = query.trim().toLowerCase();
+    const norm = (s: string) =>
+      s
+        .toLocaleLowerCase("tr")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/'/g, "");
+    const q = norm(query.trim());
     if (q) {
       list = list.filter(
         (e) =>
-          e.turkish.toLowerCase().includes(q) ||
-          e.meaning.toLowerCase().includes(q) ||
+          norm(e.turkish).includes(q) ||
+          norm(e.meaning).includes(q) ||
           String(e.no).includes(q)
       );
     }
@@ -107,7 +113,7 @@ export default function EsmaScreen() {
             active={filter === "favorites"}
             onPress={() => setFilter("favorites")}
             theme={theme}
-            testID="esma-filter-fav"
+            testID="esma-fav-chip"
           />
         </View>
       </View>

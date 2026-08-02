@@ -104,7 +104,7 @@ export default function CustomDhikrScreen() {
               styles.input,
               { color: theme.text, borderColor: theme.border, backgroundColor: theme.bgCard },
             ]}
-            testID="dhikr-arabic-input"
+            testID="dhikr-transliteration-input"
           />
         </View>
 
@@ -152,7 +152,7 @@ export default function CustomDhikrScreen() {
                   backgroundColor: theme.bgCard,
                 },
               ]}
-              testID="custom-target-input"
+              testID="dhikr-target-input"
             />
             <Pressable
               onPress={() => {
