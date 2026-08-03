@@ -10,6 +10,7 @@ import {
   requestNotificationPermission,
   scheduleDailyReminder,
 } from "@/src/lib/notifications";
+import { BottomBanner } from "@/src/ads/BottomBanner";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
@@ -329,6 +330,8 @@ export default function Ayarlar() {
             hiçbir sunucuya gönderilmez.
           </Text>
         </Section>
+
+        <BottomBanner />
       </ScrollView>
     </View>
   );

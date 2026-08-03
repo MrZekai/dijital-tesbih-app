@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
+import { AdsProvider } from "@/src/ads/AdsProvider";
 import { StoreProvider } from "@/src/lib/store";
 
 LogBox.ignoreAllLogs(true);
@@ -29,14 +30,16 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StoreProvider>
-          <StatusBar style="light" />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: "fade",
-              contentStyle: { backgroundColor: "#06090E" },
-            }}
-          />
+          <AdsProvider>
+            <StatusBar style="light" />
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: "fade",
+                contentStyle: { backgroundColor: "#06090E" },
+              }}
+            />
+          </AdsProvider>
         </StoreProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

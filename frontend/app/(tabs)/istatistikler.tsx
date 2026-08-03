@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ConfirmSheet } from "@/src/components/ConfirmSheet";
+import { BottomBanner } from "@/src/ads/BottomBanner";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
@@ -207,6 +208,8 @@ export default function Istatistikler() {
             </View>
           </View>
         </View>
+
+        <BottomBanner />
       </ScrollView>
 
       <ConfirmSheet

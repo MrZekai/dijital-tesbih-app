@@ -1,0 +1,28 @@
+{
+  "summary": "AdMob regression test on mobile web preview (390x844) — Zikirhane app is FULLY FUNCTIONAL end-to-end. Bundling succeeds after the sdk.web.ts shim was added; earlier bundling error from react-native-google-mobile-ads is resolved. No banner ad is present on the Home tab (verified DOM absence of testID='bottom-banner-ad'). BottomBanner mounted on Zikirlerim/Istatistikler/Ayarlar returns null on web (correct behavior — adsEnabled=false). Counter (0→5), Undo (3→2), active-dhikr-selector and target-selector all functional. Tesbihat 10 rapid taps produced count=10 with no race condition. Esmaül Hüsna list renders 99 names; esma-detail-tap increments correctly (0→3). Custom dhikr creation via add-dhikr-fab + save-dhikr-btn succeeded (TEST_Zikir_Auto card appeared). Istatistikler shows daily-goal-card, weekly-chart, top-dhikrs-list. Ayarlar renders with all switches visible. Zero console errors, zero page errors, zero AdMob/native-only module warnings on web. Only minor RN-Web deprecation warnings ('shadow*' style props, props.pointerEvents) — not blocking, not related to AdMob.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "global", "issues": ["React Native Web deprecation warnings in console: 'shadow*' style props deprecated (use boxShadow); props.pointerEvents deprecated (use style.pointerEvents). Non-blocking but should be cleaned up eventually."]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "sdk.web.ts shim (returns null from getAdsSdk) correctly prevents Metro from bundling native-only 'react-native/Libraries/Utilities/codegenNativeComponent'. Verified in latest expo.out.log — bundle finished in 6.9s with zero errors.",
+    "adsEnabled = !isWeb && !isExpoGo evaluated correctly to false on web; AdsProvider useEffect short-circuits so no UMP/gatherConsent call fires. Good.",
+    "BottomBanner early-returns null when !adsEnabled — no DOM node with testID='bottom-banner-ad' is emitted on web, so ads truly do not leak into any tab. Home is ad-free by design (component not imported/mounted in index.tsx).",
+    "Interstitial code (useRespectfulInterstitial) not exercised on web (adsEnabled=false path). Should be regression-tested on native build separately; cannot be validated in this environment.",
+    "Minor: RN-Web deprecations (shadow*, pointerEvents) are inherited from third-party components; can be silenced but not urgent."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only test)", "frontend": "100%"},
+  "seed_data_creation": "Created a custom dhikr card 'TEST_Zikir_Auto' via save-dhikr-btn — persists in AsyncStorage (localStorage on web). Safe to leave; main agent may clean if desired.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Web preview is a valid regression surface for the JS/routing/layout paths but does NOT execute the AdMob native module. For actual banner/interstitial behavior (BannerAd rendering, UMP consent form, interstitial cooldown), a native dev-client build on Android/iOS is required. On web, the ONLY guarantee is (1) no bundling error, (2) no DOM node emitted for bottom-banner-ad, (3) AdsProvider provides {canRequestAds:false, adsEnabled:false} without crashing.",
+  "rca_of_issue": "Original bundling error 'Importing native-only module codegenNativeComponent on web from react-native-google-mobile-ads' was resolved by the sdk.web.ts platform-shim (Metro auto-picks .web.ts extension). Verified in expo.out.log: latest bundle completed successfully in 6948ms with 1463 modules and no errors. BottomBanner defensively checks `if (!adsEnabled || !canRequestAds || !sdk) return null;` before referencing sdk.BannerAd, so even if the shim were bypassed the component would still not crash on web."
+}

@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.emergent.dijitaltesbih.td5pbb",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserTrackingUsageDescription": "Kişiselleştirilmiş reklamları göstermek ve reklam ölçümü yapmak için kullanılabilir."
       }
     },
     "android": {
@@ -48,6 +49,23 @@
         {
           "color": "#C6A664",
           "defaultChannel": "zikirhane-daily"
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "delayAppMeasurementInit": true,
+          "userTrackingUsageDescription": "Kişiselleştirilmiş reklamları göstermek ve reklam ölçümü yapmak için kullanılabilir."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraProguardRules": "-keep class com.google.android.gms.internal.consent_sdk.** { *; }"
+          }
         }
       ]
     ],

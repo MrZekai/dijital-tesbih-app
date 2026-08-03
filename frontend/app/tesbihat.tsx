@@ -17,6 +17,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { TesbihRing } from "@/src/components/TesbihRing";
+import { useRespectfulInterstitial } from "@/src/ads/useRespectfulInterstitial";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
@@ -33,6 +34,7 @@ export default function Tesbihat() {
   const [count, setCount] = useState(0);
   const [done, setDone] = useState(false);
   const transitioningRef = useRef(false);
+  const showInterstitial = useRespectfulInterstitial();
 
   const scale = useSharedValue(1);
   const step = STEPS[stepIdx];
@@ -123,7 +125,7 @@ export default function Tesbihat() {
             </Text>
           </Pressable>
           <Pressable
-            onPress={() => router.back()}
+            onPress={() => showInterstitial(() => router.back())}
             style={[styles.ctaSolid, { backgroundColor: theme.gold }]}
             testID="tesbihat-back"
           >
