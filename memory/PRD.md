@@ -42,6 +42,18 @@
 - Koyu / Açık tema
 
 ## Bilinen kısıtlar / sonraki adımlar
-- AdMob (test reklamları) entegrasyonu deployment'a bırakıldı
-- Bildirimler yalnızca gerçek cihaz / dev build'de çalışır (Expo Go'da izin sınırlı)
-- Yaklaşık %60 alt kutulama katmanı iOS için `expo-glass-effect` yerine `expo-blur` kullanıyor
+- ✅ **AdMob altyapısı entegre edildi** (react-native-google-mobile-ads@16.4.0 + expo-build-properties)
+  - Test reklam ID'leri varsayılan; gerçek ID'ler `.env` üzerinden verilebilir:
+    - `ADMOB_ANDROID_APP_ID`, `ADMOB_IOS_APP_ID` (app.json plugin config)
+    - `EXPO_PUBLIC_AD_MODE=production`
+    - `EXPO_PUBLIC_ANDROID_BANNER_ID`, `EXPO_PUBLIC_IOS_BANNER_ID`
+    - `EXPO_PUBLIC_ANDROID_INTERSTITIAL_ID`, `EXPO_PUBLIC_IOS_INTERSTITIAL_ID`
+  - Banner: Zikirlerim / İstatistikler / Ayarlar ScrollView'lerinin ALT'ında (yalnızca kullanıcı sayfayı sonuna kadar kaydırınca görünür → yanlış tıklama riski minimum)
+  - **Ana Sayfa (sayaç ekranı) reklamsız** — problem statement gereği
+  - İnterstitial: yalnızca Namaz Sonrası Tesbihat tamamlanınca "Ana Sayfaya Dön" butonuna basılınca (10 dk cooldown)
+  - UMP consent akışı (EEA/UK/Türkiye) entegre — her açılışta çağrılır
+  - **Expo Go / web preview'de otomatik devre dışı** — `sdk.web.ts` shim + `isExpoGo` + `isWeb` guard'lar
+  - Native dev-client veya production build gerekir (Expo Go'da çalışmaz)
+- Bildirimler yalnızca gerçek cihaz / dev build'de çalışır
+- Uygulama simgesi ve splash görselinin özgün altın "tesbih halkası + hilal" tasarımıyla değiştirilmesi (mevcut placeholder)
+- Uygulama içi hafif "tesbih tanesi sesi" için opsiyonel ses dosyası
