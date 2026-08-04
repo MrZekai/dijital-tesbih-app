@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.zikirhane.tesbih",
+      "bundleIdentifier": "com.emergent.dijitaltesbih.td5pbb",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSUserTrackingUsageDescription": "Kişiselleştirilmiş reklamları göstermek ve reklam ölçümü yapmak için kullanılabilir."
@@ -22,7 +22,7 @@
         "backgroundColor": "#06090E"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.zikirhane.tesbih",
+      "package": "com.emergent.dijitaltesbih.td5pbb",
       "permissions": [
         "VIBRATE",
         "WAKE_LOCK"
@@ -54,7 +54,7 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-1380972808968213~2930057843",
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
           "iosAppId": "ca-app-pub-3940256099942544~1458002511",
           "delayAppMeasurementInit": true,
           "userTrackingUsageDescription": "Kişiselleştirilmiş reklamları göstermek ve reklam ölçümü yapmak için kullanılabilir."

@@ -19,7 +19,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ConfirmSheet } from "@/src/components/ConfirmSheet";
 import { TesbihRing } from "@/src/components/TesbihRing";
 import { TARGET_PRESETS } from "@/src/lib/dhikrs";
-import { useTesbihSounds } from "@/src/lib/sounds";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
@@ -46,10 +45,6 @@ export default function Home() {
   const simpleMode = state.settings.simpleMode;
   const keepAwake = state.settings.keepAwake;
   const vibration = state.settings.vibration;
-  const soundOn = state.settings.sound;
-
-  // Ses: hook kosulsuz cagrilir, calip calmayacagina icerde karar verilir.
-  const playSound = useTesbihSounds(soundOn);
 
   // Keep screen awake if enabled
   useEffect(() => {
@@ -77,7 +72,6 @@ export default function Home() {
   const doTap = () => {
     const { justReachedTarget } = increment();
     triggerHaptic(justReachedTarget ? "success" : "light");
-    playSound(justReachedTarget ? "target" : "tap");
     scale.value = withSequence(
       withTiming(0.94, { duration: 90 }),
       withTiming(1, { duration: 160 })

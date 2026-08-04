@@ -1,8 +1,5 @@
-// BottomBanner - Zikirlerim, Istatistikler, Ayarlar altinda guvenli banner.
-// DUZELTME: sdk.useForeground() erken `return null`dan SONRA cagriliyordu.
-// canRequestAds false->true olunca hook sayisi degisiyor ve React
-// "Rendered more hooks than during the previous render" hatasi ile cokuyordu.
-// Cozum: kosullu kisim ayri bir alt bilesene tasindi.
+// BottomBanner — Zikirlerim, İstatistikler, Ayarlar altında güvenli banner.
+// KULLANIM: Sadece sayaç OLMAYAN ekranlarda. Ana Sayfa'da KESİNLİKLE kullanılmaz.
 
 import React, { useRef } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
@@ -15,30 +12,20 @@ import { useAds } from "./AdsProvider";
 import { getAdsSdk } from "./sdk";
 
 interface Props {
+  // Alt tab bar yüksekliğinin üstünde bırakılacak boşluk (default: 0).
   bottomInset?: number;
   testID?: string;
 }
 
 export function BottomBanner({ bottomInset = 0, testID }: Props) {
-  // Hook sayisi HER render'da sabit.
   const { theme } = useStore();
   const { canRequestAds, adsEnabled } = useAds();
   const sdk = getAdsSdk();
-
-  if (!adsEnabled || !canRequestAds || !sdk) return null;
-
-  return (
-    <BannerSlot sdk={sdk} theme={theme} bottomInset={bottomInset} testID={testID} />
-  );
-}
-
-interface SlotProps extends Props {
-  sdk: NonNullable<ReturnType<typeof getAdsSdk>>;
-  theme: ReturnType<typeof useStore>["theme"];
-}
-
-function BannerSlot({ sdk, theme, bottomInset = 0, testID }: SlotProps) {
+  // Ref native modül yoksa da kullanılabilir; sadece SDK bulunduğunda mount edilir
   const bannerRef = useRef<unknown>(null);
+
+  // SDK ve consent yoksa hiçbir şey render etme (yer bile tutma yok).
+  if (!adsEnabled || !canRequestAds || !sdk) return null;
 
   const BannerAd = sdk.BannerAd as React.ComponentType<{
     ref?: React.MutableRefObject<unknown>;
@@ -49,7 +36,7 @@ function BannerSlot({ sdk, theme, bottomInset = 0, testID }: SlotProps) {
 
   const size = sdk.BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER;
 
-  // Artik kosulsuz cagriliyor: bu bilesen zaten sadece SDK varken mount olur.
+  // iOS'ta foreground'a döndüğünde yeniden yükle
   sdk.useForeground(() => {
     if (Platform.OS === "ios") {
       const b = bannerRef.current as { load?: () => void } | null;
@@ -68,7 +55,7 @@ function BannerSlot({ sdk, theme, bottomInset = 0, testID }: SlotProps) {
         },
       ]}
       accessible
-      accessibilityLabel="Reklam alani"
+      accessibilityLabel="Reklam alanı"
       testID={testID ?? "bottom-banner-ad"}
     >
       <Text style={[styles.label, { color: theme.textSubtle }]}>Reklam</Text>
