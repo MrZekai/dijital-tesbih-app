@@ -64,19 +64,3 @@ export const adDebugInfo = {
   bannerUnitId,
   interstitialUnitId,
 };
-
-// --- Uygulama acilis reklami (App Open) ---
-const TEST_APP_OPEN_ANDROID = "ca-app-pub-3940256099942544/9257395921";
-const TEST_APP_OPEN_IOS = "ca-app-pub-3940256099942544/5575463023";
-
-export const appOpenUnitId = production
-  ? Platform.OS === "ios"
-    ? process.env.EXPO_PUBLIC_IOS_APP_OPEN_ID ?? TEST_APP_OPEN_IOS
-    : process.env.EXPO_PUBLIC_ANDROID_APP_OPEN_ID ?? TEST_APP_OPEN_ANDROID
-  : Platform.OS === "ios"
-    ? TEST_APP_OPEN_IOS
-    : TEST_APP_OPEN_ANDROID;
-
-// Acilis reklami cok sik cikmasin: en az 4 dakika ara.
-// (AdMob politikasi acisindan da onemli - asiri siklik ihlal sayilir.)
-export const APP_OPEN_COOLDOWN_MS = 4 * 60 * 1000;

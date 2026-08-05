@@ -1,8 +1,6 @@
 // Alt sekme yapısı — Ana Sayfa, Zikirlerim, İstatistikler, Ayarlar.
 
 import { Ionicons } from "@expo/vector-icons";
-import { useAppOpenAd } from "@/src/ads/useAppOpenAd";
-import { useRespectfulInterstitial } from "@/src/ads/useRespectfulInterstitial";
 import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import React from "react";
@@ -16,18 +14,8 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const isDark = theme.name === "dark";
 
-  // Sekmeler arasi gecislerde gecis reklami.
-
-  // Bekleme suresi ve sikliK kontrolu hook icinde (10 dk).
-
-  const showInterstitial = useRespectfulInterstitial();
-
-  // Uygulama one geldiginde acilis reklami (4 dk bekleme icinde).
-  useAppOpenAd();
-
   return (
     <Tabs
-      screenListeners={{ tabPress: () => showInterstitial() }}
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,

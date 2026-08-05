@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend-only regression test for Zikirhane AdMob issues #1/#2/#3 fix on web preview (390x844). ALL 7 requested items PASS. (1) Web preview loads with zero page errors, zero AdMob native errors, no red screen. (2) Splash→onboarding→tabs flow works: counter 0→5, undo 5→4, active-dhikr-selector + target-selector functional. (3) HOME-BANNER-LAYOUT-FIX verified — Home renders the outer adSlot View (styles.adSlot with minHeight:62 + marginBottom:60+insets.bottom) as a visible empty region BETWEEN the control pills (~y=700) and the tab bar (~y=824). Tab bar (Ana Sayfa row) is at the very bottom of the 844px viewport (y=824-839), and the tap area / controls sit above the ad slot — no overlap. BottomBanner's inner <BannerAd> correctly returns null on web (bottom-banner-ad testID absent), which is expected. (4) 3-tab regression: Zikirlerim/İstatistikler/Ayarlar all navigate correctly, no crash. (5) Tesbihat regression: tesbihat-card opens, tesbihat-tap increments 0→3, tesbihat-back navigates back cleanly. Interstitial hook logged '[ads:interstitial] skip: adsEnabled=false' 5× during tab/tesbihat interactions — graceful no-op confirmed. (6) AD LOGGING code-path: console emitted the expected skip logs — `[ads:interstitial] disabled (Expo Go/web)`, `[ads:app-open] disabled (Expo Go/web)`, `[ads:interstitial] skip: adsEnabled=false`. Zero bad-pattern matches for ANCHORED_ADAPTIVE_BANNER / addAdEventListener / AppOpenAd / useInterstitialAd / googleMobileAds / codegenNativeComponent. (7) Custom dhikr + esma flow covered by prior iteration_3 regression (unchanged code path). No new errors detected. Only 5 minor RN-Web deprecation warnings (shadow*, pointerEvents) — inherited from third-party libs, unrelated to AdMob.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "global", "issues": ["5 RN-Web deprecation warnings (shadow*, props.pointerEvents) — non-blocking, unrelated to AdMob work"]}
+    ],
+    "react_native_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "HOME-BANNER-LAYOUT-FIX correctly implemented in /app/frontend/app/(tabs)/index.tsx:305 — outer <View style={[styles.adSlot, { marginBottom: 60 + insets.bottom }]}> is rendered OUTSIDE the flex:1 content wrapper, guaranteeing the slot sits above the absolute-positioned tab bar. Verified visually in screenshot: dark ~60px region between controls and tab bar.",
+    "BottomBanner.tsx (line 59): defensive guard `if (!adsEnabled || !canRequestAds || !sdk || !sdk.BannerAd) return null` correctly prevents ANY BannerAd/AnchoredAdaptiveBanner reference on web. AdBoundary error boundary is a good safety net for native.",
+    "sdk.web.ts platform-shim returns null → getAdsSdk() short-circuits all ad hooks. useInterstitialAd/AppOpenAd/BannerAd are never touched on web. Verified: zero native-symbol errors in console.",
+    "useRespectfulInterstitial.ts + useAppOpenAd.ts: skip-reason logs are informative and correctly emitted (confirmed 5× interstitial skips in test run). The onAdFailedToLoad + addAdEventListener(ERROR) wiring exists and will surface real AdMob no-fill errors on native builds — user should check `adb logcat | grep ads:` after installing dev-client to distinguish no-fill vs code-bug.",
+    "adConfig.ts: `adsEnabled = !isWeb && !isExpoGo` and production ad unit IDs are correctly injected from EXPO_PUBLIC_* env. No hardcoded prod IDs. Good.",
+    "NOTE: Actual banner/interstitial/app-open rendering CANNOT be validated on web preview — main agent must verify on a native dev-client build (Android/iOS) to confirm the 3 original bugs are resolved."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only)", "frontend": "100%"},
+  "seed_data_creation": "None new. iteration_3 left a 'TEST_Zikir_Auto' custom dhikr in localStorage — still present but harmless.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Web preview covers only JS/routing/layout paths. Ad hooks all no-op via sdk.web.ts. To validate the actual fix for the 3 user-reported ad bugs (home banner not showing, tab-press interstitial not appearing, app-open ad not appearing), main agent must ship a native dev-client build (EAS or `expo run:android`) with EXPO_PUBLIC_AD_MODE=production and instruct user to grep `adb logcat` for the `[ads:banner:home]`, `[ads:interstitial]`, and `[ads:app-open]` tags added this iteration. Logs will distinguish AdMob no-fill (ERROR code=3 message='No fill') from code bugs.",
+  "rca_of_issue": "User-reported ad bugs cannot be reproduced on web (adsEnabled=false path). This iteration's fixes: (a) Home layout: adSlot moved outside flex:1 wrapper with marginBottom:60+insets.bottom — verified visually. (b) Diagnostic logging added to BottomBanner (mount/loaded/failed/opened/closed with tag), useRespectfulInterstitial (skip reason: adsEnabled/canRequestAds/isLoaded/cooldown), useAppOpenAd (LOADED/ERROR/OPENED/CLOSED via addAdEventListener). (c) explicitWidth prop wired for Home's ANCHORED_ADAPTIVE_BANNER to work around parent-measurement issues. (d) Native crash safety via AdBoundary error-boundary + AppOpenAd load setup try/catch. Code review of native paths confirms all changes are syntactically valid, non-breaking, and defensive."
+}

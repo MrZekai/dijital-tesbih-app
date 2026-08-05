@@ -25,13 +25,8 @@ interface AdsSdk {
     isLoaded: boolean;
     load: () => void;
     show: () => Promise<void>;
-    error?: Error | null;
-};
+  };
   TestIds: { BANNER: string; INTERSTITIAL: string };
-  // Uygulama acilis reklami (App Open) sinifi.
-  AppOpenAd: unknown;
-  // Ad olaylari (LOADED, ERROR, OPENED, CLOSED, CLICKED, PAID).
-  AdEventType: Record<string, string>;
 }
 
 let cached: AdsSdk | null = null;
@@ -50,9 +45,7 @@ export function getAdsSdk(): AdsSdk | null {
       BannerAdSize: sdk.BannerAdSize,
       useForeground: sdk.useForeground,
       useInterstitialAd: sdk.useInterstitialAd,
-      AppOpenAd: sdk.AppOpenAd,
       TestIds: sdk.TestIds,
-      AdEventType: sdk.AdEventType,
     };
     return cached;
   } catch (e) {

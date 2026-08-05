@@ -105,8 +105,6 @@ export default function Home() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* Icerik: kalan alani kaplar, banner alta sigsin diye. */}
-      <View style={{ flex: 1 }}>
       <LinearGradient
         colors={[theme.emeraldDeep, theme.bg, theme.navy]}
         start={{ x: 0, y: 0 }}
@@ -296,15 +294,7 @@ export default function Home() {
         visible={showDhikrPicker}
         onClose={() => setShowDhikrPicker(false)}
       />
-      </View>
-    {/* Reklam alani: Home'da tab bar (absolute) icinden gectigi icin ayrica
-        yukselti veriyoruz; banner yuklenmese bile yer AYRILIR ve slot tab
-        bar'in USTUNDE gorunur. `explicitWidth` — ANCHORED_ADAPTIVE_BANNER
-        native olcumu sabit hale getirir (Home layout'unda parent-olcumu
-        guvensiz olabildigi icin). */}
-    <View style={[styles.adSlot, { marginBottom: 60 + insets.bottom }]}>
-      <BottomBanner tag="home" explicitWidth={Math.floor(screenW)} />
-    </View>
+    <BottomBanner />
     </View>
   );
 }
@@ -496,14 +486,6 @@ function DhikrPickerSheet({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  // Banner icin sabit yukseklikli alan. Genislik cihaza gore
-  // adaptive banner tarafindan doldurulur (responsive).
-  adSlot: {
-    width: "100%",
-    minHeight: 62,
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
   header: {
     alignItems: "center",
     gap: spacing.sm,

@@ -1,0 +1,129 @@
+// BottomBanner - cokmeye dayanikli banner.
+//
+// GECMIS: Bu bilesen uygulamayi Zikirlerim/Istatistikler/Ayarlar
+// sekmelerinde cokertiyordu. Iki ayri sebep giderildi:
+//  1) sdk.useForeground() erken return'den sonra cagriliyordu (hook ihlali).
+//  2) BannerAdSize.LARGE_ANCHORED_ADAPTIVE_BANNER sabiti kurulu SDK
+//     surumunde (16.0.3) olmayabilir -> undefined boyut -> native cokme.
+//
+// Ayrica ne olursa olsun uygulamanin kapanmamasi icin banner bir
+// ErrorBoundary icine alindi: reklam catlarsa sadece reklam gizlenir.
+
+import React, { useRef } from "react";
+import { Platform, StyleSheet, Text, View } from "react-native";
+
+import { useStore } from "@/src/lib/store";
+import { spacing } from "@/src/lib/theme";
+
+import { bannerUnitId } from "./adConfig";
+import { useAds } from "./AdsProvider";
+import { getAdsSdk } from "./sdk";
+
+interface Props {
+  bottomInset?: number;
+  testID?: string;
+}
+
+class AdBoundary extends React.Component<
+  { children: React.ReactNode },
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(err: unknown) {
+    console.warn("[ads] banner crashed, gizlendi", err);
+  }
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
+
+export function BottomBanner({ bottomInset = 0, testID }: Props) {
+  // Hook sayisi HER render'da sabit.
+  const { theme } = useStore();
+  const { canRequestAds, adsEnabled } = useAds();
+  const sdk = getAdsSdk();
+
+  if (!adsEnabled || !canRequestAds || !sdk || !sdk.BannerAd) return null;
+
+  return (
+    <AdBoundary>
+      <BannerSlot sdk={sdk} theme={theme} bottomInset={bottomInset} testID={testID} />
+    </AdBoundary>
+  );
+}
+
+interface SlotProps extends Props {
+  sdk: NonNullable<ReturnType<typeof getAdsSdk>>;
+  theme: ReturnType<typeof useStore>["theme"];
+}
+
+function BannerSlot({ sdk, theme, bottomInset = 0, testID }: SlotProps) {
+  const bannerRef = useRef<unknown>(null);
+
+  const BannerAd = sdk.BannerAd as React.ComponentType<{
+    ref?: React.MutableRefObject<unknown>;
+    unitId: string;
+    size: string;
+    onAdFailedToLoad?: (err: unknown) => void;
+  }>;
+
+  // Boyut sabiti SDK surumune gore degisebilir; yedekli seciyoruz.
+  const sizes = (sdk.BannerAdSize ?? {}) as Record<string, string>;
+  // NOT: ADAPTIVE boyutlar genisligi ust kapsayicidan olcer. Banner artik
+  // tabBar icinde yasadigi icin bu olcum guvenilir degil -> reklam hic
+  // istenmiyordu (yer ayriliyor ama bos kaliyordu). Sabit BANNER (320x50)
+  // olcume ihtiyac duymaz, her zaman yuklenir.
+  const size = sizes.BANNER ?? "BANNER";
+
+  // sdk sabit oldugu icin hook sayisi degismez.
+  if (typeof sdk.useForeground === "function") {
+    sdk.useForeground(() => {
+      if (Platform.OS === "ios") {
+        const b = bannerRef.current as { load?: () => void } | null;
+        b?.load?.();
+      }
+    });
+  }
+
+  return (
+    <View
+      style={[
+        styles.slot,
+        {
+          marginBottom: bottomInset,
+          backgroundColor: theme.bgElevated,
+          borderTopColor: theme.divider,
+        },
+      ]}
+      testID={testID ?? "bottom-banner-ad"}
+    >
+      <Text style={[styles.label, { color: theme.textSubtle }]}>Reklam</Text>
+      <BannerAd
+        ref={bannerRef}
+        unitId={bannerUnitId}
+        size={size}
+        onAdFailedToLoad={(err) => console.warn("[ads] banner failed", err)}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  slot: {
+    minHeight: 60,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  label: {
+    fontSize: 10,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+});

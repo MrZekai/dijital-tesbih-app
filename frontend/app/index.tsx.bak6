@@ -14,12 +14,12 @@ export default function Index() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setReady(true), 0);
+    const t = setTimeout(() => setReady(true), 1400);
     return () => clearTimeout(t);
   }, []);
 
   if (ready && loaded) {
-    // Kullanici istegi: acilista hicbir ara ekran olmasin, dogrudan Ana Sayfa.
+    if (!state.settings.onboardingDone) return <Redirect href="/onboarding" />;
     return <Redirect href="/(tabs)" />;
   }
 
