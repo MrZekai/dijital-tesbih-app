@@ -205,7 +205,7 @@ export default function Home() {
         style={[
           styles.controls,
           {
-            bottom: 0,   // banner alaninin hemen ustu
+            bottom: insets.bottom + 84,
             paddingHorizontal: spacing.xl,
             pointerEvents: "box-none",
           },
@@ -568,6 +568,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   controls: {
+    // Kontrolleri asagi it: banner alaninin hemen ustune otursun.
+    marginTop: "auto",
     position: "absolute",
     left: 0,
     right: 0,
