@@ -37,8 +37,7 @@ export default function Home() {
     setTargetForActive,
     updateSettings,
     state,
-    todayTotal,
-} = useStore();
+  } = useStore();
   const insets = useSafeAreaInsets();
   const [confirmReset, setConfirmReset] = useState(false);
   const [showTargets, setShowTargets] = useState(false);
@@ -109,9 +108,6 @@ export default function Home() {
       {/* Icerik: kalan alani kaplar, banner alta sigsin diye. */}
       <View style={{ flex: 1 }}>
         <Text style={[styles.brandTitle, { color: theme.gold }]}>ZIKIRMATIK</Text>
-        <Text style={[styles.todayLine, { color: theme.textMuted }]}>
-          Bugun {todayTotal()} zikir
-        </Text>
       <LinearGradient
         colors={[theme.emeraldDeep, theme.bg, theme.navy]}
         start={{ x: 0, y: 0 }}
@@ -168,7 +164,7 @@ export default function Home() {
         testID="counter-tap-area"
         android_ripple={{ color: "rgba(198,166,100,0.08)", borderless: true }}
       >
-        <View style={[styles.centerCol, { paddingBottom: 132 }]}>
+        <View style={[styles.centerCol, { paddingBottom: insets.bottom + 200 }]}>
           <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
             <TesbihRing
               size={size}
@@ -503,12 +499,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   // Banner icin sabit yukseklikli alan. Genislik cihaza gore
   // adaptive banner tarafindan doldurulur (responsive).
-  todayLine: {
-    fontSize: 11,
-    textAlign: "center",
-    opacity: 0.7,
-    marginBottom: 4,
-  },
   brandTitle: {
     fontSize: 12,
     letterSpacing: 4,

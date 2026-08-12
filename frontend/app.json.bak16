@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Hedef Zikirmatik",
+    "name": "Zikirhane",
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -38,8 +38,8 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
-          "imageWidth": 180,
+          "image": "./assets/images/splash-image.png",
+          "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#06090E"
         }

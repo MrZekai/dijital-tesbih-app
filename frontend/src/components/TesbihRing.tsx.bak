@@ -65,21 +65,7 @@ export function TesbihRing({
             opacity: isFilled ? 1 : 0.35,
           },
         ]}
-      >
-        {/* Ust-sol parlama: dogal boncuk kabartmasi hissi verir */}
-        <View
-          style={{
-            position: "absolute",
-            left: beadSize * 0.45,
-            top: beadSize * 0.35,
-            width: beadSize * 0.75,
-            height: beadSize * 0.55,
-            borderRadius: beadSize * 0.375,
-            backgroundColor: "rgba(255,255,255,0.5)",
-            opacity: isFilled ? 0.5 : 0.15,
-          }}
-        />
-      </View>
+      />
     );
   }
 
@@ -109,14 +95,5 @@ const styles = StyleSheet.create({
   },
   bead: {
     position: "absolute",
-    // Gercek tesbih tanesi hissi: ince koyu kenar + yumusak golge
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.35)",
-    shadowColor: "#000",
-    shadowOpacity: 0.45,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
-    overflow: "hidden",
   },
 });
