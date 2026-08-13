@@ -57,3 +57,39 @@
 - Bildirimler yalnızca gerçek cihaz / dev build'de çalışır
 - Uygulama simgesi ve splash görselinin özgün altın "tesbih halkası + hilal" tasarımıyla değiştirilmesi (mevcut placeholder)
 - Uygulama içi hafif "tesbih tanesi sesi" için opsiyonel ses dosyası
+
+## QA Kapanış Testi Düzeltmeleri (v1.0.16 / versionCode 132)
+Kapalı test QA raporundaki 16 bulgu (BUG-001…BUG-016) giderildi:
+- **BUG-001 (P0, kritik)**: `useRespectfulInterstitial` içinde `interstitial.load()` her
+  render'da tekrar tetikleniyordu (kararsız hook-obje referansı efekt
+  bağımlılığındaydı) → "Maximum update depth exceeded" crash + oturum veri
+  kaybı. Ref-tabanlı + primitive-only bağımlılık deseniyle düzeltildi.
+  Persistans da sertleştirildi: 200ms debounce + 1.5s zorunlu maksimum
+  bekleme flush + arka plana geçişte anında flush (`src/lib/store.tsx`).
+- **BUG-002**: Namaz Sonrası Tesbihat artık `incrementDhikrById()` ile AYNI
+  canonical istatistik mekanizmasını kullanıyor (çift sayım yok).
+- **BUG-003/014/016**: Ayarlar > Özel hedef artık çalışıyor; ortak
+  `src/lib/validation.ts` doğrulayıcısı, açık hata mesajları, `usePathname`
+  tabanlı stale-input temizliği.
+- **BUG-004**: Yeni `dhikrHistoryTotals` alanı — "En Sık Yapılan Zikirler"
+  artık canlı sayaçtan değil kümülatif geçmişten okunuyor (Sıfırla bunu
+  etkilemiyor). Geriye dönük uyumluluk migration'ı eklendi.
+- **BUG-005/006/009**: Zikir Seç / Hedef Seç / Esma detay sheet'leri native
+  `<Modal>`'a taşındı (scroll + Android Geri tuşu otomatik kapatma +
+  SurfaceView tabanlı reklamların üstünde render).
+- **BUG-007**: Büyük Yazı Modu'nda basamak sayısına göre dinamik font boyutu.
+- **BUG-010**: Tesbihat otomatik geçişteki 350ms engelleme penceresi
+  kaldırıldı — asama gecisi artık anlık/senkron.
+- **BUG-011**: Tüm `textTransform:"uppercase"` kullanımları kaldırıldı,
+  Türkçe İ/ı doğru büyük harfli metinler doğrudan yazıldı.
+- **BUG-012**: Sürüm artık `expo-application` üzerinden native paketten
+  okunuyor (sabit kodlanmış "1.0.0" kaldırıldı).
+- **BUG-013**: `SafeAreaProvider initialWindowMetrics` eklendi (açılışta
+  status bar altına kayma riski giderildi).
+- **BUG-015**: Özel zikir ekleme ekranında aynı isim uyarısı + "Yine de
+  Kaydet" onay akışı eklendi.
+- **BUG-008 (kasıtlı ertelendi)**: Eşzamanlı çoklu dokunuş desteği, mevcut
+  kusursuz tek-dokunuş davranışını bozma riski nedeniyle uygulanmadı (QA'nın
+  kendi notunda izin verilen bir karar, kod içinde belgelendi).
+- AdMob test ID'leri DEĞİŞTİRİLMEDİ, canlı reklam AÇILMADI (kullanıcı talebi).
+
