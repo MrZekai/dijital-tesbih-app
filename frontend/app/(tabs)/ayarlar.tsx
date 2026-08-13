@@ -400,6 +400,34 @@ export default function Ayarlar() {
             Zikir kayıtlarınız yalnızca bu cihazda saklanır ve hiçbir sunucuya
             gönderilmez.
           </Text>
+          {/* Gizlilik Politikası — Play Console gereklilikleriyle uyumlu,
+              tarayıcıda açılan resmi politika linki. */}
+          <Pressable
+            onPress={() =>
+              Linking.openURL(
+                "https://sites.google.com/view/hedefzikirmatik/ana-sayfa"
+              ).catch(() => {})
+            }
+            style={styles.privacyRow}
+            testID="privacy-policy-row"
+            accessibilityRole="link"
+            accessibilityLabel="Gizlilik Politikası"
+          >
+            <View
+              style={[styles.settingIcon, { backgroundColor: theme.emeraldDeep }]}
+            >
+              <Ionicons name="shield-checkmark-outline" size={18} color={theme.gold} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: theme.text, fontSize: 15, fontWeight: "500" }}>
+                Gizlilik Politikası
+              </Text>
+              <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: 2 }}>
+                Tarayıcıda aç
+              </Text>
+            </View>
+            <Ionicons name="open-outline" size={18} color={theme.textSubtle} />
+          </Pressable>
         </Section>
 
         <BottomBanner />
@@ -596,5 +624,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 4,
+  },
+  privacyRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(255,255,255,0.06)",
+    paddingTop: spacing.md,
   },
 });

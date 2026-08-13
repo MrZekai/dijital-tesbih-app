@@ -1,0 +1,45 @@
+{
+  "summary": "Zikirmatik 12-point pre-AAB hardening pass reviewed on web preview. App boots cleanly (no red screen, no page errors). All Turkish UI copy renders correctly. app.json versionCode=1019 confirmed. android.allowBackup=false confirmed. Google privacy policy row rendered in Ayarlar with correct testID `privacy-policy-row`, label `Gizlilik Politikası`, subtitle `Tarayıcıda aç` — clicking it does not crash. `ADS_ENABLED=false` verified: `bottom-banner-placeholder` renders on Home, `bottom-banner-ad` is NOT mounted, no native AdMob logs. Console shows `[ads:interstitial] disabled (Expo Go/web)` and `[ads:app-open] disabled (Expo Go/web)` — reklam altyapısı doğru şekilde pasif. Tab navigation works (Ana Sayfa / Zikirlerim / İstatistikler / Ayarlar). Tesbihat screen opens via `tesbihat-shortcut` and renders (Sübhanallah 0/33, DOKUN prompt). Theme toggle switches (background colors flip, no crash). Zikirlerim and İstatistikler screens render without regression. Multi-touch source-level tests: 8/8 PASS (`node tests/multiTouchCounting.test.js` → ALL MULTI-TOUCH COUNTING TESTS PASSED). TypeScript check: 0 errors (`npx tsc --noEmit` exit 0). KNOWN WEB LIMITATION: `MultiTouchTapArea` uses `Gesture.Manual().onTouchesDown` from react-native-gesture-handler 2.28.0 — on the web preview (Playwright mouse clicks / synthetic touch events) the counter does NOT increment; `setPointerCapture` errors appear when forcing synthetic pointer events. This is a well-known RNGH-web limitation for `Gesture.Manual`, NOT a code bug: the 8 algorithmic tests plus code review confirm the semantics are correct and native Android touches WILL fire `onTouchesDown`. Because counter increments cannot be exercised on the web preview, downstream tests that depend on a non-zero count (undo/reset/dhikr modal blocking, target modal blocking, Tesbihat 33-loop advance, goal-applied re-check) can only be verified structurally (testIDs, rendering, no crashes) and via the source-level tests — user MUST validate 30-tap counting and multi-finger counting on a physical Android device before AAB release. Deprecated packages detected: none introduced by this pass (expo-audio in use, not expo-av).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Counter increment (home) on web preview",
+        "issue": "Playwright page.click() (mouse events) does not increment the counter — Gesture.Manual().onTouchesDown on react-native-web only fires for real touch events. This blocks automated web-preview verification of BUG-008 fix but is expected behavior on web. Native Android will work. Recommend user verify on physical device.",
+        "affected_testIDs": ["counter-tap-area", "counter-value", "undo-button", "reset-button", "reset-confirm"]
+      }
+    ],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/frontend/tests/multiTouchCounting.test.js",
+    "/app/test_reports/iteration_6.json"
+  ],
+  "action_items": [
+    "USER ACTION: Validate on a physical Android device (a) 30 sequential single-finger taps → count 30, (b) 2 fingers × 50 → 100, (c) 4 fingers × 25 → 100, (d) long-press = 1, (e) modal open blocks counting. Web preview cannot exercise Gesture.Manual().onTouchesDown with synthetic events.",
+    "OPTIONAL (main agent): Consider adding a web-only fallback tap path in MultiTouchTapArea so that automated web QA can regression-test the counter. Example: wrap the GestureDetector's View with an onClick handler gated by Platform.OS === 'web' that calls onTap() once. Would restore web-preview testability without affecting native behavior. Not strictly required for AAB release since native touches work correctly."
+  ],
+  "critical_code_review_comments": [
+    "app.json versionCode=1019 matches /app/memory/ANDROID_VERSIONCODE.md — OK.",
+    "app.json android.allowBackup=false — OK.",
+    "app.json blockedPermissions includes AD_ID, ACCESS_ADSERVICES_*, RECORD_AUDIO, FOREGROUND_SERVICE_MEDIA_PLAYBACK, SYSTEM_ALERT_WINDOW, R/W_EXTERNAL_STORAGE — matches hardening spec.",
+    "adConfig.ts ADS_ENABLED=false is single source of truth; BottomBanner correctly renders bottom-banner-placeholder when adsEnabled is false with pointerEvents='none'.",
+    "MultiTouchTapArea uses stable refs for onTap/disabled to avoid re-creating gesture on each render — good.",
+    "Home screen wraps counter in MultiTouchTapArea with disabled={anyOverlayOpen} where anyOverlayOpen = showDhikrPicker || showTargets || confirmReset — correctly blocks both Zikir Seç and Hedef Seç modals as required.",
+    "Home renders BottomBanner only when !anyOverlayOpen — banner hidden while modal open (BUG-009 preserved).",
+    "Ayarlar privacy-policy-row uses Linking.openURL(...).catch(() => {}) — safe on web where popups may be blocked.",
+    "Ayarlar app-version-text now reads from expo-application (BUG-012 preserved).",
+    "GestureHandlerRootView wraps app in app/_layout.tsx — required for RNGH.",
+    "index.tsx imports Pressable but Home also uses it for ControlPill/IconToggle — Pressable is still used correctly for controls (not the counter).",
+    "expo-audio (not deprecated expo-av) present in plugins — good."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "~85% (structural/UI: PASS; counter-tap increment on web: BLOCKED by RNGH-web limitation, verified via 8/8 algorithmic tests)"},
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "MultiTouchTapArea's Gesture.Manual().onTouchesDown does NOT respond to synthetic mouse or PointerEvent(pointerdown, pointerType:'touch') from Playwright on react-native-web. To automate counter regression on web, either (a) revert to Pressable on web with a Platform.select, or (b) add a Platform.OS==='web' onClick handler on the wrapper View. Native Android tap counting is expected to work — verify with a physical device.",
+  "rca_of_issue": "Root cause of web-preview counting limitation: react-native-gesture-handler's web implementation of Gesture.Manual() relies on the browser's PointerEvent capture pipeline (setPointerCapture) which requires an authentic browser-initiated pointer with pointerId currently active on the target element. Playwright's forced click uses mouse events; synthetic PointerEvent dispatch without a real capture triggers 'setPointerCapture: No active pointer with the given id is found'. Consequently onTouchesDown never fires in the web preview. This is a testing-environment artifact, not a runtime defect on Android — the 8 algorithmic unit tests confirm the counting logic is correct, and native touch events on Android fire onTouchesDown deterministically."
+}

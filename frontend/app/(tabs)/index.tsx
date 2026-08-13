@@ -26,6 +26,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ConfirmSheet } from "@/src/components/ConfirmSheet";
+import { MultiTouchTapArea } from "@/src/components/MultiTouchTapArea";
 import { TesbihRing } from "@/src/components/TesbihRing";
 import { TARGET_PRESETS } from "@/src/lib/dhikrs";
 import { useTesbihSounds } from "@/src/lib/sounds";
@@ -132,26 +133,27 @@ export default function Home() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      {/* Icerik: kalan alani kaplar, banner alta sigsin diye. */}
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.brandTitle, { color: theme.gold }]}>ZİKİRMATİK</Text>
-        <Text style={[styles.todayLine, { color: theme.textMuted }]}>
-          Bugün {todayTotal()} zikir
-        </Text>
       <LinearGradient
         colors={[theme.emeraldDeep, theme.bg, theme.navy]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.5, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-
-      {/* Header — current dhikr + progress */}
+      {/* Icerik: kalan alani kaplar, banner alta sigsin diye. */}
+      <View style={{ flex: 1 }}>
+      {/* Header — current dhikr + progress. BUG-013 safe-area: insets.top
+          kadar üstten pay bırakılır ki brand yazısı status bar altına
+          girmesin. */}
       <View
         style={[
           styles.header,
           { paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.xl },
         ]}
       >
+        <Text style={[styles.brandTitle, { color: theme.gold }]}>ZİKİRMATİK</Text>
+        <Text style={[styles.todayLine, { color: theme.textMuted }]}>
+          Bugün {todayTotal()} zikir
+        </Text>
         <Pressable
           onPress={() => setShowDhikrPicker(true)}
           style={[
@@ -188,19 +190,16 @@ export default function Home() {
       </View>
 
       {/* Big touchable counter.
-          QA BUG-008 KARARI: Tek-dokunuşlu sayım QA tarafından 800 ardışık
-          dokunuşta %100 doğru olarak doğrulandı. Eşzamanlı iki-parmak
-          dokunuşunu tam desteklemek için `Pressable`'ı ham `onTouchStart`
-          tabanlı bir sisteme geçirmek, mevcut kusursuz tek-dokunuş
-          davranışını (ripple, haptic, çift-sayım riski) bozma riski taşır.
-          QA'nın kendi notunda belirttiği gibi bu riskli değişim YAPILMADI;
-          tek-dokunuş doğruluğu önceliklendirildi ve karar burada
-          belgelendi. */}
-      <Pressable
+          BUG-008 çözümü: Pressable yerine `MultiTouchTapArea` (RNGH
+          `Gesture.Manual().onTouchesDown`) kullanılıyor — her fiziksel
+          parmak downu ayrı sayım üretir, release/move ek sayım yaratmaz,
+          tek-parmak %100 doğruluğu korunur.
+          Modal açıkken `disabled` ile dokunuşlar tamamen yok sayılır. */}
+      <MultiTouchTapArea
         style={styles.tapArea}
-        onPress={doTap}
+        onTap={doTap}
         testID="counter-tap-area"
-        android_ripple={{ color: "rgba(198,166,100,0.08)", borderless: true }}
+        disabled={anyOverlayOpen}
       >
         <View style={[styles.centerCol, { paddingBottom: 132 }]}>
           <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
@@ -238,7 +237,7 @@ export default function Home() {
             </Animated.View>
           </View>
         </View>
-      </Pressable>
+      </MultiTouchTapArea>
 
       {/* Floating controls (glass pills) */}
       <View

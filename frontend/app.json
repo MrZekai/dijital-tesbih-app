@@ -23,10 +23,22 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.zikirhane.tesbih",
-      "versionCode": 132,
+      "versionCode": 1019,
+      "allowBackup": false,
       "permissions": [
         "VIBRATE",
         "WAKE_LOCK"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "com.google.android.gms.permission.AD_ID",
+        "android.permission.ACCESS_ADSERVICES_AD_ID",
+        "android.permission.ACCESS_ADSERVICES_ATTRIBUTION",
+        "android.permission.ACCESS_ADSERVICES_TOPICS"
       ]
     },
     "web": {
@@ -69,8 +81,16 @@
           }
         }
       ],
-      "expo-audio",
-      "expo-asset"
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundRecording": false
+        }
+      ],
+      "expo-asset",
+      "./plugins/withZikirmatikManifestCleanup.js"
     ],
     "experiments": {
       "typedRoutes": true

@@ -8,7 +8,7 @@ import { initialWindowMetrics, SafeAreaProvider } from "react-native-safe-area-c
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { AdsProvider } from "@/src/ads/AdsProvider";
-import { StoreProvider } from "@/src/lib/store";
+import { StoreProvider, useStore } from "@/src/lib/store";
 
 LogBox.ignoreAllLogs(true);
 
@@ -37,7 +37,7 @@ export default function RootLayout() {
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <StoreProvider>
           <AdsProvider>
-            <StatusBar style="light" />
+            <ThemedStatusBar />
             <Stack
               screenOptions={{
                 headerShown: false,
@@ -50,4 +50,12 @@ export default function RootLayout() {
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
+}
+
+// StatusBar simgeleri aktif temaya göre okunabilir kalsın:
+// - dark tema → light content (beyaz simgeler)
+// - light tema → dark content (siyah simgeler)
+function ThemedStatusBar() {
+  const { theme } = useStore();
+  return <StatusBar style={theme.name === "dark" ? "light" : "dark"} />;
 }
