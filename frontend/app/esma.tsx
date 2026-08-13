@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
   FlatList,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -184,10 +185,18 @@ export default function EsmaScreen() {
         )}
       />
 
-      {/* Detail modal */}
-      {detail ? (
-        <View style={[StyleSheet.absoluteFillObject, styles.modalOverlay, { backgroundColor: theme.overlay }]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setDetail(null)} />
+      {/* Detail modal — BUG-006 tutarliligi: Android Geri tusu artik
+          onRequestClose ile modali kapatir, uygulamayi kapatmaz. */}
+      <Modal
+        visible={!!detail}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setDetail(null)}
+      >
+        {detail ? (
+          <View style={[StyleSheet.absoluteFillObject, styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setDetail(null)} />
           <View
             style={[
               styles.sheet,
@@ -274,7 +283,8 @@ export default function EsmaScreen() {
             </View>
           </View>
         </View>
-      ) : null}
+        ) : null}
+      </Modal>
 
       <ConfirmSheet
         visible={confirmResetNo !== null}

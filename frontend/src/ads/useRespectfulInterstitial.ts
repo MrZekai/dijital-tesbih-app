@@ -1,20 +1,36 @@
 // useRespectfulInterstitial — sekme gecislerinde / tesbihat sonrasi interstitial.
 //
-// TANI: Kullanici hicbir interstitial gormedigini bildirdi. Bunun uc olasi
-// sebebi vardir:
-//   1) `useInterstitialAd` yeni kurulusta ilk load'u tetiklemez; bunu
-//      canRequestAds sonrasi manuel yapiyoruz.
-//   2) Load basarili olsa bile isLoaded'e ulasmadan tabPress tetiklenmis
-//      olabilir → sessizce continueAction() dondurup dusuyor.
-//   3) AdMob no-fill (test ID icin nadir; prod ID icin coobbtcadgindan sik).
-// Bu hook her hayat dongusu adimini konsola log'lar → kullanici gunlugu
-// inceleyerek gercek sebebi ayirt edebilir.
+// KRITIK KOK NEDEN DUZELTMESI (QA BUG-001):
+// `sdk.useInterstitialAd()` (react-native-google-mobile-ads) her cagirildiginda
+// YENI bir obje referansi dondurur ({...state, load, show}) — internal
+// useReducer state'i degismese bile obje literal'i her render'da yeniden
+// olusturulur. Bu obje onceden useEffect bagimliligi olarak kullaniliyordu:
+//   useEffect(() => { interstitial.load(); }, [..., interstitial, attempts])
+// Global store (StoreProvider) her zikir dokunusunda TUM context tuketicilerini
+// yeniden render ettigi icin, bu efekt HER DOKUNUSTA yeniden tetikleniyor,
+// `load()`u tekrar tekrar cagiriyor, bu da AdMob event'lerini (LOADED/ERROR)
+// tetikleyip kutuphanenin kendi useReducer'ini guncelliyor (_handleAdEvent) →
+// tekrar render → tekrar efekt → tekrar load()... Hizli/uzun dokunus
+// oturumlarinda bu döngü "Maximum update depth exceeded" crash'ine ve
+// dolayisiyla oturum veri kaybina yol aciyordu.
+//
+// COZUM: `interstitial` objesinin KENDISINI hicbir efektin bagimlilik
+// dizisine KOYMUYORUZ. En guncel referansi bir ref'te tutup, load() cagrisini
+// sadece PRIMITIVE bagimliliklar (adsEnabled/canRequestAds/attempts)
+// degistiginde ve her "attempt" icin TEK SEFER tetikliyoruz.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { interstitialUnitId, INTERSTITIAL_COOLDOWN_MS } from "./adConfig";
 import { useAds } from "./AdsProvider";
 import { getAdsSdk } from "./sdk";
+
+type InterstitialHookReturn = {
+  isLoaded: boolean;
+  load: () => void;
+  show: () => Promise<void>;
+  error?: Error | null;
+};
 
 export function useRespectfulInterstitial(): (
   continueAction?: () => void
@@ -25,15 +41,20 @@ export function useRespectfulInterstitial(): (
   const [attempts, setAttempts] = useState(0);
 
   const interstitial = sdk?.useInterstitialAd?.(interstitialUnitId) as
-    | {
-        isLoaded: boolean;
-        load: () => void;
-        show: () => Promise<void>;
-        error?: Error | null;
-      }
+    | InterstitialHookReturn
     | undefined;
 
-  // Yaslamalar: yukleme durumunu loglayalim.
+  // KRITIK: her render'da en guncel objeyi ref'e yaz (render govdesinde,
+  // efekt disinda) — bu bir state guncellemesi degil, sadece "en son deger"
+  // deseni; render dongusune girmez.
+  const interstitialRef = useRef<InterstitialHookReturn | undefined>(
+    interstitial
+  );
+  interstitialRef.current = interstitial;
+
+  // Her "attempt" icin en fazla BIR kez load() cagir. `interstitial` objesinin
+  // referans degisimine ASLA tepki vermeyiz — bu, dongunun kokudur.
+  const loadedForAttempt = useRef<number>(-1);
   useEffect(() => {
     if (!adsEnabled) {
       console.log("[ads:interstitial] disabled (Expo Go/web)");
@@ -43,23 +64,39 @@ export function useRespectfulInterstitial(): (
       console.log("[ads:interstitial] waiting for consent/init");
       return;
     }
-    if (!interstitial) {
+    if (loadedForAttempt.current === attempts) {
+      // Bu attempt icin zaten load() cagrildi — tekrar cagirma (dongu koruma).
+      return;
+    }
+    const current = interstitialRef.current;
+    if (!current) {
       console.warn("[ads:interstitial] hook returned undefined");
       return;
     }
+    loadedForAttempt.current = attempts;
     console.log(
-      `[ads:interstitial] initial load unitId=${interstitialUnitId} attempts=${attempts}`
+      `[ads:interstitial] load requested unitId=${interstitialUnitId} attempt=${attempts}`
     );
     try {
-      interstitial.load();
+      current.load();
     } catch (e) {
       console.warn("[ads:interstitial] load threw", e);
     }
-  }, [adsEnabled, canRequestAds, interstitial, attempts]);
+    // NOT: `interstitial` bilerek bagimlilik dizisinde degil (kararli
+    // olmayan referans → sonsuz dongu riski). Sadece primitive degerler.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adsEnabled, canRequestAds, attempts]);
 
-  // isLoaded degistiginde log
+  // isLoaded/error degistiginde sadece log — state guncellemesi YOK, bu
+  // yuzden dongu riski tasimiyor.
+  const lastLoggedRef = useRef<string>("");
   useEffect(() => {
     if (!interstitial) return;
+    const key = `${interstitial.isLoaded}:${
+      interstitial.error ? String(interstitial.error) : "none"
+    }`;
+    if (lastLoggedRef.current === key) return;
+    lastLoggedRef.current = key;
     console.log(
       `[ads:interstitial] state isLoaded=${interstitial.isLoaded} error=${
         interstitial.error ? String(interstitial.error) : "none"

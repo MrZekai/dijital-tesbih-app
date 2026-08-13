@@ -7,7 +7,15 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Dimensions,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import * as Haptics from "expo-haptics";
 import Animated, {
   useAnimatedStyle,
@@ -25,6 +33,17 @@ import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
 const { width: screenW } = Dimensions.get("window");
+
+// BUG-007: Büyük Yazı Modu'nda 4-5 haneli sayaçlar (örn. 1044) tesbih
+// halkasıyla çakışıyor ve satır kaydırabiliyordu. Basamak sayısına göre
+// dinamik font boyutu — sayaç her zaman tek satırda kalır.
+function getCounterFontSize(bigText: boolean, digitCount: number): number {
+  const base = bigText ? 152 : 128;
+  if (digitCount <= 2) return base;
+  if (digitCount === 3) return Math.round(base * 0.82);
+  if (digitCount === 4) return Math.round(base * 0.64);
+  return Math.round(base * 0.52); // 5+ hane
+}
 
 export default function Home() {
   const {
@@ -102,7 +121,14 @@ export default function Home() {
 
   const size = Math.min(screenW - 40, 360);
   const progress = Math.min(1, activeDhikrState.count / activeDhikrState.target);
-  const counterFontSize = bigText ? 152 : 128;
+  const counterDigits = String(activeDhikrState.count).length;
+  const counterFontSize = getCounterFontSize(bigText, counterDigits);
+  // BUG-009: Zikir Seç / Hedef Seç modalları açıkken reklam alanını gizle —
+  // native SurfaceView tabanlı reklamlar bazı Android sürümlerinde modal
+  // katmanının üstünde görünebiliyordu. Modal artık native <Modal>
+  // kullandığı için ayrı bir pencere katmanında render olur, ancak bu ek
+  // önlem kullanıcının talep ettiği "güvenli" davranışı garantiler.
+  const anyOverlayOpen = showDhikrPicker || showTargets || confirmReset;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
@@ -161,7 +187,15 @@ export default function Home() {
         </Pressable>
       </View>
 
-      {/* Big touchable counter */}
+      {/* Big touchable counter.
+          QA BUG-008 KARARI: Tek-dokunuşlu sayım QA tarafından 800 ardışık
+          dokunuşta %100 doğru olarak doğrulandı. Eşzamanlı iki-parmak
+          dokunuşunu tam desteklemek için `Pressable`'ı ham `onTouchStart`
+          tabanlı bir sisteme geçirmek, mevcut kusursuz tek-dokunuş
+          davranışını (ripple, haptic, çift-sayım riski) bozma riski taşır.
+          QA'nın kendi notunda belirttiği gibi bu riskli değişim YAPILMADI;
+          tek-dokunuş doğruluğu önceliklendirildi ve karar burada
+          belgelendi. */}
       <Pressable
         style={styles.tapArea}
         onPress={doTap}
@@ -196,6 +230,8 @@ export default function Home() {
                 ]}
                 testID="counter-value"
                 allowFontScaling={false}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
                 {activeDhikrState.count}
               </Text>
@@ -306,10 +342,13 @@ export default function Home() {
         yukselti veriyoruz; banner yuklenmese bile yer AYRILIR ve slot tab
         bar'in USTUNDE gorunur. `explicitWidth` — ANCHORED_ADAPTIVE_BANNER
         native olcumu sabit hale getirir (Home layout'unda parent-olcumu
-        guvensiz olabildigi icin). */}
-    <View style={[styles.adSlot, { marginBottom: 60 + insets.bottom }]}>
-      <BottomBanner tag="home" explicitWidth={Math.floor(screenW)} />
-    </View>
+        guvensiz olabildigi icin). BUG-009: herhangi bir modal acikken
+        banner alanini gizliyoruz. */}
+    {!anyOverlayOpen ? (
+      <View style={[styles.adSlot, { marginBottom: 60 + insets.bottom }]}>
+        <BottomBanner tag="home" explicitWidth={Math.floor(screenW)} />
+      </View>
+    ) : null}
     </View>
   );
 }
@@ -377,6 +416,11 @@ function IconToggle({
 }
 
 // Target picker
+// BUG-006 + BUG-009 duzeltmesi: plain View overlay yerine RN'in native
+// <Modal> bileşeni kullanılıyor. Bu; (1) Android donanım Geri tuşunu
+// otomatik olarak `onRequestClose` ile yakalar (uygulamayı kapatmaz),
+// (2) ayrı bir native pencere katmanında render olduğu için SurfaceView
+// tabanlı reklamların ÜZERİNDE her zaman görünür.
 function TargetPickerSheet({
   visible,
   current,
@@ -390,48 +434,60 @@ function TargetPickerSheet({
   onClose: () => void;
   theme: any;
 }) {
-  if (!visible) return null;
+  const insets = useSafeAreaInsets();
   return (
-    <View style={[StyleSheet.absoluteFillObject, styles.modalOverlay, { backgroundColor: theme.overlay }]}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      <View
-        style={[
-          styles.modalSheet,
-          { backgroundColor: theme.bgCard, borderColor: theme.border },
-        ]}
-      >
-        <Text style={[styles.modalTitle, { color: theme.text }]}>Hedef Seç</Text>
-        <View style={styles.targetGrid}>
-          {TARGET_PRESETS.map((t) => (
-            <Pressable
-              key={t}
-              onPress={() => onPick(t)}
-              style={[
-                styles.targetChip,
-                {
-                  borderColor: t === current ? theme.gold : theme.border,
-                  backgroundColor: t === current ? theme.emeraldDeep : "transparent",
-                },
-              ]}
-              testID={`target-${t}`}
-            >
-              <Text
-                style={{
-                  color: t === current ? theme.gold : theme.text,
-                  fontSize: 18,
-                  fontWeight: "600",
-                }}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={[StyleSheet.absoluteFillObject, styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View
+          style={[
+            styles.modalSheet,
+            {
+              backgroundColor: theme.bgCard,
+              borderColor: theme.border,
+              paddingBottom: insets.bottom + spacing.lg,
+            },
+          ]}
+        >
+          <Text style={[styles.modalTitle, { color: theme.text }]}>Hedef Seç</Text>
+          <View style={styles.targetGrid}>
+            {TARGET_PRESETS.map((t) => (
+              <Pressable
+                key={t}
+                onPress={() => onPick(t)}
+                style={[
+                  styles.targetChip,
+                  {
+                    borderColor: t === current ? theme.gold : theme.border,
+                    backgroundColor: t === current ? theme.emeraldDeep : "transparent",
+                  },
+                ]}
+                testID={`target-${t}`}
               >
-                {t}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={{
+                    color: t === current ? theme.gold : theme.text,
+                    fontSize: 18,
+                    fontWeight: "600",
+                  }}
+                >
+                  {t}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Text style={[styles.modalHint, { color: theme.textSubtle }]}>
+            Özel hedef için özel zikir oluşturabilirsiniz.
+          </Text>
         </View>
-        <Text style={[styles.modalHint, { color: theme.textSubtle }]}>
-          Özel hedef için özel zikir oluşturabilirsiniz.
-        </Text>
       </View>
-    </View>
+    </Modal>
   );
 }
 
@@ -444,58 +500,82 @@ function DhikrPickerSheet({
   onClose: () => void;
 }) {
   const { theme, allDhikrs, state, setActiveDhikr } = useStore();
-  if (!visible) return null;
+  const insets = useSafeAreaInsets();
   return (
-    <View style={[StyleSheet.absoluteFillObject, styles.modalOverlay, { backgroundColor: theme.overlay }]}>
-      <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      <View
-        style={[
-          styles.modalSheet,
-          { backgroundColor: theme.bgCard, borderColor: theme.border, maxHeight: "72%" },
-        ]}
-      >
-        <Text style={[styles.modalTitle, { color: theme.text }]}>Zikir Seç</Text>
-        <View style={{ gap: 8 }}>
-          {allDhikrs.map((d) => {
-            const s = state.dhikrStates[d.id];
-            const active = state.activeDhikrId === d.id;
-            return (
-              <Pressable
-                key={d.id}
-                onPress={() => {
-                  setActiveDhikr(d.id);
-                  onClose();
-                }}
-                style={[
-                  styles.dhikrRow,
-                  {
-                    borderColor: active ? theme.gold : theme.border,
-                    backgroundColor: active ? theme.emeraldDeep : "transparent",
-                  },
-                ]}
-                testID={`dhikr-pick-${d.id}`}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{ color: theme.text, fontSize: 16, fontWeight: "600" }}
-                  >
-                    {d.name}
-                  </Text>
-                  {"arabic" in d && d.arabic ? (
-                    <Text style={{ color: theme.textMuted, fontSize: 14, marginTop: 2 }}>
-                      {d.arabic}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={[StyleSheet.absoluteFillObject, styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View
+          style={[
+            styles.modalSheet,
+            {
+              backgroundColor: theme.bgCard,
+              borderColor: theme.border,
+              maxHeight: "72%",
+              paddingBottom: 0,
+            },
+          ]}
+        >
+          <Text style={[styles.modalTitle, { color: theme.text }]}>Zikir Seç</Text>
+          {/* BUG-005: liste artik kaydirilabilir — 6'dan fazla zikir olsa
+              bile tumune (ozellikle listenin sonundaki ozel zikirlere)
+              erisilebilir. */}
+          <ScrollView
+            style={{ marginTop: 4 }}
+            contentContainerStyle={{
+              gap: 8,
+              paddingBottom: insets.bottom + spacing.lg,
+            }}
+            showsVerticalScrollIndicator={false}
+            testID="dhikr-picker-scroll"
+          >
+            {allDhikrs.map((d) => {
+              const s = state.dhikrStates[d.id];
+              const active = state.activeDhikrId === d.id;
+              return (
+                <Pressable
+                  key={d.id}
+                  onPress={() => {
+                    setActiveDhikr(d.id);
+                    onClose();
+                  }}
+                  style={[
+                    styles.dhikrRow,
+                    {
+                      borderColor: active ? theme.gold : theme.border,
+                      backgroundColor: active ? theme.emeraldDeep : "transparent",
+                    },
+                  ]}
+                  testID={`dhikr-pick-${d.id}`}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{ color: theme.text, fontSize: 16, fontWeight: "600" }}
+                    >
+                      {d.name}
                     </Text>
-                  ) : null}
-                </View>
-                <Text style={{ color: theme.gold, fontSize: 14 }}>
-                  {s?.count || 0} / {s?.target || d.defaultTarget}
-                </Text>
-              </Pressable>
-            );
-          })}
+                    {"arabic" in d && d.arabic ? (
+                      <Text style={{ color: theme.textMuted, fontSize: 14, marginTop: 2 }}>
+                        {d.arabic}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text style={{ color: theme.gold, fontSize: 14 }}>
+                    {s?.count || 0} / {s?.target || d.defaultTarget}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </View>
       </View>
-      </View>
+    </Modal>
   );
 }
 

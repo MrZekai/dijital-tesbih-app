@@ -59,7 +59,7 @@ export default function Istatistikler() {
           <View style={styles.goalHeader}>
             <View>
               <Text style={[styles.goalLabel, { color: theme.textMuted }]}>
-                Bugünkü Zikir
+                BUGÜNKÜ ZİKİR
               </Text>
               <Text
                 style={[
@@ -72,7 +72,7 @@ export default function Istatistikler() {
             </View>
             <View style={styles.goalRight}>
               <Text style={[styles.goalLabel, { color: theme.textMuted }]}>
-                Hedef
+                HEDEF
               </Text>
               <Text style={[styles.goalGoal, { color: theme.text }]}>{dailyGoal}</Text>
             </View>
@@ -281,9 +281,10 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   goalLabel: {
+    // BUG-011: textTransform kaldirildi, metin JSX'te dogrudan Türkçe
+    // buyuk harfle yazildi (device locale'ine bagimli olmadan).
     fontSize: 12,
     letterSpacing: 1,
-    textTransform: "uppercase",
   },
   goalValue: {
     fontSize: 42,

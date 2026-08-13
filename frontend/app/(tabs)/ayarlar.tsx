@@ -1,7 +1,9 @@
 // Ayarlar — tema, ses, titreşim, büyük yazı, sade mod, ekran açık, bildirim, günlük hedef.
 
 import { Ionicons } from "@expo/vector-icons";
-import React, { useState } from "react";
+import { usePathname } from "expo-router";
+import * as Application from "expo-application";
+import React, { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -13,6 +15,7 @@ import {
 import { BottomBanner } from "@/src/ads/BottomBanner";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
+import { parsePositiveInteger } from "@/src/lib/validation";
 
 const GOAL_PRESETS = [33, 100, 300, 500, 1000];
 
@@ -21,7 +24,26 @@ export default function Ayarlar() {
   const insets = useSafeAreaInsets();
   const s = state.settings;
   const [customGoal, setCustomGoal] = useState("");
+  const [goalError, setGoalError] = useState<string | null>(null);
+  const [goalApplied, setGoalApplied] = useState(false);
   const [permBlockedAt, setPermBlockedAt] = useState<number | null>(null);
+
+  // BUG-016 duzeltmesi: onceden `useFocusEffect`'in blur temizligi kullanildi,
+  // ancak test agent'i navigasyon hedefi Ana Sayfa (Tabs'in ilk/varsayilan
+  // rotasi) oldugunda bu temizligin GUVENILMEZ calistigini tespit etti
+  // (react-navigation'in focus/blur olay zamanlamasi index rotasi icin
+  // farkli davranabiliyor). Bunun yerine expo-router'in `usePathname()`'ini
+  // kullaniyoruz — bu, navigasyon "focus" event'lerinden BAGIMSIZ olarak
+  // dogrudan router state'ini okur ve HANGI sekmeye gidildiginden bagimsiz,
+  // tutarli sekilde calisir.
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!pathname.includes("ayarlar")) {
+      setCustomGoal("");
+      setGoalError(null);
+      setGoalApplied(false);
+    }
+  }, [pathname]);
 
   const onToggleReminder = async (val: boolean) => {
     if (val) {
@@ -59,6 +81,22 @@ export default function Ayarlar() {
     }
   };
 
+  // BUG-003: hem burada hem Özel Zikir Ekle'de AYNI paylaşılan doğrulama
+  // mantığı (`parsePositiveInteger`) kullanılır.
+  const onApplyCustomGoal = () => {
+    const result = parsePositiveInteger(customGoal);
+    if (!result.valid || !result.value) {
+      // BUG-014: geçersiz giriş artık sessizce yok sayılmıyor.
+      setGoalError(result.error || "Geçersiz değer.");
+      setGoalApplied(false);
+      return;
+    }
+    updateSettings({ dailyGoal: result.value });
+    setCustomGoal("");
+    setGoalError(null);
+    setGoalApplied(true);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       <ScrollView
@@ -69,13 +107,19 @@ export default function Ayarlar() {
           gap: spacing.lg,
         }}
         showsVerticalScrollIndicator={false}
+        // BUG-003 kök neden düzeltmesi: bu prop olmadan, klavye açıkken bu
+        // ScrollView içindeki başka bir kontrole (örn. "Uygula" butonu)
+        // yapılan İLK dokunuş sadece klavyeyi kapatıyor, buton basılmıyordu.
+        // "Özel Zikir Ekle" ekranı bunu zaten doğru yapıyordu — aynı davranış
+        // burada da uygulandı.
+        keyboardShouldPersistTaps="handled"
       >
         <Text style={[styles.h1, { color: theme.text, fontFamily: fonts.display }]}>
           Ayarlar
         </Text>
 
         {/* Görünüm */}
-        <Section title="Görünüm" theme={theme}>
+        <Section title="GÖRÜNÜM" theme={theme}>
           <SettingRow
             icon="contrast-outline"
             label="Koyu Tema"
@@ -109,7 +153,7 @@ export default function Ayarlar() {
           <SettingRow
             icon="leaf-outline"
             label="Sade Kullanım Modu"
-            description="Yaşlı kullanıcılar için kontrolleri gizler, sayaca odaklanır."
+            description="Kontrolleri sadeleştirir, sayaca odaklanmanızı sağlar."
             theme={theme}
             testID="setting-simple"
             right={
@@ -125,7 +169,7 @@ export default function Ayarlar() {
         </Section>
 
         {/* Geri bildirim */}
-        <Section title="Geri Bildirim" theme={theme}>
+        <Section title="GERİ BİLDİRİM" theme={theme}>
           <SettingRow
             icon="phone-portrait-outline"
             label="Titreşim"
@@ -176,15 +220,21 @@ export default function Ayarlar() {
         </Section>
 
         {/* Günlük hedef */}
-        <Section title="Günlük Hedef" theme={theme}>
+        <Section title="GÜNLÜK HEDEF" theme={theme}>
           <Text style={{ color: theme.textMuted, fontSize: 13, marginBottom: spacing.sm }}>
-            İstatistiklerde ilerleme çubuğunu belirler.
+            İstatistiklerde ilerleme çubuğunu belirler. Şu an aktif hedef:{" "}
+            <Text style={{ color: theme.gold, fontWeight: "700" }}>{s.dailyGoal}</Text>
           </Text>
           <View style={styles.goalRow}>
             {GOAL_PRESETS.map((g) => (
               <Pressable
                 key={g}
-                onPress={() => updateSettings({ dailyGoal: g })}
+                onPress={() => {
+                  updateSettings({ dailyGoal: g });
+                  setCustomGoal("");
+                  setGoalError(null);
+                  setGoalApplied(false);
+                }}
                 style={[
                   styles.goalChip,
                   {
@@ -210,24 +260,27 @@ export default function Ayarlar() {
           <View style={styles.goalInputRow}>
             <TextInput
               value={customGoal}
-              onChangeText={setCustomGoal}
+              onChangeText={(t) => {
+                setCustomGoal(t);
+                setGoalError(null);
+                setGoalApplied(false);
+              }}
               keyboardType="number-pad"
-              placeholder="Özel hedef"
+              placeholder="Özel hedef (örn. 250)"
               placeholderTextColor={theme.textSubtle}
               style={[
                 styles.input,
-                { color: theme.text, borderColor: theme.border },
+                {
+                  color: theme.text,
+                  borderColor: goalError ? theme.danger : theme.border,
+                },
               ]}
               testID="custom-goal-input"
+              returnKeyType="done"
+              onSubmitEditing={onApplyCustomGoal}
             />
             <Pressable
-              onPress={() => {
-                const n = parseInt(customGoal, 10);
-                if (!Number.isNaN(n) && n > 0) {
-                  updateSettings({ dailyGoal: n });
-                  setCustomGoal("");
-                }
-              }}
+              onPress={onApplyCustomGoal}
               style={[
                 styles.applyBtn,
                 { backgroundColor: theme.gold },
@@ -237,10 +290,20 @@ export default function Ayarlar() {
               <Text style={{ color: theme.bg, fontWeight: "700" }}>Uygula</Text>
             </Pressable>
           </View>
+          {goalError ? (
+            <Text style={{ color: theme.danger, fontSize: 12, marginTop: 6 }}>
+              {goalError}
+            </Text>
+          ) : null}
+          {goalApplied ? (
+            <Text style={{ color: theme.gold, fontSize: 12, marginTop: 6 }} testID="goal-applied-msg">
+              Günlük hedef {s.dailyGoal} olarak güncellendi.
+            </Text>
+          ) : null}
         </Section>
 
         {/* Bildirim */}
-        <Section title="Hatırlatıcı" theme={theme}>
+        <Section title="HATIRLATICI" theme={theme}>
           <SettingRow
             icon="notifications-outline"
             label="Günlük Hatırlatma"
@@ -316,18 +379,26 @@ export default function Ayarlar() {
         </Section>
 
         {/* Uygulama Hakkında */}
-        <Section title="Uygulama" theme={theme}>
+        <Section title="UYGULAMA" theme={theme}>
           <View style={styles.rowInfo}>
             <Text style={{ color: theme.textMuted }}>Sürüm</Text>
-            <Text style={{ color: theme.text }}>1.0.0</Text>
+            {/* BUG-012: sabit kodlanmış "1.0.0" yerine yüklü native paketten
+                gerçek sürüm/derleme numarası okunur — app.json'daki değerden
+                bağımsız olarak her zaman kurulu APK ile eşleşir. */}
+            <Text style={{ color: theme.text }} testID="app-version-text">
+              {Application.nativeApplicationVersion ?? "—"}
+              {Application.nativeBuildVersion
+                ? ` (${Application.nativeBuildVersion})`
+                : ""}
+            </Text>
           </View>
           <View style={styles.rowInfo}>
             <Text style={{ color: theme.textMuted }}>Veri Saklama</Text>
             <Text style={{ color: theme.text }}>Yalnızca Cihaz</Text>
           </View>
           <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: spacing.sm }}>
-            Zikirhane çevrimdışı çalışır. Kayıtlarınız yalnızca cihazınızda saklanır ve
-            hiçbir sunucuya gönderilmez.
+            Zikir kayıtlarınız yalnızca bu cihazda saklanır ve hiçbir sunucuya
+            gönderilmez.
           </Text>
         </Section>
 
@@ -348,12 +419,14 @@ function Section({
 }) {
   return (
     <View>
+      {/* BUG-011: textTransform kaldirildi — title prop'u cagiran yerlerde
+          zaten dogru Türkçe buyuk harfle geliyor (device locale'ine
+          bagimli olmadan). */}
       <Text
         style={{
           color: theme.textMuted,
           fontSize: 12,
           letterSpacing: 1.5,
-          textTransform: "uppercase",
           marginBottom: spacing.sm,
           paddingLeft: 4,
         }}

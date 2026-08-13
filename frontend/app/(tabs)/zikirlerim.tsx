@@ -110,7 +110,7 @@ export default function Zikirlerim() {
           <Ionicons name="chevron-forward" size={20} color={theme.textSubtle} />
         </Pressable>
 
-        <Text style={[styles.section, { color: theme.textMuted }]}>Zikir Listesi</Text>
+        <Text style={[styles.section, { color: theme.textMuted }]}>ZİKİR LİSTESİ</Text>
 
         <View style={{ gap: spacing.md }}>
           {allDhikrs.map((d) => {
@@ -238,9 +238,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   section: {
+    // BUG-011: textTransform kaldirildi, metin dogrudan Türkçe buyuk
+    // harfle yazildi.
     fontSize: 12,
     letterSpacing: 1.5,
-    textTransform: "uppercase",
     marginTop: spacing.sm,
   },
   tesbihatCard: {

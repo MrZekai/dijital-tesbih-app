@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
   FadeIn,
@@ -21,19 +21,21 @@ import { useRespectfulInterstitial } from "@/src/ads/useRespectfulInterstitial";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
+// BUG-002: bu id'ler `dhikrs.ts` icindeki BUILTIN_DHIKRS ile eslesir —
+// böylece tesbihat sayimlari AYNI canonical zikir kaydina (ve dolayisiyla
+// toplam/günlük/haftalık/aylık istatistiklere) akar.
 const STEPS = [
-  { name: "Sübhanallah", arabic: "سُبْحَانَ ٱللَّٰهِ", target: 33 },
-  { name: "Elhamdülillah", arabic: "ٱلْحَمْدُ لِلَّٰهِ", target: 33 },
-  { name: "Allahu Ekber", arabic: "ٱللَّٰهُ أَكْبَرُ", target: 33 },
+  { id: "subhanallah", name: "Sübhanallah", arabic: "سُبْحَانَ ٱللَّٰهِ", target: 33 },
+  { id: "elhamdulillah", name: "Elhamdülillah", arabic: "ٱلْحَمْدُ لِلَّٰهِ", target: 33 },
+  { id: "allahuekber", name: "Allahu Ekber", arabic: "ٱللَّٰهُ أَكْبَرُ", target: 33 },
 ];
 
 export default function Tesbihat() {
-  const { theme, state } = useStore();
+  const { theme, state, incrementDhikrById } = useStore();
   const insets = useSafeAreaInsets();
   const [stepIdx, setStepIdx] = useState(0);
   const [count, setCount] = useState(0);
   const [done, setDone] = useState(false);
-  const transitioningRef = useRef(false);
   const showInterstitial = useRespectfulInterstitial();
 
   const scale = useSharedValue(1);
@@ -46,9 +48,15 @@ export default function Tesbihat() {
     else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
+  // BUG-010 duzeltmesi: onceden asama gecisinde 350ms'lik bir "engelleme
+  // penceresi" (setTimeout + transitioningRef) vardi; bu pencerede gelen
+  // dokunuslar SESSIZCE ATILIYORDU (hizli/surekli dokunusta kayip). Simdi
+  // asama gecisi AYNI state guncellemesi icinde, ANINDA ve senkron olarak
+  // yapiliyor — hicbir dokunus icin "olu zaman" yok, cift sayim da yok.
   const onTap = () => {
     if (done) return;
-    if (transitioningRef.current) return;
+    // BUG-002: canonical istatistik/gecmis mekanizmasina dokunusu isle.
+    incrementDhikrById(step.id);
     scale.value = withSequence(
       withTiming(0.94, { duration: 80 }),
       withTiming(1, { duration: 160 })
@@ -58,12 +66,11 @@ export default function Tesbihat() {
       if (next >= step.target) {
         doHaptic(true);
         if (stepIdx < STEPS.length - 1) {
-          transitioningRef.current = true;
-          setTimeout(() => {
-            setStepIdx((i) => Math.min(STEPS.length - 1, i + 1));
-            setCount(0);
-            transitioningRef.current = false;
-          }, 350);
+          // Sonraki asamaya ANINDA gec — dokunus kaybina yol acan bekleme
+          // penceresi yok. Gecis animasyonu (FadeIn) gorsel olarak devam
+          // eder, ancak sayimi ASLA bloklamaz.
+          setStepIdx((i) => Math.min(STEPS.length - 1, i + 1));
+          return 0;
         } else {
           setDone(true);
         }
@@ -239,7 +246,7 @@ export default function Tesbihat() {
               { color: theme.textSubtle, marginTop: spacing.md },
             ]}
           >
-            Dokun · Sıradaki zikir otomatik başlar
+            DOKUN · SIRADAKİ ZİKİR OTOMATİK BAŞLAR
           </Text>
         </View>
       </Pressable>
@@ -307,9 +314,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   hint: {
+    // BUG-011: textTransform "uppercase" cihaz locale'ine (en-US) bagli
+    // oldugu icin Türkçe İ/ı donusumunu bozuyordu. Metin dogrudan büyük
+    // harfle Türkçe olarak yazildi, transform kaldirildi.
     fontSize: 12,
     letterSpacing: 1.2,
-    textTransform: "uppercase",
   },
   done: {
     flex: 1,

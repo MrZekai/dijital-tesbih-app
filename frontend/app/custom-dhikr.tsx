@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TARGET_PRESETS } from "@/src/lib/dhikrs";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
+import { normalizeName, parsePositiveInteger } from "@/src/lib/validation";
 
 export default function CustomDhikrScreen() {
   const { theme, state, addCustomDhikr, updateCustomDhikr } = useStore();
@@ -29,13 +30,35 @@ export default function CustomDhikrScreen() {
   const [arabic, setArabic] = useState(editing?.arabic || "");
   const [target, setTarget] = useState<number>(editing?.defaultTarget || 33);
   const [customTarget, setCustomTarget] = useState("");
+  const [targetError, setTargetError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // BUG-015: ayni isimde baska bir zikir bulundugunda kullaniciya once
+  // uyari gosterilir; "Yine de Kaydet" ile onaylarsa kayit devam eder.
+  const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
 
   const canSave = name.trim().length > 0 && target > 0;
+
+  const findDuplicate = () => {
+    const norm = normalizeName(name);
+    if (!norm) return null;
+    const dup = state.customDhikrs.find(
+      (c) => c.id !== editing?.id && normalizeName(c.name) === norm
+    );
+    return dup || null;
+  };
 
   const onSave = () => {
     if (!canSave) {
       setError("Zikir adı ve hedef gerekli.");
+      return;
+    }
+    setError(null);
+    const dup = findDuplicate();
+    if (dup && !duplicateConfirmed) {
+      setError(
+        `"${dup.name}" adında bir zikir zaten var. Yine de kaydetmek için tekrar dokunun.`
+      );
+      setDuplicateConfirmed(true);
       return;
     }
     if (editing) {
@@ -77,10 +100,14 @@ export default function CustomDhikrScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View>
-          <Text style={[styles.label, { color: theme.textMuted }]}>Zikir Adı</Text>
+          <Text style={[styles.label, { color: theme.textMuted }]}>ZİKİR ADI</Text>
           <TextInput
             value={name}
-            onChangeText={setName}
+            onChangeText={(t) => {
+              setName(t);
+              setDuplicateConfirmed(false);
+              setError(null);
+            }}
             placeholder="Örn. Yâ Rezzâk"
             placeholderTextColor={theme.textSubtle}
             style={[
@@ -93,7 +120,7 @@ export default function CustomDhikrScreen() {
 
         <View>
           <Text style={[styles.label, { color: theme.textMuted }]}>
-            Arapça Yazılışı (isteğe bağlı)
+            ARAPÇA YAZILIŞI (İSTEĞE BAĞLI)
           </Text>
           <TextInput
             value={arabic}
@@ -109,7 +136,7 @@ export default function CustomDhikrScreen() {
         </View>
 
         <View>
-          <Text style={[styles.label, { color: theme.textMuted }]}>Hedef</Text>
+          <Text style={[styles.label, { color: theme.textMuted }]}>HEDEF</Text>
           <View style={styles.chips}>
             {TARGET_PRESETS.map((t) => (
               <Pressable
@@ -139,7 +166,10 @@ export default function CustomDhikrScreen() {
           <View style={{ flexDirection: "row", gap: 8, marginTop: spacing.md }}>
             <TextInput
               value={customTarget}
-              onChangeText={setCustomTarget}
+              onChangeText={(t) => {
+                setCustomTarget(t);
+                setTargetError(null);
+              }}
               placeholder="Özel hedef"
               placeholderTextColor={theme.textSubtle}
               keyboardType="number-pad"
@@ -156,10 +186,15 @@ export default function CustomDhikrScreen() {
             />
             <Pressable
               onPress={() => {
-                const n = parseInt(customTarget, 10);
-                if (!Number.isNaN(n) && n > 0) {
-                  setTarget(n);
+                const result = parsePositiveInteger(customTarget);
+                if (result.valid && result.value) {
+                  setTarget(result.value);
                   setCustomTarget("");
+                  setTargetError(null);
+                } else {
+                  // BUG-014: gecersiz girisler (0, negatif, ondalik) artik
+                  // sessizce yok sayilmiyor — acik hata mesaji gosterilir.
+                  setTargetError(result.error || "Geçersiz değer.");
                 }
               }}
               style={[styles.applyBtn, { borderColor: theme.gold }]}
@@ -168,6 +203,11 @@ export default function CustomDhikrScreen() {
               <Text style={{ color: theme.gold, fontWeight: "700" }}>Uygula</Text>
             </Pressable>
           </View>
+          {targetError ? (
+            <Text style={{ color: theme.danger, fontSize: 12, marginTop: 6 }}>
+              {targetError}
+            </Text>
+          ) : null}
           <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: 6 }}>
             Seçili hedef: <Text style={{ color: theme.gold, fontWeight: "700" }}>{target}</Text>
           </Text>
@@ -190,7 +230,11 @@ export default function CustomDhikrScreen() {
           testID="save-dhikr-btn"
         >
           <Text style={{ color: theme.bg, fontSize: 16, fontWeight: "700" }}>
-            {editing ? "Değişiklikleri Kaydet" : "Zikri Kaydet"}
+            {duplicateConfirmed
+              ? "Yine de Kaydet"
+              : editing
+              ? "Değişiklikleri Kaydet"
+              : "Zikri Kaydet"}
           </Text>
         </Pressable>
       </ScrollView>
@@ -219,9 +263,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   label: {
+    // BUG-011: textTransform kaldirildi — metinler JSX'te dogrudan Türkçe
+    // buyuk harfle yazildi.
     fontSize: 12,
     letterSpacing: 1.5,
-    textTransform: "uppercase",
     marginBottom: 8,
   },
   input: {

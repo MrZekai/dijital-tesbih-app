@@ -10,7 +10,7 @@
 //   - Yukleme sonucu (yuklendi / hata / kapak) tag'li olarak konsola yazilir
 //     ki no-fill / kod hatasi ayrimini kullanici gorebilsin.
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 
 import { useStore } from "@/src/lib/store";
@@ -87,6 +87,11 @@ function BannerSlot({
   tag,
 }: SlotProps) {
   const bannerRef = useRef<unknown>(null);
+  // Ek kalite iyilestirmesi: reklam yuklenemedigi (no-fill) durumda bos
+  // "Reklam" etiketli alani EKRANDA TUTMAYIP tamamen kucultuyoruz.
+  const [adStatus, setAdStatus] = useState<"loading" | "loaded" | "failed">(
+    "loading"
+  );
 
   const BannerAd = sdk.BannerAd as React.ComponentType<{
     ref?: React.MutableRefObject<unknown>;
@@ -128,30 +133,42 @@ function BannerSlot({
     );
   }
 
+  // Ek kalite iyilestirmesi: no-fill durumunda alani gorsel olarak
+  // kucult (0 yukseklik) — BannerAd bileseni MOUNTED kalir ki SDK'nin
+  // kendi ic yenileme (refresh) mekanizmasi calisirsa slot geri gelebilir.
+  const collapsed = adStatus === "failed";
+
   return (
     <View
       style={[
         styles.slot,
-        {
-          marginBottom: bottomInset,
-          backgroundColor: theme.bgElevated,
-          borderTopColor: theme.divider,
-        },
+        collapsed
+          ? styles.slotCollapsed
+          : {
+              marginBottom: bottomInset,
+              backgroundColor: theme.bgElevated,
+              borderTopColor: theme.divider,
+            },
       ]}
       testID={testID ?? "bottom-banner-ad"}
+      pointerEvents={collapsed ? "none" : "auto"}
     >
-      <Text style={[styles.label, { color: theme.textSubtle }]}>Reklam</Text>
+      {!collapsed ? (
+        <Text style={[styles.label, { color: theme.textSubtle }]}>REKLAM</Text>
+      ) : null}
       <BannerAd
         ref={bannerRef}
         unitId={bannerUnitId}
         size={size}
         width={explicitWidth}
         onAdLoaded={() => {
+          setAdStatus("loaded");
           console.log(`[ads:banner:${tag}] loaded`);
         }}
         onAdFailedToLoad={(err) => {
           // Google Mobile Ads hata objesi: { code, message }
           const e = err as { code?: string; message?: string } | undefined;
+          setAdStatus("failed");
           console.warn(
             `[ads:banner:${tag}] failed code=${e?.code ?? "?"} message="${
               e?.message ?? String(err)
@@ -173,10 +190,20 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
+  // Ek kalite iyilestirmesi: reklam yuklenemedigi zaman bos alan tamamen
+  // kucultulur (dead-space yok).
+  slotCollapsed: {
+    minHeight: 0,
+    height: 0,
+    paddingVertical: 0,
+    borderTopWidth: 0,
+    overflow: "hidden",
+  },
   label: {
+    // BUG-011: textTransform kaldirildi, metin dogrudan Türkçe buyuk
+    // harfle yazildi.
     fontSize: 10,
     letterSpacing: 1.5,
-    textTransform: "uppercase",
     marginBottom: 2,
   },
 });
