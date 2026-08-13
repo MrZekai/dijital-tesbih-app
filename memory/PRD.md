@@ -93,3 +93,32 @@ Kapalı test QA raporundaki 16 bulgu (BUG-001…BUG-016) giderildi:
   kendi notunda izin verilen bir karar, kod içinde belgelendi).
 - AdMob test ID'leri DEĞİŞTİRİLMEDİ, canlı reklam AÇILMADI (kullanıcı talebi).
 
+
+---
+
+## v1.0.16 (versionCode 132) — Kapalı Test Finalizasyonu (closed-test)
+
+- **Reklam Ana Anahtarı (ADS_ENABLED)**: `src/ads/adConfig.ts` içine tek
+  merkezi `export const ADS_ENABLED = false;` eklendi. `adsEnabled` artık
+  `ADS_ENABLED && !isWeb && !isExpoGo`. false iken: banner yüklenmez (statik
+  yer tutucu), interstitial/app-open pasif, AdMob ağ istekleri yok, native
+  BannerAd mount edilmez, event listener'lar pasif, sekme geçişi doğrudan
+  çalışır. `BottomBanner` reklam pasifken null yerine mevcut boyutları
+  koruyan statik (tıklanamaz) yer tutucu `<View>` render eder. Tüm reklam
+  altyapısı ileride prod için kod tabanında korundu.
+- **BUG-004 migration (tam geri-uyumluluk)**: `dhikrHistoryTotals` yoksa,
+  `dailyLog[*].perDhikr` toplamı ile canlı sayacın MAKSİMUMU alınır (toplama
+  yok → çift sayım yok). Case A=40, B=2000, C=150, D=değişmez (node testiyle
+  doğrulandı).
+- **BUG-013 safe-area (final)**: Zikirlerim ve İstatistikler ekranları
+  `SafeAreaView edges={["top"]}` ile sarıldı; içerik kaydırırken durum
+  çubuğunun altında kalır (renk/düzen/kart konumları korunur).
+- **Türkçe büyük harf temizliği**: "ZIKIRMATIK"→"ZİKİRMATİK", "Bugun"→"Bugün",
+  kullanılmayan `textTransform:"uppercase"` (index.tsx hint stili) kaldırıldı.
+- **App Open reload hardening**: `useAppOpenAd.ts` tek yeniden-yükleme yoluna
+  indirildi (yalnızca CLOSED event; `show().finally(load)` kaldırıldı).
+- **Depo temizliği**: Tüm `*.bak*` yedekleri silindi; `.gitignore`'a
+  `*.bak` / `*.bak*` eklendi. yarn.lock korundu.
+- Doğrulama: tsc --noEmit ✓ (0 hata), expo lint ✓ (0 hata, 3 önceden var olan
+  uyarı), expo-doctor ✓ (18/18). Sürüm 1.0.16 / versionCode 132 / paket
+  com.zikirhane.tesbih aynı. ADS_ENABLED=false.

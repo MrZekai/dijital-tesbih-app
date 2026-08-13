@@ -37,4 +37,8 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# backup files (kaynak yedekleri geri gelmesin)
+*.bak
+*.bak*
+
 app-example

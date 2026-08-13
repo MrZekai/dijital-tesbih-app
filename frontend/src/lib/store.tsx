@@ -235,14 +235,36 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               }
             }
             merged.settings = { ...defaultSettings, ...parsed.settings };
-            // BUG-004 geri uyumluluk migration'i: eski kayitlarda
-            // `dhikrHistoryTotals` alani yoktu. Mevcut canli sayaclari
-            // baslangic degeri olarak kullanip veri kaybini onluyoruz —
-            // hicbir mevcut istatistik silinmez.
+            // BUG-004 geri-uyumlu migration (v1.0.15 → v1.0.16):
+            // Yeni `dhikrHistoryTotals` alanı yoksa, KÜMÜLATİF geçmişi
+            // mevcut EN GÜVENİLİR kalıcı veriden yeniden inşa ederiz. İki
+            // kaynak vardır:
+            //   1) dailyLog[*].perDhikr toplamı → tarihsel kümülatif sayım
+            //   2) dhikrStates[id].count       → canlı sayaç (Sıfırla ile azalır)
+            // Kullanıcının geçmişini ASLA azaltmamak için ikisinin
+            // MAKSİMUMUNU alırız (TOPLAMA yapmayız → çift sayım olmaz):
+            //   - canlı=40,  geçmiş=40   → 40   (Case A)
+            //   - canlı=0,   geçmiş=2000 → 2000 (Case B)
+            //   - canlı=150, geçmiş=100  → 150  (Case C, en yüksek güvenilir değer)
+            // Migration YALNIZCA alan henüz yokken çalışır; varsa aynen
+            // korunur (Case D). Mevcut günlük/haftalık/aylık istatistikler
+            // (dailyLog/totalCount) hiç değiştirilmez.
             if (!merged.dhikrHistoryTotals) {
+              const historyFromDaily: Record<string, number> = {};
+              for (const entry of Object.values(merged.dailyLog || {})) {
+                for (const [id, c] of Object.entries(entry?.perDhikr || {})) {
+                  historyFromDaily[id] = (historyFromDaily[id] || 0) + (c || 0);
+                }
+              }
               const seeded: Record<string, number> = {};
-              for (const [id, st] of Object.entries(merged.dhikrStates)) {
-                seeded[id] = st?.count || 0;
+              const ids = new Set<string>([
+                ...Object.keys(merged.dhikrStates || {}),
+                ...Object.keys(historyFromDaily),
+              ]);
+              for (const id of ids) {
+                const live = merged.dhikrStates[id]?.count || 0;
+                const hist = historyFromDaily[id] || 0;
+                seeded[id] = Math.max(live, hist);
               }
               merged.dhikrHistoryTotals = seeded;
             }

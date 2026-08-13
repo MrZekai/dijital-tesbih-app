@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ConfirmSheet } from "@/src/components/ConfirmSheet";
 import { BottomBanner } from "@/src/ads/BottomBanner";
@@ -34,10 +34,10 @@ export default function Istatistikler() {
   const top = topDhikrs(3);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+    <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: theme.bg }]}>
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + spacing.lg,
+          paddingTop: spacing.lg,
           paddingBottom: insets.bottom + 100,
           paddingHorizontal: spacing.xl,
           gap: spacing.lg,
@@ -226,7 +226,7 @@ export default function Istatistikler() {
         theme={theme}
         testID="reset-all-confirm"
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -134,9 +134,9 @@ export default function Home() {
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
       {/* Icerik: kalan alani kaplar, banner alta sigsin diye. */}
       <View style={{ flex: 1 }}>
-        <Text style={[styles.brandTitle, { color: theme.gold }]}>ZIKIRMATIK</Text>
+        <Text style={[styles.brandTitle, { color: theme.gold }]}>ZİKİRMATİK</Text>
         <Text style={[styles.todayLine, { color: theme.textMuted }]}>
-          Bugun {todayTotal()} zikir
+          Bugün {todayTotal()} zikir
         </Text>
       <LinearGradient
         colors={[theme.emeraldDeep, theme.bg, theme.navy]}
@@ -652,9 +652,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   hint: {
+    // BUG-011 temizliği: `textTransform: "uppercase"` cihaz locale'ine bağlı
+    // Türkçe İ/ı dönüşümünü bozabildiği için kaldırıldı (bu stil şu an JSX'te
+    // kullanılmıyor; büyük harfli metinler doğrudan Türkçe yazılıyor).
     fontSize: 12,
     letterSpacing: 1.5,
-    textTransform: "uppercase",
     marginTop: spacing.sm,
   },
   controls: {

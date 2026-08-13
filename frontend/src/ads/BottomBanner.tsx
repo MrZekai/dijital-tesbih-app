@@ -56,7 +56,27 @@ export function BottomBanner({
   const { canRequestAds, adsEnabled } = useAds();
   const sdk = getAdsSdk();
 
-  if (!adsEnabled || !canRequestAds || !sdk || !sdk.BannerAd) return null;
+  // Reklam pasifken (kapalı test: ADS_ENABLED=false, veya Expo Go / Web,
+  // veya consent/SDK hazır değil) native BannerAd MOUNT EDİLMEZ; bunun
+  // yerine mevcut düzeni bozmayan STATİK bir yer tutucu döneriz. Böylece
+  // reklam alanının boyut/boşlukları korunur ama tıklanabilir bir reklam
+  // yüzeyi veya ağ isteği oluşmaz.
+  if (!adsEnabled || !canRequestAds || !sdk || !sdk.BannerAd) {
+    return (
+      <View
+        style={[
+          styles.slot,
+          {
+            marginBottom: bottomInset,
+            backgroundColor: theme.bgElevated,
+            borderTopColor: theme.divider,
+          },
+        ]}
+        testID={testID ?? "bottom-banner-placeholder"}
+        pointerEvents="none"
+      />
+    );
+  }
 
   return (
     <AdBoundary tag={tag}>

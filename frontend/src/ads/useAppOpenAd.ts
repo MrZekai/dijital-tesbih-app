@@ -85,6 +85,11 @@ export function useAppOpenAd() {
         console.log("[ads:app-open] OPENED (gosteriliyor)");
       });
       const offClosed = ad.addAdEventListener(AdEventType.CLOSED, () => {
+        // TEK yeniden-yükleme yolu: reklam kapandığında (CLOSED) bir sonraki
+        // gösterim için yeniden yükleriz. `show().finally()` içindeki ikinci
+        // reload yolu KALDIRILDI — böylece tamamlanan bir App Open reklamı
+        // tam olarak BİR yeniden-yükleme denemesiyle sonuçlanır (çift
+        // yükleme / no-fill spam'i önlenir).
         console.log("[ads:app-open] CLOSED, yeniden yukleniyor...");
         load();
       });
@@ -145,9 +150,11 @@ export function useAppOpenAd() {
       }
       lastShown.current = now;
       console.log("[ads:app-open] showing...");
-      ad.show()
-        .catch((e) => console.warn("[ads:app-open] show failed", e))
-        .finally(() => load());
+      // NOT: yeniden yükleme TEK yoldan yapılır → CLOSED event listener'ı.
+      // Burada `.finally(load)` KULLANILMAZ (aksi halde iki reload yolu
+      // oluşurdu). show() hata verirse zaten reklam tamamlanmamıştır; bir
+      // sonraki foreground geçişinde `!ad.loaded` kontrolü load()'u tetikler.
+      ad.show().catch((e) => console.warn("[ads:app-open] show failed", e));
     });
     return () => sub.remove();
   }, [load]);

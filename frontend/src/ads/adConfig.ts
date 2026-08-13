@@ -16,12 +16,32 @@ const TEST_INTERSTITIAL_IOS = "ca-app-pub-3940256099942544/4411468910";
 
 const isWeb = Platform.OS === "web";
 
+// ─────────────────────────────────────────────────────────────────────────
+// REKLAM ANA ANAHTARI (ADVERTISING MASTER SWITCH)
+//
+// Kapalı test (closed-testing) sürümü için reklamlar TAMAMEN pasiftir.
+// TÜM reklam bileşenleri ve hook'ları (banner, interstitial, app-open,
+// AdsProvider/UMP init, SDK require) bu TEK merkezi değeri okur.
+//
+// ADS_ENABLED = false iken:
+//   - Banner yüklemesi yok → yerine statik yer tutucu gösterilir.
+//   - Interstitial yükleme/gösterme yok.
+//   - App Open yükleme/gösterme yok.
+//   - AdMob ağ istekleri / native modül require'ı yok.
+//   - Reklam olay dinleyicileri (event listeners) pasif.
+//
+// İleride production reklam yayınına geçildiğinde bu tek değeri `true`
+// yapmak yeterlidir; tüm reklam altyapısı kod tabanında korunmaktadır.
+export const ADS_ENABLED = false;
+
 // Expo Go'da native module bulunmaz → reklam gösterilmez.
 // executionEnvironment: "storeClient" = Expo Go, "standalone"/"bare" = dev/prod build.
 const isExpoGo = Constants.executionEnvironment === "storeClient";
 
-// Reklamlar sadece gerçek native build'de (dev client veya store build) etkindir.
-export const adsEnabled = !isWeb && !isExpoGo;
+// Reklamlar yalnızca ANA ANAHTAR açıksa VE gerçek native build'de (dev client
+// veya store build) etkindir. ADS_ENABLED=false iken hiçbir koşulda reklam
+// isteği yapılmaz (getAdsSdk null döner → native SDK require bile edilmez).
+export const adsEnabled = ADS_ENABLED && !isWeb && !isExpoGo;
 
 const production = process.env.EXPO_PUBLIC_AD_MODE === "production";
 export const isProductionAds = production;
@@ -57,6 +77,7 @@ export const INTERSTITIAL_COOLDOWN_MS = 10 * 60 * 1000;
 
 // Consent form içeriği için debug bilgisi (yalnızca dev'de yararlı)
 export const adDebugInfo = {
+  ADS_ENABLED,
   adsEnabled,
   isExpoGo,
   isWeb,
