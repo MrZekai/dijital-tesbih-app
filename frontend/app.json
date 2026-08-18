@@ -2,7 +2,7 @@
   "expo": {
     "name": "Hedef Zikirmatik",
     "slug": "frontend",
-    "version": "1.0.16",
+    "version": "1.0.17",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "frontend",
@@ -23,22 +23,21 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.zikirhane.tesbih",
-      "versionCode": 1019,
+      "versionCode": 1020,
       "allowBackup": false,
       "permissions": [
         "VIBRATE",
-        "WAKE_LOCK"
+        "WAKE_LOCK",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "com.google.android.gms.permission.AD_ID"
       ],
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "com.google.android.gms.permission.AD_ID",
-        "android.permission.ACCESS_ADSERVICES_AD_ID",
-        "android.permission.ACCESS_ADSERVICES_ATTRIBUTION",
-        "android.permission.ACCESS_ADSERVICES_TOPICS"
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -68,7 +67,6 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-1380972808968213~2930057843",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
           "delayAppMeasurementInit": true,
           "userTrackingUsageDescription": "Kişiselleştirilmiş reklamları göstermek ve reklam ölçümü yapmak için kullanılabilir."
         }

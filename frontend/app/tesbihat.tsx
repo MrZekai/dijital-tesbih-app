@@ -3,10 +3,13 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
+
+import { Text } from "@/src/components/AppText";
 import Animated, {
   FadeIn,
   useAnimatedStyle,
@@ -18,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { TesbihRing } from "@/src/components/TesbihRing";
 import { useRespectfulInterstitial } from "@/src/ads/useRespectfulInterstitial";
+import { useTesbihSounds } from "@/src/lib/sounds";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
@@ -30,13 +34,53 @@ const STEPS = [
   { id: "allahuekber", name: "Allahu Ekber", arabic: "ٱللَّٰهُ أَكْبَرُ", target: 33 },
 ];
 
+/** UX-3: Yarim kalmis tesbihat en fazla bu sure kadar hatirlanir (12 saat). */
+const RESUME_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+
 export default function Tesbihat() {
-  const { theme, state, incrementDhikrById } = useStore();
+  const {
+    theme,
+    state,
+    incrementDhikrById,
+    setTesbihatProgress,
+    clearTesbihatProgress,
+  } = useStore();
   const insets = useSafeAreaInsets();
-  const [stepIdx, setStepIdx] = useState(0);
-  const [count, setCount] = useState(0);
+
+  // UX-3: Kaldigi yerden devam. Ilk render'da kalici ilerlemeyi okuyup
+  // baslangic degeri olarak kullaniriz (useState lazy initializer) —
+  // boylece ekran once 0'dan basip sonra ziplamaz.
+  const saved = state.tesbihatProgress;
+  const resumable =
+    !!saved &&
+    saved.stepIdx >= 0 &&
+    saved.stepIdx < STEPS.length &&
+    saved.count > 0 &&
+    saved.count < STEPS[saved.stepIdx].target &&
+    Date.now() - saved.updatedAt < RESUME_MAX_AGE_MS;
+
+  const [stepIdx, setStepIdx] = useState(() => (resumable ? saved!.stepIdx : 0));
+  const [count, setCount] = useState(() => (resumable ? saved!.count : 0));
   const [done, setDone] = useState(false);
+  // Devam edildigini kullaniciya bir kez bildirmek icin.
+  const [resumedNotice, setResumedNotice] = useState(resumable);
   const showInterstitial = useRespectfulInterstitial();
+
+  // Ses: hook kosulsuz cagrilir, calip calmayacagina icerde karar verilir.
+  const playSound = useTesbihSounds(state.settings.sound);
+
+  // DÜZELTME: "Ekranı Açık Tut" ayarı yalnızca Ana Sayfa'da işliyordu;
+  // 99'luk tesbihat sırasında ekran sönüyordu. Artık burada da geçerli.
+  const keepAwake = state.settings.keepAwake;
+  useEffect(() => {
+    const TAG = "zikirhane-tesbihat";
+    if (keepAwake) {
+      activateKeepAwakeAsync(TAG).catch(() => {});
+      return () => {
+        deactivateKeepAwake(TAG);
+      };
+    }
+  }, [keepAwake]);
 
   const scale = useSharedValue(1);
   const step = STEPS[stepIdx];
@@ -48,37 +92,96 @@ export default function Tesbihat() {
     else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  // BUG-010 duzeltmesi: onceden asama gecisinde 350ms'lik bir "engelleme
-  // penceresi" (setTimeout + transitioningRef) vardi; bu pencerede gelen
-  // dokunuslar SESSIZCE ATILIYORDU (hizli/surekli dokunusta kayip). Simdi
-  // asama gecisi AYNI state guncellemesi icinde, ANINDA ve senkron olarak
-  // yapiliyor — hicbir dokunus icin "olu zaman" yok, cift sayim da yok.
+  // ═══════════════════════════════════════════════════════════════════════
+  // QA NEW-001 — "Namaz modu, otomatik geçişten hemen sonraki dokunuşları
+  // YANLIŞ zikre yazıyor" (yarış koşulu / race condition)
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // KÖK NEDEN
+  // ─────────
+  // `onTap` içindeki `step` ve `count` değerleri RENDER CLOSURE'INDAN
+  // okunuyordu. React bir state güncellemesinden sonra yeniden render edip
+  // yeni bir closure üretene kadar geçen sürede (aynı kare içinde) gelen
+  // dokunuşlar ESKİ closure'ı çalıştırır. Sonuç:
+  //   - 33. dokunuşta Elhamdülillah'a geçilir,
+  //   - ama hemen ardından gelen 34. ve 35. dokunuşlar hâlâ eski closure'da
+  //     olduğu için `incrementDhikrById("subhanallah")` çağırır.
+  // QA'nin ölçümü: 35 hızlı dokunuş → Sübhanallah +35 / Elhamdülillah +0
+  // (beklenen +33 / +2). Toplamlar doğru, ama DAĞILIM bozuk → "En Sık
+  // Yapılan Zikirler" sıralaması sistematik olarak çarpılıyordu.
+  //
+  // ÇÖZÜM (QA'nin önerdiği yöntem)
+  // ──────────────────────────────
+  // Otoriter sayaç/aşama değerleri REF'lerde tutulur. Ref'ler dokunuş
+  // anında SENKRON güncellenir; React state'i yalnızca EKRANI ÇİZMEK için
+  // aynalanır. Böylece her dokunuş, o anki GERÇEK aşamayı ve sayacı okur —
+  // React'in render zamanlamasından tamamen bağımsız.
+  //
+  // NOT: Bu aynı zamanda `count + 1` closure okumasının yol açacağı SAYIM
+  // KAYBINI da engeller (aynı karede iki dokunuş gelirse ikisi de aynı
+  // `count` değerini okuyup tek artış üretirdi).
+  const stepIdxRef = useRef(resumable ? saved!.stepIdx : 0);
+  const countRef = useRef(resumable ? saved!.count : 0);
+  const doneRef = useRef(false);
+
   const onTap = () => {
-    if (done) return;
+    if (doneRef.current) return;
+
+    // ─── Commit anında GERÇEK durumu ref'ten oku (closure'dan DEĞİL) ───
+    const idx = stepIdxRef.current;
+    const activeStep = STEPS[idx];
+    const next = countRef.current + 1;
+    const reachedTarget = next >= activeStep.target;
+    const isLastStep = idx >= STEPS.length - 1;
+
     // BUG-002: canonical istatistik/gecmis mekanizmasina dokunusu isle.
-    incrementDhikrById(step.id);
+    // Artik DOGRU zikir id'sine yaziliyor.
+    incrementDhikrById(activeStep.id);
+
+    // ─── Ref'leri SENKRON ilerlet — bir sonraki dokunus guncel degeri gorur ───
+    if (reachedTarget && !isLastStep) {
+      stepIdxRef.current = idx + 1;
+      countRef.current = 0;
+    } else {
+      countRef.current = next;
+      if (reachedTarget && isLastStep) doneRef.current = true;
+    }
+
+    // ─── Ekrani guncelle ───
+    setStepIdx(stepIdxRef.current);
+    setCount(countRef.current);
+    if (doneRef.current) setDone(true);
+
     scale.value = withSequence(
       withTiming(0.94, { duration: 80 }),
       withTiming(1, { duration: 160 })
     );
-    setCount((prev) => {
-      const next = prev + 1;
-      if (next >= step.target) {
-        doHaptic(true);
-        if (stepIdx < STEPS.length - 1) {
-          // Sonraki asamaya ANINDA gec — dokunus kaybina yol acan bekleme
-          // penceresi yok. Gecis animasyonu (FadeIn) gorsel olarak devam
-          // eder, ancak sayimi ASLA bloklamaz.
-          setStepIdx((i) => Math.min(STEPS.length - 1, i + 1));
-          return 0;
-        } else {
-          setDone(true);
-        }
-      } else {
-        doHaptic(false);
-      }
-      return next;
-    });
+
+    doHaptic(reachedTarget);
+    // Ana Sayfa'da olan tesbih tanesi SESI burada hic calmiyordu — eklendi.
+    playSound(reachedTarget ? "target" : "tap");
+
+    // UX-3: ilerlemeyi kalici sakla (store zaten diske debounce'lu yazar).
+    if (doneRef.current) {
+      clearTesbihatProgress();
+    } else {
+      setTesbihatProgress({
+        stepIdx: stepIdxRef.current,
+        count: countRef.current,
+      });
+    }
+    if (resumedNotice) setResumedNotice(false);
+  };
+
+  /** Tesbihati bastan baslat (ref + state + kalici ilerleme birlikte). */
+  const restart = () => {
+    stepIdxRef.current = 0;
+    countRef.current = 0;
+    doneRef.current = false;
+    setStepIdx(0);
+    setCount(0);
+    setDone(false);
+    clearTesbihatProgress();
   };
 
   const anim = useAnimatedStyle(() => ({
@@ -119,11 +222,7 @@ export default function Tesbihat() {
           </Text>
           <View style={{ height: 40 }} />
           <Pressable
-            onPress={() => {
-              setDone(false);
-              setStepIdx(0);
-              setCount(0);
-            }}
+            onPress={restart}
             style={[styles.ctaGhost, { borderColor: theme.gold }]}
             testID="tesbihat-restart"
           >
@@ -195,6 +294,35 @@ export default function Tesbihat() {
           );
         })}
       </View>
+
+      {/* UX-3: Kaldigi yerden devam bildirimi + bastan baslama secenegi. */}
+      {resumedNotice ? (
+        <View style={styles.resumeRow}>
+          <View
+            style={[
+              styles.resumeChip,
+              { borderColor: theme.gold, backgroundColor: theme.emeraldDeep },
+            ]}
+          >
+            <Ionicons name="play-back-outline" size={14} color={theme.gold} />
+            <Text style={{ color: theme.gold, fontSize: 12 }}>
+              Kaldığınız yerden devam ediyorsunuz
+            </Text>
+            <Pressable onPress={restart} hitSlop={8} testID="tesbihat-restart-inline">
+              <Text
+                style={{
+                  color: theme.text,
+                  fontSize: 12,
+                  fontWeight: "700",
+                  textDecorationLine: "underline",
+                }}
+              >
+                Baştan başla
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
 
       {/* Counter */}
       <Pressable style={styles.tapArea} onPress={onTap} testID="tesbihat-tap">
@@ -272,6 +400,22 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     letterSpacing: 0.3,
+  },
+  resumeRow: {
+    alignItems: "center",
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  resumeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexWrap: "wrap",
+    justifyContent: "center",
   },
   stepsRow: {
     flexDirection: "row",

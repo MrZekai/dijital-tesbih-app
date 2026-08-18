@@ -6,8 +6,10 @@ import { LogBox } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { initialWindowMetrics, SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AppErrorBoundary } from "@/src/components/AppErrorBoundary";
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { AdsProvider } from "@/src/ads/AdsProvider";
+import { FontScaleProvider } from "@/src/lib/fontScale";
 import { StoreProvider, useStore } from "@/src/lib/store";
 
 LogBox.ignoreAllLogs(true);
@@ -27,6 +29,9 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
+    // QA BUG-001: reklam SDK'si dahil hicbir render hatasi uygulamayi
+    // komple dusuremesin — kok seviyede hata siniri.
+    <AppErrorBoundary tag="root">
     <GestureHandlerRootView style={{ flex: 1 }}>
       {/* BUG-013: `initialMetrics` olmadan SafeAreaProvider ilk render'da
           top/bottom inset'leri 0 olarak baslatabilir (native olcum
@@ -36,19 +41,24 @@ export default function RootLayout() {
           gecikmesini ortadan kaldirir. */}
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <StoreProvider>
-          <AdsProvider>
-            <ThemedStatusBar />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: "fade",
-                contentStyle: { backgroundColor: "#06090E" },
-              }}
-            />
-          </AdsProvider>
+          {/* Büyük Yazı Modu: tek sayısal context — sayaç artışlarında
+              gereksiz yeniden render üretmez (bkz. src/lib/fontScale.tsx). */}
+          <FontScaleProvider>
+            <AdsProvider>
+              <ThemedStatusBar />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: "fade",
+                  contentStyle: { backgroundColor: "#06090E" },
+                }}
+              />
+            </AdsProvider>
+          </FontScaleProvider>
         </StoreProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+    </AppErrorBoundary>
   );
 }
 

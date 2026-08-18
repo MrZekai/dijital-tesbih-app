@@ -4,13 +4,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import {
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
   View,
 } from "react-native";
+
+import { Text, TextInput } from "@/src/components/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { TARGET_PRESETS } from "@/src/lib/dhikrs";
@@ -187,6 +188,8 @@ export default function CustomDhikrScreen() {
             <Pressable
               onPress={() => {
                 const result = parsePositiveInteger(customTarget);
+                // QA BUG-014 tutarliligi: klavye burada da kapatilir.
+                Keyboard.dismiss();
                 if (result.valid && result.value) {
                   setTarget(result.value);
                   setCustomTarget("");

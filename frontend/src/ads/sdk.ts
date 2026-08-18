@@ -4,13 +4,26 @@
 
 import { adsEnabled } from "./adConfig";
 
+export interface ConsentInfo {
+  canRequestAds: boolean;
+  // UMP: AB/İngiltere kullanıcılarının onay tercihlerini SONRADAN
+  // değiştirebilmesi için "Gizlilik Seçenekleri" formu gerekiyor mu?
+  privacyOptionsRequirementStatus?: string;
+  status?: string;
+}
+
 type AdsConsentModule = {
-  gatherConsent: () => Promise<unknown>;
-  getConsentInfo: () => Promise<{ canRequestAds: boolean }>;
+  gatherConsent: () => Promise<ConsentInfo>;
+  getConsentInfo: () => Promise<ConsentInfo>;
+  // AdMob politikası: onay veren kullanıcı tercihini geri alabilmeli.
+  showPrivacyOptionsForm?: () => Promise<ConsentInfo>;
+  reset?: () => void;
+  PrivacyOptionsRequirementStatus?: Record<string, string>;
 };
 
 type MobileAdsModule = {
   initialize: () => Promise<unknown>;
+  setRequestConfiguration?: (config: object) => Promise<unknown>;
 };
 
 interface AdsSdk {
@@ -32,6 +45,7 @@ interface AdsSdk {
   AppOpenAd: unknown;
   // Ad olaylari (LOADED, ERROR, OPENED, CLOSED, CLICKED, PAID).
   AdEventType: Record<string, string>;
+  MaxAdContentRating?: Record<string, string>;
 }
 
 let cached: AdsSdk | null = null;
@@ -53,6 +67,7 @@ export function getAdsSdk(): AdsSdk | null {
       AppOpenAd: sdk.AppOpenAd,
       TestIds: sdk.TestIds,
       AdEventType: sdk.AdEventType,
+      MaxAdContentRating: sdk.MaxAdContentRating,
     };
     return cached;
   } catch (e) {

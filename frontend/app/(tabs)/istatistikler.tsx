@@ -1,11 +1,14 @@
 // İstatistikler — günlük, haftalık, aylık ve toplam.
 
 import React, { useState } from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+
+import { Text } from "@/src/components/AppText";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ConfirmSheet } from "@/src/components/ConfirmSheet";
-import { BottomBanner } from "@/src/ads/BottomBanner";
+import { StatusBarScrim } from "@/src/components/StatusBarScrim";
+import { useBottomChromeHeight } from "@/src/lib/layout";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
@@ -21,7 +24,7 @@ export default function Istatistikler() {
     topDhikrs,
     resetAllStats,
   } = useStore();
-  const insets = useSafeAreaInsets();
+  const bottomChrome = useBottomChromeHeight();
   const [confirmReset, setConfirmReset] = useState(false);
 
   const today = todayTotal();
@@ -35,10 +38,12 @@ export default function Istatistikler() {
 
   return (
     <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: theme.bg }]}>
+      <StatusBarScrim />
       <ScrollView
         contentContainerStyle={{
           paddingTop: spacing.lg,
-          paddingBottom: insets.bottom + 100,
+          // Sekme cubugu + SABIT reklam alani + guvenli alan.
+          paddingBottom: bottomChrome + spacing.lg,
           paddingHorizontal: spacing.xl,
           gap: spacing.lg,
         }}
@@ -186,30 +191,31 @@ export default function Istatistikler() {
             Tüm zikir sayaçları, günlük kayıtlar ve Esma sayaçları silinir. Bu işlem
             geri alınamaz.
           </Text>
-          <View
-            style={{ flexDirection: "row" }}
-          >
-            <View
-              style={{
+          {/* DÜZELTME: Buton daha önce `<Text onPress>` idi — dokunma alanı
+              yalnızca yazının kendisiydi ve basılı görsel geri bildirimi
+              yoktu. Artık tam bir Pressable. */}
+          <View style={{ flexDirection: "row" }}>
+            <Pressable
+              onPress={() => setConfirmReset(true)}
+              style={({ pressed }) => ({
                 borderRadius: radius.pill,
                 borderWidth: StyleSheet.hairlineWidth,
                 borderColor: theme.danger,
                 paddingHorizontal: spacing.lg,
                 paddingVertical: 10,
-              }}
+                opacity: pressed ? 0.6 : 1,
+              })}
+              testID="reset-all-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Tüm verileri sıfırla"
             >
-              <Text
-                onPress={() => setConfirmReset(true)}
-                style={{ color: theme.danger, fontSize: 13, fontWeight: "600" }}
-                testID="reset-all-btn"
-              >
+              <Text style={{ color: theme.danger, fontSize: 13, fontWeight: "600" }}>
                 Tümünü Sıfırla
               </Text>
-            </View>
+            </Pressable>
           </View>
         </View>
 
-        <BottomBanner />
       </ScrollView>
 
       <ConfirmSheet

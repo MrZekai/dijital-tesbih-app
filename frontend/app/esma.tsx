@@ -9,12 +9,15 @@ import {
   Modal,
   Pressable,
   StyleSheet,
-  Text,
-  TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
+
+import { Text, TextInput } from "@/src/components/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BANNER_SLOT_HEIGHT } from "@/src/ads/adConfig";
+import { BottomBanner } from "@/src/ads/BottomBanner";
 import { ConfirmSheet } from "@/src/components/ConfirmSheet";
 import { ESMA_LIST, type EsmaEntry } from "@/src/lib/esma";
 import { useStore } from "@/src/lib/store";
@@ -31,6 +34,7 @@ export default function EsmaScreen() {
     toggleEsmaFavorite,
   } = useStore();
   const insets = useSafeAreaInsets();
+  const { width: screenW } = useWindowDimensions();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [detail, setDetail] = useState<EsmaEntry | null>(null);
@@ -123,7 +127,8 @@ export default function EsmaScreen() {
         data={data}
         keyExtractor={(item) => String(item.no)}
         contentContainerStyle={{
-          paddingBottom: insets.bottom + spacing["2xl"],
+          // Alttaki SABIT reklam alaninin arkasinda icerik kalmasin.
+          paddingBottom: insets.bottom + BANNER_SLOT_HEIGHT + spacing["2xl"],
           paddingHorizontal: spacing.xl,
           paddingTop: spacing.md,
         }}
@@ -184,6 +189,19 @@ export default function EsmaScreen() {
           </Pressable>
         )}
       />
+
+      {/* SABIT REKLAM ALANI — liste kaydirilsa da ekranin altinda ayni
+          yerde ve her zaman gorunur kalir. Detay sayfasi (modal) acikken
+          gizlenir; modal ayri bir native pencere katmanidir ve reklam
+          yuzeyiyle ust uste binmemelidir. */}
+      {!detail ? (
+        <View
+          style={[styles.bannerAnchor, { bottom: insets.bottom }]}
+          testID="esma-banner-anchor"
+        >
+          <BottomBanner tag="esma" explicitWidth={Math.floor(screenW)} />
+        </View>
+      ) : null}
 
       {/* Detail modal — BUG-006 tutarliligi: Android Geri tusu artik
           onRequestClose ile modali kapatir, uygulamayi kapatmaz. */}
@@ -343,6 +361,12 @@ function FilterChip({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  bannerAnchor: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: BANNER_SLOT_HEIGHT,
+  },
   header: {
     paddingHorizontal: spacing.xl,
     paddingBottom: spacing.md,

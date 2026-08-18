@@ -21,7 +21,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { interstitialUnitId, INTERSTITIAL_COOLDOWN_MS } from "./adConfig";
+import {
+  interstitialEnabled,
+  interstitialUnitId,
+  INTERSTITIAL_COOLDOWN_MS,
+} from "./adConfig";
 import { useAds } from "./AdsProvider";
 import { getAdsSdk } from "./sdk";
 
@@ -35,8 +39,32 @@ type InterstitialHookReturn = {
 export function useRespectfulInterstitial(): (
   continueAction?: () => void
 ) => Promise<void> {
-  const { canRequestAds, adsEnabled } = useAds();
-  const sdk = getAdsSdk();
+  const { canRequestAds, adsEnabled: ctxAdsEnabled } = useAds();
+  // v1.0.17: AdMob panelinde bu uygulama için kullanılan bir GEÇİŞ REKLAMI
+  // birimi yok → özellik kapalı (bkz. adConfig.ts `interstitialEnabled`).
+  const adsEnabled = ctxAdsEnabled && interstitialEnabled;
+
+  // ═════════════════════════════════════════════════════════════════════
+  // QA BUG-001 (KRİTİK) — "_handleAdEvent içinde sonsuz React güncelleme
+  // döngüsü → uygulama çöküyor"
+  //
+  // Çökme, kütüphanenin `useInterstitialAd()` hook'unun İÇİNDEKİ
+  // `_handleAdEvent` reducer'ından kaynaklanıyordu. QA son turda çökmeyi
+  // yeniden üretemedi ama "kod yolu hâlâ ikili içinde, bir gösterim
+  // gerçekleşirse tekrar tetiklenebilir" diyerek imzalamayı reddetti —
+  // haklı bir itiraz.
+  //
+  // Bu sürümde geçiş reklamı zaten kapalı olduğu için `useInterstitialAd`
+  // ARTIK HİÇ ÇAĞRILMIYOR: `interstitialEnabled` modül seviyesinde sabit
+  // (`false`) olduğundan bu dal her render'da aynıdır — hook sırası
+  // bozulmaz. Sonuç: çöken kod yolu uygulamada HİÇ OLUŞMUYOR, sadece
+  // "gösterilmiyor" değil.
+  //
+  // Birim kimliği eklenip `interstitialEnabled = true` yapıldığında hook
+  // tekrar devreye girer; o durumda bu ekranın canlı reklam dolumuyla
+  // yeniden test edilmesi gerekir.
+  // ═════════════════════════════════════════════════════════════════════
+  const sdk = interstitialEnabled ? getAdsSdk() : null;
   const lastShown = useRef(0);
   const [attempts, setAttempts] = useState(0);
 
@@ -84,7 +112,6 @@ export function useRespectfulInterstitial(): (
     }
     // NOT: `interstitial` bilerek bagimlilik dizisinde degil (kararli
     // olmayan referans → sonsuz dongu riski). Sadece primitive degerler.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adsEnabled, canRequestAds, attempts]);
 
   // isLoaded/error degistiginde sadece log — state guncellemesi YOK, bu
@@ -102,6 +129,9 @@ export function useRespectfulInterstitial(): (
         interstitial.error ? String(interstitial.error) : "none"
       }`
     );
+    // Sadece primitive alanlar izlenir; `interstitial` objesi her render'da
+    // yeni referans dondurdugu icin bagimlilik dizisine ALINMAZ.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interstitial?.isLoaded, interstitial?.error]);
 
   return useCallback(

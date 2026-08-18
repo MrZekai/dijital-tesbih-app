@@ -74,7 +74,9 @@ export async function scheduleDailyReminder(
     await Notifications.scheduleNotificationAsync({
       identifier: REMINDER_ID,
       content: {
-        title: "Zikirhane",
+        // Uygulama adıyla tutarlı olmalı — eskiden eski proje kod adı
+        // ("Zikirhane") görünüyordu.
+        title: "Hedef Zikirmatik",
         body,
         sound: false,
       },

@@ -4,15 +4,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { usePathname } from "expo-router";
 import * as Application from "expo-application";
 import React, { useEffect, useState } from "react";
-import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Keyboard, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+
+import { Text, TextInput } from "@/src/components/AppText";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
   cancelDailyReminder,
   requestNotificationPermission,
   scheduleDailyReminder,
 } from "@/src/lib/notifications";
-import { BottomBanner } from "@/src/ads/BottomBanner";
+import { StatusBarScrim } from "@/src/components/StatusBarScrim";
+import { useBottomChromeHeight } from "@/src/lib/layout";
+import { useAds } from "@/src/ads/AdsProvider";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 import { parsePositiveInteger } from "@/src/lib/validation";
@@ -21,7 +25,8 @@ const GOAL_PRESETS = [33, 100, 300, 500, 1000];
 
 export default function Ayarlar() {
   const { theme, state, updateSettings } = useStore();
-  const insets = useSafeAreaInsets();
+  const { privacyOptionsRequired, showPrivacyOptions } = useAds();
+  const bottomChrome = useBottomChromeHeight();
   const s = state.settings;
   const [customGoal, setCustomGoal] = useState("");
   const [goalError, setGoalError] = useState<string | null>(null);
@@ -83,26 +88,42 @@ export default function Ayarlar() {
 
   // BUG-003: hem burada hem Özel Zikir Ekle'de AYNI paylaşılan doğrulama
   // mantığı (`parsePositiveInteger`) kullanılır.
+  //
+  // QA BUG-014: Rapor iki eksik bildirdi:
+  //   1) Gecersiz deger (0, -5) sessizce reddediliyor, HATA MESAJI YOK.
+  //      → `setGoalError` zaten ekleniyordu; mesaj metni daha acik hale
+  //        getirildi ve alan temizlenmiyor (kullanici ne yazdigini gorsun).
+  //   2) "Uygula"dan sonra sayisal KLAVYE ACIK KALIYOR ve alt gezinme
+  //      cubugunu kapatiyor. → Klavye her iki durumda da kapatilir.
   const onApplyCustomGoal = () => {
     const result = parsePositiveInteger(customGoal);
     if (!result.valid || !result.value) {
-      // BUG-014: geçersiz giriş artık sessizce yok sayılmıyor.
-      setGoalError(result.error || "Geçersiz değer.");
+      setGoalError(
+        result.error || "Hedef 1 veya daha büyük bir tam sayı olmalıdır."
+      );
       setGoalApplied(false);
+      Keyboard.dismiss();
       return;
     }
     updateSettings({ dailyGoal: result.value });
     setCustomGoal("");
     setGoalError(null);
     setGoalApplied(true);
+    Keyboard.dismiss();
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+    <SafeAreaView
+      edges={["top"]}
+      style={[styles.container, { backgroundColor: theme.bg }]}
+    >
+      {/* BUG-013: kaydirilan icerik durum cubugunun altina sizmasin. */}
+      <StatusBarScrim />
       <ScrollView
         contentContainerStyle={{
-          paddingTop: insets.top + spacing.lg,
-          paddingBottom: insets.bottom + 120,
+          paddingTop: spacing.lg,
+          // Sekme cubugu + SABIT reklam alani + guvenli alan.
+          paddingBottom: bottomChrome + spacing.lg,
           paddingHorizontal: spacing.xl,
           gap: spacing.lg,
         }}
@@ -135,9 +156,14 @@ export default function Ayarlar() {
               />
             }
           />
+          {/* Büyük Yazı Modu — v1.0.17'de gerçekten çalışır hale getirildi.
+              Artık uygulamadaki TÜM yazılar %22 büyür (bkz.
+              src/lib/fontScale.tsx + src/components/AppText.tsx). Kullanıcı
+              ne olduğunu anlasın diye açıklama ve canlı önizleme eklendi. */}
           <SettingRow
             icon="text-outline"
             label="Büyük Yazı Modu"
+            description="Uygulamadaki tüm yazıları daha büyük ve okunaklı gösterir."
             theme={theme}
             testID="setting-bigtext"
             right={
@@ -150,6 +176,25 @@ export default function Ayarlar() {
               />
             }
           />
+          <View
+            style={[
+              styles.previewBox,
+              { borderColor: theme.border, backgroundColor: theme.bgElevated },
+            ]}
+            testID="bigtext-preview"
+          >
+            <Text style={{ color: theme.textSubtle, fontSize: 11, letterSpacing: 1 }}>
+              ÖNİZLEME
+            </Text>
+            <Text style={{ color: theme.text, fontSize: 15, marginTop: 4 }}>
+              Sübhanallah · Elhamdülillah · Allahu Ekber
+            </Text>
+            <Text style={{ color: theme.textMuted, fontSize: 12, marginTop: 2 }}>
+              {s.bigText
+                ? "Büyük yazı açık — yazılar %22 daha büyük görünür."
+                : "Büyük yazı kapalı — standart boyut."}
+            </Text>
+          </View>
           <SettingRow
             icon="leaf-outline"
             label="Sade Kullanım Modu"
@@ -428,11 +473,40 @@ export default function Ayarlar() {
             </View>
             <Ionicons name="open-outline" size={18} color={theme.textSubtle} />
           </Pressable>
+
+          {/* AdMob / UMP politika gerekliliği: AB-EEA ve İngiltere'deki
+              kullanıcılar reklam onayı tercihlerini SONRADAN değiştirebilmeli.
+              Bu satır yalnızca UMP "gerekli" dediğinde görünür. */}
+          {privacyOptionsRequired ? (
+            <Pressable
+              onPress={() => {
+                showPrivacyOptions();
+              }}
+              style={styles.privacyRow}
+              testID="ad-privacy-options-row"
+              accessibilityRole="button"
+              accessibilityLabel="Reklam Gizlilik Seçenekleri"
+            >
+              <View
+                style={[styles.settingIcon, { backgroundColor: theme.emeraldDeep }]}
+              >
+                <Ionicons name="options-outline" size={18} color={theme.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: theme.text, fontSize: 15, fontWeight: "500" }}>
+                  Reklam Gizlilik Seçenekleri
+                </Text>
+                <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: 2 }}>
+                  Kişiselleştirilmiş reklam tercihinizi değiştirin.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={theme.textSubtle} />
+            </Pressable>
+          ) : null}
         </Section>
 
-        <BottomBanner />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -624,6 +698,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 4,
+  },
+  previewBox: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginTop: 2,
   },
   privacyRow: {
     flexDirection: "row",

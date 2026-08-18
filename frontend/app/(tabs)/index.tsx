@@ -2,20 +2,20 @@
 // Tüm ekran dokunulabilir. Sayaç tap ile artar. Uzun basma yok — tek dokunuş odaklı.
 
 import { Ionicons } from "@expo/vector-icons";
-import { BottomBanner } from "@/src/ads/BottomBanner";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Dimensions,
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
+  useWindowDimensions,
   View,
 } from "react-native";
+
+import { Text } from "@/src/components/AppText";
 import * as Haptics from "expo-haptics";
 import Animated, {
   useAnimatedStyle,
@@ -29,11 +29,10 @@ import { ConfirmSheet } from "@/src/components/ConfirmSheet";
 import { MultiTouchTapArea } from "@/src/components/MultiTouchTapArea";
 import { TesbihRing } from "@/src/components/TesbihRing";
 import { TARGET_PRESETS } from "@/src/lib/dhikrs";
+import { useBottomChromeHeight } from "@/src/lib/layout";
 import { useTesbihSounds } from "@/src/lib/sounds";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
-
-const { width: screenW } = Dimensions.get("window");
 
 // BUG-007: Büyük Yazı Modu'nda 4-5 haneli sayaçlar (örn. 1044) tesbih
 // halkasıyla çakışıyor ve satır kaydırabiliyordu. Basamak sayısına göre
@@ -60,9 +59,35 @@ export default function Home() {
     todayTotal,
 } = useStore();
   const insets = useSafeAreaInsets();
+  // Dimensions.get() modül yüklenirken BİR KEZ okunuyordu; katlanabilir /
+  // çoklu-pencere cihazlarda ekran genişliği değiştiğinde banner yanlış
+  // genişlikte kalıyordu. useWindowDimensions canlı değeri verir.
+  const { width: screenW } = useWindowDimensions();
+  // Sekme cubugu + SABIT reklam alani toplam yuksekligi.
+  const bottomChrome = useBottomChromeHeight();
   const [confirmReset, setConfirmReset] = useState(false);
   const [showTargets, setShowTargets] = useState(false);
   const [showDhikrPicker, setShowDhikrPicker] = useState(false);
+  // Kontrol katmaninin GERCEK yuksekligi (olculur). Sayac halkasinin alt
+  // bosslugu bundan hesaplanir; boylece Sade Mod'da / Buyuk Yazi Modu'nda /
+  // farkli ekran boylarinda halka ile dugmeler ASLA cakismaz.
+  const [controlsH, setControlsH] = useState(0);
+  // Kısa bilgi baloncuğu — bir kontrole basıldığında NE OLDUĞUNU söyler.
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 1900);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    []
+  );
 
   const bigText = state.settings.bigText;
   const simpleMode = state.settings.simpleMode;
@@ -96,6 +121,10 @@ export default function Home() {
     }
   };
 
+  // QA UX-1 (raporun "en yuksek degerli UX iyilestirmesi" dedigi madde):
+  // Hedefe ulasildiginda — uygulamadaki EN ANLAMLI an — hicbir mesaj,
+  // kutlama veya belirgin durum yoktu; sadece taneler altin oluyordu.
+  // Artik acik bir bildirim + gucli titresim + hedef sesi veriliyor.
   const doTap = () => {
     const { justReachedTarget } = increment();
     triggerHaptic(justReachedTarget ? "success" : "light");
@@ -109,6 +138,9 @@ export default function Home() {
         withTiming(1, { duration: 220 }),
         withTiming(0, { duration: 700 })
       );
+      showToast(
+        `Hedefe ulaştınız — ${activeDhikrState.target} ${activeDhikr.name}. Allah kabul etsin.`
+      );
     }
   };
 
@@ -121,7 +153,20 @@ export default function Home() {
   }));
 
   const size = Math.min(screenW - 40, 360);
-  const progress = Math.min(1, activeDhikrState.count / activeDhikrState.target);
+
+  // QA UX-2: Hedef asildiginda ekran "50 / 33" gibi anlamsiz bir oran
+  // gosteriyor ve halka hep dolu kaliyordu; kac TUR tamamlandigi hicbir
+  // yerde yazmiyordu. Artik:
+  //   - tamamlanan tur sayisi hesaplanir ve rozet olarak gosterilir,
+  //   - halka her yeni turda bastan doldugu icin ilerleme anlamli kalir.
+  const targetCount = Math.max(1, activeDhikrState.target);
+  const totalCount = activeDhikrState.count;
+  const completedLaps = Math.floor(totalCount / targetCount);
+  const countInLap = totalCount % targetCount;
+  // Tam kat basildiginda (orn. 33/33, 66/33) halka DOLU gorunmeli, 0 degil.
+  const progress =
+    totalCount > 0 && countInLap === 0 ? 1 : countInLap / targetCount;
+
   const counterDigits = String(activeDhikrState.count).length;
   const counterFontSize = getCounterFontSize(bigText, counterDigits);
   // BUG-009: Zikir Seç / Hedef Seç modalları açıkken reklam alanını gizle —
@@ -178,15 +223,32 @@ export default function Home() {
             {activeDhikr.arabic}
           </Text>
         ) : null}
-        <Pressable
-          onPress={() => setShowTargets(true)}
-          style={[styles.progressPill, { borderColor: theme.border }]}
-          testID="target-selector"
-        >
-          <Text style={[styles.progressText, { color: theme.text }]}>
-            {activeDhikrState.count} / {activeDhikrState.target}
-          </Text>
-        </Pressable>
+        <View style={styles.progressRow}>
+          <Pressable
+            onPress={() => setShowTargets(true)}
+            style={[styles.progressPill, { borderColor: theme.border }]}
+            testID="target-selector"
+          >
+            <Text style={[styles.progressText, { color: theme.text }]}>
+              {activeDhikrState.count} / {activeDhikrState.target}
+            </Text>
+          </Pressable>
+          {/* UX-2: tamamlanan tur sayisi */}
+          {completedLaps > 0 ? (
+            <View
+              style={[
+                styles.lapBadge,
+                { borderColor: theme.gold, backgroundColor: theme.emeraldDeep },
+              ]}
+              testID="lap-badge"
+            >
+              <Ionicons name="checkmark-circle" size={12} color={theme.gold} />
+              <Text style={[styles.lapText, { color: theme.gold }]}>
+                {completedLaps} tur
+              </Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       {/* Big touchable counter.
@@ -201,7 +263,15 @@ export default function Home() {
         testID="counter-tap-area"
         disabled={anyOverlayOpen}
       >
-        <View style={[styles.centerCol, { paddingBottom: 132 }]}>
+        {/* Alt bosluk = sekme cubugu + SABIT reklam alani + olculen
+            kontrol yuksekligi. Sayac halkasi hicbir cihazda dugmelerin
+            veya reklam alaninin altinda kalmaz. */}
+        <View
+          style={[
+            styles.centerCol,
+            { paddingBottom: bottomChrome + controlsH + spacing.md },
+          ]}
+        >
           <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
             <TesbihRing
               size={size}
@@ -244,11 +314,19 @@ export default function Home() {
         style={[
           styles.controls,
           {
-            bottom: 0,   // banner alaninin hemen ustu
+            // Kontroller SABIT reklam alaninin ve sekme cubugunun
+            // USTUNDE konumlanir. AdMob politikasi: tiklanabilir
+            // kontroller banner'a YAPISIK olmamali (yanlislikla reklam
+            // tiklamasi = gecersiz trafik) — bu yuzden ek guvenli bosluk.
+            bottom: bottomChrome + spacing.md,
             paddingHorizontal: spacing.xl,
             pointerEvents: "box-none",
           },
         ]}
+        onLayout={(e) => {
+          const h = Math.round(e.nativeEvent.layout.height);
+          if (h > 0 && h !== controlsH) setControlsH(h);
+        }}
       >
         <View style={styles.controlsRow}>
           <ControlPill
@@ -269,33 +347,92 @@ export default function Home() {
             testID="reset-button"
           />
         </View>
+        {/* Kısa bilgi baloncuğu — hangi kontrolün ne yaptığı anında görünür.
+            Alan HER ZAMAN ayrılır (opacity ile gösterilir/gizlenir) ki
+            baloncuk çıkıp kaybolurken düğmeler yukarı-aşağı zıplamasın. */}
+        <View
+          style={[styles.toastRow, { opacity: toast ? 1 : 0 }]}
+          pointerEvents="none"
+        >
+          <View
+            style={[
+              styles.toast,
+              { backgroundColor: theme.bgCard, borderColor: theme.gold },
+            ]}
+          >
+            <Text
+              style={{ color: theme.text, fontSize: 13 }}
+              testID="home-toast"
+              numberOfLines={1}
+            >
+              {toast ?? " "}
+            </Text>
+          </View>
+        </View>
+
+        {/* DÜZELTME: Bu dört düğmenin hiçbirinde etiket yoktu; özellikle
+            "güneş" (Ekranı Açık Tut) düğmesine basıldığında ekranda hiçbir
+            değişiklik görünmediği için kullanıcı düğmenin bozuk olduğunu
+            düşünüyordu. Artık her düğmenin altında adı yazıyor, basınca
+            titreşim + bilgi baloncuğu geliyor ve aktif durum altın renkli
+            dolgu ile net şekilde belli oluyor. */}
         {!simpleMode ? (
           <View style={styles.controlsRow}>
             <IconToggle
               icon={vibration ? "phone-portrait" : "phone-portrait-outline"}
+              label="Titreşim"
               active={vibration}
-              onPress={() => updateSettings({ vibration: !vibration })}
+              onPress={() => {
+                const nextVal = !vibration;
+                updateSettings({ vibration: nextVal });
+                // Titreşim AÇILIRKEN geri bildirim ver (kapatırken verme).
+                if (nextVal) {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }
+                showToast(nextVal ? "Titreşim açık" : "Titreşim kapalı");
+              }}
               theme={theme}
               testID="vibration-toggle"
             />
             <IconToggle
-              icon={state.settings.sound ? "volume-medium" : "volume-mute-outline"}
-              active={state.settings.sound}
-              onPress={() => updateSettings({ sound: !state.settings.sound })}
+              icon={soundOn ? "volume-medium" : "volume-mute-outline"}
+              label="Ses"
+              active={soundOn}
+              onPress={() => {
+                const nextVal = !soundOn;
+                updateSettings({ sound: nextVal });
+                triggerHaptic("light");
+                if (nextVal) playSound("tap");
+                showToast(nextVal ? "Tesbih sesi açık" : "Tesbih sesi kapalı");
+              }}
               theme={theme}
               testID="sound-toggle"
             />
             <IconToggle
               icon={keepAwake ? "sunny" : "sunny-outline"}
+              label="Ekran"
               active={keepAwake}
-              onPress={() => updateSettings({ keepAwake: !keepAwake })}
+              onPress={() => {
+                const nextVal = !keepAwake;
+                updateSettings({ keepAwake: nextVal });
+                triggerHaptic("light");
+                showToast(
+                  nextVal
+                    ? "Ekran açık kalacak (zikir sırasında sönmez)"
+                    : "Ekran normal süresinde sönecek"
+                );
+              }}
               theme={theme}
               testID="keepawake-toggle"
             />
             <IconToggle
               icon="apps-outline"
+              label="Tesbihat"
               active={false}
-              onPress={() => router.push("/tesbihat")}
+              onPress={() => {
+                triggerHaptic("light");
+                router.push("/tesbihat");
+              }}
               theme={theme}
               testID="tesbihat-shortcut"
             />
@@ -337,17 +474,10 @@ export default function Home() {
         onClose={() => setShowDhikrPicker(false)}
       />
       </View>
-    {/* Reklam alani: Home'da tab bar (absolute) icinden gectigi icin ayrica
-        yukselti veriyoruz; banner yuklenmese bile yer AYRILIR ve slot tab
-        bar'in USTUNDE gorunur. `explicitWidth` — ANCHORED_ADAPTIVE_BANNER
-        native olcumu sabit hale getirir (Home layout'unda parent-olcumu
-        guvensiz olabildigi icin). BUG-009: herhangi bir modal acikken
-        banner alanini gizliyoruz. */}
-    {!anyOverlayOpen ? (
-      <View style={[styles.adSlot, { marginBottom: 60 + insets.bottom }]}>
-        <BottomBanner tag="home" explicitWidth={Math.floor(screenW)} />
-      </View>
-    ) : null}
+    {/* NOT: Reklam alani artik BU EKRANDA DEGIL — sekme cubugunun hemen
+        ustunde, `app/(tabs)/_layout.tsx` icinde SABIT olarak duruyor.
+        Boylece dort sekmenin tamaminda ayni yerde ve her zaman gorunur;
+        arka plandaki sekmelerin gorunmeyen banner'lari da olusmuyor. */}
     </View>
   );
 }
@@ -382,35 +512,58 @@ function ControlPill({
 
 function IconToggle({
   icon,
+  label,
   active,
   onPress,
   theme,
   testID,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
+  /** Düğmenin altında görünen kısa Türkçe ad. */
+  label: string;
   active: boolean;
   onPress: () => void;
   theme: any;
   testID: string;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={[
-        styles.iconToggle,
-        {
-          borderColor: active ? theme.gold : theme.border,
-          backgroundColor: theme.bgCard + "cc",
-        },
-      ]}
-      testID={testID}
-    >
-      <Ionicons
-        name={icon}
-        size={18}
-        color={active ? theme.gold : theme.textSubtle}
-      />
-    </Pressable>
+    <View style={styles.iconToggleWrap}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.iconToggle,
+          {
+            borderColor: active ? theme.gold : theme.border,
+            // Aktif durum artık sadece ikon rengiyle değil, altın tonlu bir
+            // dolgu ve daha kalın kenarlıkla da belli oluyor.
+            borderWidth: active ? 1.5 : StyleSheet.hairlineWidth,
+            backgroundColor: active ? theme.emeraldDeep : theme.bgCard + "cc",
+            opacity: pressed ? 0.6 : 1,
+            transform: [{ scale: pressed ? 0.94 : 1 }],
+          },
+        ]}
+        testID={testID}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+        accessibilityLabel={label}
+        hitSlop={6}
+      >
+        <Ionicons
+          name={icon}
+          size={18}
+          color={active ? theme.gold : theme.textSubtle}
+        />
+      </Pressable>
+      <Text
+        style={[
+          styles.iconToggleLabel,
+          { color: active ? theme.gold : theme.textSubtle },
+        ]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }
 
@@ -595,12 +748,6 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     marginBottom: 2,
   },
-  adSlot: {
-    width: "100%",
-    minHeight: 62,
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
   header: {
     alignItems: "center",
     gap: spacing.sm,
@@ -621,6 +768,26 @@ const styles = StyleSheet.create({
   arabic: {
     fontSize: 16,
     letterSpacing: 0.5,
+  },
+  progressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  lapBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: 2,
+  },
+  lapText: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.3,
   },
   progressPill: {
     paddingHorizontal: spacing.md,
@@ -683,6 +850,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontWeight: "600",
   },
+  iconToggleWrap: {
+    alignItems: "center",
+    gap: 3,
+    minWidth: 56,
+  },
   iconToggle: {
     width: 44,
     height: 44,
@@ -690,6 +862,22 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: "center",
     justifyContent: "center",
+  },
+  iconToggleLabel: {
+    fontSize: 10,
+    letterSpacing: 0.2,
+    textAlign: "center",
+  },
+  toastRow: {
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  toast: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    maxWidth: "92%",
   },
   modalOverlay: {
     justifyContent: "flex-end",

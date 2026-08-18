@@ -1,7 +1,9 @@
 // Basit onaylı sıfırlama & benzeri kararlar için sade modal.
 
 import React from "react";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, StyleSheet, View } from "react-native";
+
+import { Text } from "@/src/components/AppText";
 
 import { spacing, radius } from "@/src/lib/theme";
 import type { ThemeTokens } from "@/src/lib/theme";

@@ -46,6 +46,17 @@ export interface Settings {
   onboardingDone: boolean;
 }
 
+/**
+ * QA UX-3: "Namaz Sonrası Tesbihat" ekranından çıkınca ilerleme tamamen
+ * kayboluyordu (kullanıcı 60. zikirde telefonu bıraksa baştan başlıyordu).
+ * İlerleme artık kalıcı olarak saklanır ve kaldığı yerden devam eder.
+ */
+export interface TesbihatProgress {
+  stepIdx: number;
+  count: number;
+  updatedAt: number;
+}
+
 export interface PersistedState {
   version: 1;
   activeDhikrId: string;
@@ -60,6 +71,8 @@ export interface PersistedState {
   esmaCounters: Record<number, number>;
   esmaFavorites: number[];
   settings: Settings;
+  /** Yarim kalmis Namaz Sonrasi Tesbihat ilerlemesi (yoksa null). */
+  tesbihatProgress: TesbihatProgress | null;
   lastActionAt: number | null;
 }
 
@@ -97,6 +110,7 @@ const defaultState = (): PersistedState => {
     esmaCounters: {},
     esmaFavorites: [],
     settings: defaultSettings,
+    tesbihatProgress: null,
     lastActionAt: null,
   };
 };
@@ -190,6 +204,9 @@ interface StoreValue {
   resetEsma: (no: number) => void;
   toggleEsmaFavorite: (no: number) => void;
   updateSettings: (patch: Partial<Settings>) => void;
+  // UX-3: yarim kalmis tesbihat ilerlemesi
+  setTesbihatProgress: (p: { stepIdx: number; count: number }) => void;
+  clearTesbihatProgress: () => void;
   finishOnboarding: () => void;
   resetAllStats: () => void;
   // stats helpers
@@ -249,6 +266,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             // Migration YALNIZCA alan henüz yokken çalışır; varsa aynen
             // korunur (Case D). Mevcut günlük/haftalık/aylık istatistikler
             // (dailyLog/totalCount) hiç değiştirilmez.
+            // UX-3 alani eski kayitlarda yok → null'a normalize et.
+            if (merged.tesbihatProgress === undefined) {
+              merged.tesbihatProgress = null;
+            }
             if (!merged.dhikrHistoryTotals) {
               const historyFromDaily: Record<string, number> = {};
               for (const entry of Object.values(merged.dailyLog || {})) {
@@ -549,6 +570,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const setTesbihatProgress: StoreValue["setTesbihatProgress"] = ({
+    stepIdx,
+    count,
+  }) => {
+    setStateSafe((prev) => ({
+      ...prev,
+      tesbihatProgress: { stepIdx, count, updatedAt: Date.now() },
+    }));
+  };
+
+  const clearTesbihatProgress: StoreValue["clearTesbihatProgress"] = () => {
+    setStateSafe((prev) =>
+      prev.tesbihatProgress === null
+        ? prev
+        : { ...prev, tesbihatProgress: null }
+    );
+  };
+
   const finishOnboarding: StoreValue["finishOnboarding"] = () => {
     setStateSafe((prev) => ({
       ...prev,
@@ -571,6 +610,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         // Bu, "Tüm Verileri Sıfırla" — bilerek TAM sifirlama, kumulatif
         // gecmis de dahil. (Sadece aktif zikir "Sıfırla" bunu ETKİLEMEZ.)
         dhikrHistoryTotals: {},
+        tesbihatProgress: null,
       };
     });
     undoStack.current = [];
@@ -638,6 +678,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     resetEsma,
     toggleEsmaFavorite,
     updateSettings,
+    setTesbihatProgress,
+    clearTesbihatProgress,
     finishOnboarding,
     resetAllStats,
     todayTotal,

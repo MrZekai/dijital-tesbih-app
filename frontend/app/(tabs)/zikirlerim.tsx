@@ -4,11 +4,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+
+import { Text } from "@/src/components/AppText";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ConfirmSheet } from "@/src/components/ConfirmSheet";
-import { BottomBanner } from "@/src/ads/BottomBanner";
+import { StatusBarScrim } from "@/src/components/StatusBarScrim";
+import { useBottomChromeHeight } from "@/src/lib/layout";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
@@ -20,7 +23,7 @@ export default function Zikirlerim() {
     setActiveDhikr,
     deleteCustomDhikr,
   } = useStore();
-  const insets = useSafeAreaInsets();
+  const bottomChrome = useBottomChromeHeight();
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const pickAndGo = (id: string) => {
@@ -32,10 +35,13 @@ export default function Zikirlerim() {
 
   return (
     <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: theme.bg }]}>
+      {/* BUG-013: kaydirilan icerik durum cubugunun altina sizmasin. */}
+      <StatusBarScrim />
       <ScrollView
         contentContainerStyle={{
           paddingTop: spacing.lg,
-          paddingBottom: insets.bottom + 100,
+          // Sekme cubugu + SABIT reklam alani + guvenli alan.
+          paddingBottom: bottomChrome + spacing.lg,
           paddingHorizontal: spacing.xl,
           gap: spacing.lg,
         }}
@@ -193,7 +199,6 @@ export default function Zikirlerim() {
           })}
         </View>
 
-        <BottomBanner />
       </ScrollView>
 
       {/* FAB */}
@@ -202,7 +207,8 @@ export default function Zikirlerim() {
         style={[
           styles.fab,
           {
-            bottom: insets.bottom + 78,
+            // FAB reklam alaninin USTUNDE dursun (yanlis tiklama riski yok).
+            bottom: bottomChrome + spacing.md,
             backgroundColor: theme.gold,
             shadowColor: theme.gold,
           },
