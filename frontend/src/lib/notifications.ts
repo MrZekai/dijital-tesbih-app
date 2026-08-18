@@ -76,7 +76,7 @@ export async function scheduleDailyReminder(
       content: {
         // Uygulama adıyla tutarlı olmalı — eskiden eski proje kod adı
         // ("Zikirhane") görünüyordu.
-        title: "Hedef Zikirmatik",
+        title: "Zikirmatik",
         body,
         sound: false,
       },
