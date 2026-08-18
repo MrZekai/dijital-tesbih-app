@@ -2,7 +2,7 @@
   "expo": {
     "name": "Zikirmatik",
     "slug": "frontend",
-    "version": "1.0.18",
+    "version": "1.0.19",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "frontend",
@@ -23,7 +23,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.zikirhane.tesbih",
-      "versionCode": 1021,
+      "versionCode": 1022,
       "allowBackup": false,
       "permissions": [
         "VIBRATE",
