@@ -6,65 +6,77 @@ import { LogBox } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { initialWindowMetrics, SafeAreaProvider } from "react-native-safe-area-context";
 
+import { AdsProvider } from "@/src/ads/AdsProvider";
+import { useAppOpenAd } from "@/src/ads/useAppOpenAd";
 import { AppErrorBoundary } from "@/src/components/AppErrorBoundary";
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
-import { AdsProvider } from "@/src/ads/AdsProvider";
 import { FontScaleProvider } from "@/src/lib/fontScale";
 import { StoreProvider, useStore } from "@/src/lib/store";
 
 LogBox.ignoreAllLogs(true);
 
-// PRESERVE: prewarm icon fonts before rendering to avoid vendor-path crash on Android
+// Native splash, fontlar + güvenli cold-start reklam fırsatı bitene kadar kalır.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useIconFonts();
 
   useEffect(() => {
-    if (loaded || error) {
-      SplashScreen.hideAsync();
-    }
+    if (!loaded && !error) return;
+    // Son emniyet: reklam/UMP katmanında beklenmedik bir JS hatası olsa bile
+    // native splash sonsuza kadar ekranda kalmasın. Normal akış 3 sn içinde
+    // RootNavigator tarafından kapatılır; bu yalnız yedek emniyettir.
+    const failSafe = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {});
+    }, 5000);
+    return () => clearTimeout(failSafe);
   }, [loaded, error]);
 
   if (!loaded && !error) return null;
 
   return (
-    // QA BUG-001: reklam SDK'si dahil hicbir render hatasi uygulamayi
-    // komple dusuremesin — kok seviyede hata siniri.
     <AppErrorBoundary tag="root">
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      {/* BUG-013: `initialMetrics` olmadan SafeAreaProvider ilk render'da
-          top/bottom inset'leri 0 olarak baslatabilir (native olcum
-          asenkron gelir) — bu, uygulama acilisinda kaydirilabilir
-          ekranlarda icerigin kisa bir sure status bar'in ALTINDAN
-          baslamasina yol aciyordu. `initialWindowMetrics` bu ilk olcum
-          gecikmesini ortadan kaldirir. */}
-      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <StoreProvider>
-          {/* Büyük Yazı Modu: tek sayısal context — sayaç artışlarında
-              gereksiz yeniden render üretmez (bkz. src/lib/fontScale.tsx). */}
-          <FontScaleProvider>
-            <AdsProvider>
-              <ThemedStatusBar />
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  animation: "fade",
-                  contentStyle: { backgroundColor: "#06090E" },
-                }}
-              />
-            </AdsProvider>
-          </FontScaleProvider>
-        </StoreProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+          <StoreProvider>
+            <FontScaleProvider>
+              <AdsProvider>
+                <RootNavigator />
+              </AdsProvider>
+            </FontScaleProvider>
+          </StoreProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     </AppErrorBoundary>
   );
 }
 
-// StatusBar simgeleri aktif temaya göre okunabilir kalsın:
-// - dark tema → light content (beyaz simgeler)
-// - light tema → dark content (siyah simgeler)
+function RootNavigator() {
+  // App Open artık yalnız burada, uygulamanın gerçek root/loading aşamasında
+  // yönetilir. Tabs içinde mount edilmez; ana içerik açıldıktan sonra geç
+  // yüklenen reklam cold-start gerekçesiyle gösterilemez.
+  const { coldStartSettled } = useAppOpenAd({ gateColdStart: true });
+
+  useEffect(() => {
+    if (coldStartSettled) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [coldStartSettled]);
+
+  return (
+    <>
+      <ThemedStatusBar />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: "fade",
+          contentStyle: { backgroundColor: "#06090E" },
+        }}
+      />
+    </>
+  );
+}
+
 function ThemedStatusBar() {
   const { theme } = useStore();
   return <StatusBar style={theme.name === "dark" ? "light" : "dark"} />;

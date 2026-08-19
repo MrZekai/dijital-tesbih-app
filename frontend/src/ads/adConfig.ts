@@ -1,6 +1,6 @@
 // AdMob konfigürasyonu — YALNIZCA GERÇEK (production) reklam kimlikleri.
 //
-// v1.0.17
+// v1.0.20
 // ─────────────────────────────────────────────────────────────────────────
 // ÖNEMLİ: Google'ın örnek/TEST reklam birimi kimlikleri bu kod tabanından
 // TAMAMEN KALDIRILDI. Hiçbir dosyada test birimi sabiti bulunmuyor.
@@ -95,17 +95,11 @@ export const INTERSTITIAL_COOLDOWN_MS = 10 * 60 * 1000;
 export const APP_OPEN_COOLDOWN_MS = 4 * 60 * 1000;
 
 /**
- * Soguk acilis reklami icin izin verilen azami sure.
- *
- * 8 sn'den 5 sn'ye CEKILDI: 8 saniye, kullanicinin uygulamayi acip
- * kullanmaya baslamasi icin fazlasiyla yeterli bir sureydi ve reklam
- * calisan ekranin uzerine binebiliyordu.
- *
- * Ayrica artik sure TEK BASINA yeterli degil — `src/ads/userActivity.ts`
- * kapisi da var: kullanici herhangi bir seye dokunduysa soguk acilis
- * reklami hic gosterilmez.
+ * Cold-start loading kapısının sert üst sınırı. Bu süre dolunca ana içerik
+ * açılır; sonradan yüklenen App Open reklamı cold-start için gösterilmez.
+ * Böylece kullanıcı ana zikirmatiğe başladıktan sonra reklam ekrana düşmez.
  */
-export const APP_OPEN_COLD_START_WINDOW_MS = 5 * 1000;
+export const APP_OPEN_COLD_START_MAX_WAIT_MS = 3 * 1000;
 
 /** Google: App Open reklamları önbellekte en fazla 4 saat geçerlidir. */
 export const APP_OPEN_MAX_CACHE_MS = 4 * 60 * 60 * 1000;

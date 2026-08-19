@@ -3,9 +3,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BANNER_SLOT_HEIGHT } from "@/src/ads/adConfig";
 import { BottomBanner } from "@/src/ads/BottomBanner";
-import { useAppOpenAd } from "@/src/ads/useAppOpenAd";
 import { useRespectfulInterstitial } from "@/src/ads/useRespectfulInterstitial";
-import { markUserInteracted } from "@/src/ads/userActivity";
 import { BlurView } from "expo-blur";
 import { Tabs, usePathname } from "expo-router";
 import React from "react";
@@ -45,21 +43,12 @@ export default function TabsLayout() {
 
   const showInterstitial = useRespectfulInterstitial();
 
-  // Uygulama one geldiginde acilis reklami (4 dk bekleme icinde).
-  useAppOpenAd();
-
   const bannerVisible = TAB_ROUTES.includes(pathname);
 
   return (
     <View style={styles.root}>
       <Tabs
-      screenListeners={{
-        tabPress: () => {
-          // Sekme degisimi de bir kullanici etkilesimidir.
-          markUserInteracted();
-          showInterstitial();
-        },
-      }}
+      screenListeners={{ tabPress: () => showInterstitial() }}
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,

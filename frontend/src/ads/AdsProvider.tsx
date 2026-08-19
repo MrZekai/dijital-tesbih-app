@@ -1,16 +1,14 @@
-// AdsProvider — UMP consent akışı + AdMob SDK initialize + canRequestAds context.
-// Expo Go / Web'de tamamen pasif (children'ı olduğu gibi render eder, sdk yok).
+// AdsProvider — Google UMP consent akışı + AdMob SDK initialize + reklam izni context'i.
+// Expo Go / Web'de pasiftir; gerçek native Android build'de çalışır.
 //
-// Politika:
-//  1) FAIL-CLOSED. Onay durumu güvenilir biçimde belirlenemiyorsa reklam
-//     İSTENMEZ. Karar daima UMP'nin `canRequestAds` alanından gelir.
-//  2) SDK bir kez initialize edilir; reklam isteği yalnızca izin varsa.
-//  3) Yeniden deneme SADECE ağ/form hatasında yapılır — kullanıcı onayı
-//     bilinçli reddettiyse tekrar tekrar form gösterilmez.
-//  4) AdMob politikası: onay veren kullanıcının tercihini değiştirebilmesi
-//     için "Gizlilik Seçenekleri" formu (Ayarlar ekranından açılır).
-//  5) Uygulama içeriği genel izleyiciye uygun olduğu için maksimum reklam
-//     içerik derecesi "G".
+// v1.0.20 Play Store hardening:
+//  1) UMP bilgisi okunamıyorsa artık otomatik reklam izni veren fallback YOK.
+//  2) gatherConsent hata verirse UMP'nin önceki oturumdaki `canRequestAds`
+//     durumu getConsentInfo() ile okunur; yalnızca doğrulanmış `true` ise SDK başlar.
+//  3) SDK initialize işlemi tekilleştirilmiştir; privacy-options sonrası ilk kez
+//     reklam izni oluşursa SDK aynı oturumda güvenle initialize edilir.
+//  4) `consentReady`, App Open reklamının consent formuyla üst üste binmesini
+//     önlemek için ilk UMP değerlendirmesinin tamamlandığını bildirir.
 
 import React, {
   createContext,
@@ -25,20 +23,25 @@ import React, {
 import { AppState } from "react-native";
 
 import { adsEnabled, adTestDeviceIds } from "./adConfig";
-import { getAdsSdk, type ConsentInfo } from "./sdk";
+import { getAdsSdk } from "./sdk";
+
+type AdsSdk = NonNullable<ReturnType<typeof getAdsSdk>>;
 
 interface AdsContextValue {
   canRequestAds: boolean;
   adsEnabled: boolean;
+  /** İlk UMP değerlendirmesi tamamlandı (başarılı veya güvenli hata sonucu). */
+  consentReady: boolean;
   /** UMP: kullanıcıya "Gizlilik Seçenekleri" girişi sunulmalı mı? */
   privacyOptionsRequired: boolean;
-  /** Ayarlar ekranından çağrılır — UMP onay formunu yeniden açar. */
+  /** Ayarlar ekranından çağrılır — UMP gizlilik tercihleri formunu açar. */
   showPrivacyOptions: () => Promise<void>;
 }
 
 const AdsContext = createContext<AdsContextValue>({
   canRequestAds: false,
   adsEnabled: false,
+  consentReady: false,
   privacyOptionsRequired: false,
   showPrivacyOptions: async () => {},
 });
@@ -49,117 +52,130 @@ export function useAds(): AdsContextValue {
 
 export function AdsProvider({ children }: PropsWithChildren) {
   const [canRequestAds, setCanRequestAds] = useState(false);
+  const [consentReady, setConsentReady] = useState(!adsEnabled);
   const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false);
+
   const running = useRef(false);
   const initialized = useRef(false);
+  const initializingPromise = useRef<Promise<boolean> | null>(null);
   const aliveRef = useRef(true);
-  // Yeniden deneme YALNIZCA ag/form hatasinda; kullanici reddettiyse hayir.
-  const retryOnForeground = useRef(false);
+  const canRequestAdsRef = useRef(false);
+
+  const setAdsAllowed = useCallback((allowed: boolean) => {
+    canRequestAdsRef.current = allowed;
+    if (aliveRef.current) setCanRequestAds(allowed);
+  }, []);
+
+  const updatePrivacyRequirement = useCallback((info: {
+    privacyOptionsRequirementStatus?: string;
+  }) => {
+    const req = info.privacyOptionsRequirementStatus;
+    if (aliveRef.current) {
+      setPrivacyOptionsRequired(req === "REQUIRED" || req === "required");
+    }
+  }, []);
+
+  const initializeMobileAds = useCallback(async (sdk: AdsSdk): Promise<boolean> => {
+    if (initialized.current) return true;
+    if (initializingPromise.current) return initializingPromise.current;
+
+    initializingPromise.current = (async () => {
+      try {
+        await sdk.mobileAds().setRequestConfiguration?.({
+          maxAdContentRating: sdk.MaxAdContentRating?.G ?? "G",
+          testDeviceIdentifiers: adTestDeviceIds,
+        });
+
+        if (adTestDeviceIds.length > 0) {
+          console.warn(
+            `[ads] TEST CİHAZI MODU AKTİF (${adTestDeviceIds.length} cihaz). ` +
+              "Release build'inde EXPO_PUBLIC_ADMOB_TEST_DEVICE_IDS boş olmalıdır."
+          );
+        }
+      } catch (e) {
+        // Request configuration hatası SDK initialize'i engellememeli.
+        console.warn("[ads] setRequestConfiguration failed", e);
+      }
+
+      try {
+        await sdk.mobileAds().initialize();
+        initialized.current = true;
+        console.log("[ads] mobileAds initialize OK");
+        return true;
+      } catch (e) {
+        console.warn("[ads] mobileAds initialize failed", e);
+        return false;
+      }
+    })();
+
+    try {
+      return await initializingPromise.current;
+    } finally {
+      initializingPromise.current = null;
+    }
+  }, []);
+
+  /**
+   * UMP'nin mevcut canRequestAds değerini okur. İlk kez okunamıyorsa reklamı
+   * açmaz; aynı oturumda daha önce doğrulanmış izin varsa geçici okuma hatası
+   * o doğrulanmış durumu keyfi biçimde değiştirmez.
+   */
+  const syncConsentAndSdk = useCallback(
+    async (sdk: AdsSdk): Promise<boolean> => {
+      try {
+        const info = await sdk.AdsConsent.getConsentInfo();
+        updatePrivacyRequirement(info);
+
+        if (!info.canRequestAds) {
+          setAdsAllowed(false);
+          return false;
+        }
+
+        const sdkReady = await initializeMobileAds(sdk);
+        setAdsAllowed(sdkReady);
+        return sdkReady;
+      } catch (e) {
+        console.warn("[ads] getConsentInfo failed; reklam izni varsayılmıyor", e);
+        // Kritik: UNKNOWN/error => true fallback yok.
+        // Bu oturumda daha önce doğrulanmış bir true varsa onu koruyoruz;
+        // ilk açılıştaki belirsizlikte false kalır.
+        if (!canRequestAdsRef.current) setAdsAllowed(false);
+        return canRequestAdsRef.current;
+      }
+    },
+    [initializeMobileAds, setAdsAllowed, updatePrivacyRequirement]
+  );
 
   const bootstrap = useCallback(async () => {
-    if (!adsEnabled) return;
+    if (!adsEnabled) {
+      if (aliveRef.current) setConsentReady(true);
+      return;
+    }
     if (running.current) return;
     running.current = true;
 
     try {
       const sdk = getAdsSdk();
-      if (!sdk) return;
+      if (!sdk) {
+        setAdsAllowed(false);
+        return;
+      }
 
-      // ═══════════════════════════════════════════════════════════════
-      // UMP ONAY AKISI — FAIL-CLOSED
-      //
-      // ONCEKI SURUMDEKI CIDDI HATA:
-      //   `getConsentInfo()` basarisiz oldugunda kod `allowed = true`
-      //   yapiyordu; yani onay durumu BILINMEDIGI halde reklam istemeye
-      //   izin veriliyordu. AB/Ingiltere'deki bir kullanici icin bu, onay
-      //   alinmadan reklam istemek anlamina gelebilirdi → GDPR ve
-      //   Google "EU user consent policy" ihlali riski.
-      //
-      // YENI DAVRANIS: onay durumu guvenilir bicimde belirlenemiyorsa
-      // reklam ISTENMEZ. "Herhalde uygundur" varsayimi yapilmaz.
-      //
-      // `gatherConsent()` = requestInfoUpdate + loadAndShowConsentFormIfRequired
-      // ve guncel bilgiyi dondurur. Form YALNIZCA durum REQUIRED iken
-      // gosterilir; kullanici bir kez yanitladiktan sonra tekrar acilmaz —
-      // yani kullanici her acilista onay ekranina bogulmaz.
-      // ═══════════════════════════════════════════════════════════════
-      let info: ConsentInfo | null = null;
-      let attemptFailed = false;
-
+      // Her app start/yeniden denemede UMP bilgisini güncelle ve gerekirse formu
+      // göster. Hata olursa UMP önceki oturumdaki geçerli durumu kullanabilir;
+      // bunun için aşağıda getConsentInfo() ile gerçek canRequestAds okunur.
       try {
-        info = await sdk.AdsConsent.gatherConsent();
+        await sdk.AdsConsent.gatherConsent();
       } catch (e) {
-        attemptFailed = true;
-        console.warn("[ads] UMP gatherConsent failed", e);
-        // Form/ag hatasi: SDK'nin CIHAZDA SAKLI onay durumunu okumayi dene.
-        // UMP karari yerel olarak onbellege alir; cevrimdisiyken de onceki
-        // gecerli onay okunabilir.
-        try {
-          info = await sdk.AdsConsent.getConsentInfo();
-        } catch (e2) {
-          console.warn("[ads] getConsentInfo also failed", e2);
-          info = null;
-        }
+        console.warn("[ads] UMP gatherConsent failed; önceki consent durumu kontrol edilecek", e);
       }
 
-      // Bilgi yoksa → reklam YOK. Bilincli fail-closed.
-      const allowed = !!info?.canRequestAds;
-      if (!allowed) {
-        console.log(
-          `[ads] canRequestAds=false (status=${
-            info?.status ?? "bilinmiyor"
-          }) — reklam istenmeyecek`
-        );
-      }
-
-      const req = info?.privacyOptionsRequirementStatus;
-      if (aliveRef.current) {
-        setPrivacyOptionsRequired(req === "REQUIRED" || req === "required");
-      }
-
-      // Sadece ag/form hatasinda tekrar dene.
-      retryOnForeground.current = attemptFailed;
-
-      if (!aliveRef.current) return;
-
-      // 3) SDK'yı yalnızca BİR KEZ initialize et.
-      if (!initialized.current) {
-        try {
-          await sdk.mobileAds().setRequestConfiguration?.({
-            // Uygulama tüm yaş grupları için uygun bir ibadet uygulamasıdır.
-            maxAdContentRating: sdk.MaxAdContentRating?.G ?? "G",
-            tagForChildDirectedTreatment: false,
-            tagForUnderAgeOfConsent: false,
-            // Test reklam BİRİMLERİ kaldırıldı; kendi cihazında güvenle test
-            // etmek isteyen geliştirici .env içine cihaz kimliğini yazar.
-            // Bu yöntem GERÇEK birimi kullanır, yalnızca bu cihaza test
-            // reklamı sunar (Google'ın önerdiği güvenli yol).
-            testDeviceIdentifiers: adTestDeviceIds,
-          });
-          if (adTestDeviceIds.length > 0) {
-            console.warn(
-              `[ads] TEST CİHAZI MODU AKTİF (${adTestDeviceIds.length} cihaz). ` +
-                "Yayın build'inde EXPO_PUBLIC_ADMOB_TEST_DEVICE_IDS boş olmalıdır."
-            );
-          }
-        } catch (e) {
-          console.warn("[ads] setRequestConfiguration failed", e);
-        }
-        try {
-          await sdk.mobileAds().initialize();
-          initialized.current = true;
-          console.log("[ads] mobileAds initialize OK");
-        } catch (e) {
-          console.warn("[ads] mobileAds initialize failed", e);
-          return;
-        }
-      }
-
-      if (aliveRef.current) setCanRequestAds(allowed);
+      await syncConsentAndSdk(sdk);
     } finally {
       running.current = false;
+      if (aliveRef.current) setConsentReady(true);
     }
-  }, []);
+  }, [setAdsAllowed, syncConsentAndSdk]);
 
   useEffect(() => {
     aliveRef.current = true;
@@ -169,41 +185,43 @@ export function AdsProvider({ children }: PropsWithChildren) {
     };
   }, [bootstrap]);
 
-  // Ilk acilista ag yoksa reklam bir daha hic yuklenmesin istemiyoruz:
-  // uygulama one geldiginde tekrar dene — AMA yalnizca onceki deneme
-  // HATA aldiysa. Kullanici onayi bilincli reddettiyse tekrar denemek
-  // kullaniciyi formla rahatsiz etmek olurdu (Google da bunu istemiyor).
+  // İlk açılışta ağ/UMP geçici olarak başarısızsa uygulama tekrar aktif
+  // olduğunda yeniden dene. UMP gerekli değilse veya kullanıcı karar verdiyse
+  // canRequestAds zaten true olacağından gereksiz form döngüsü oluşmaz.
   useEffect(() => {
     if (!adsEnabled) return;
     const sub = AppState.addEventListener("change", (next) => {
-      if (next === "active" && !canRequestAds && retryOnForeground.current) {
+      if (next === "active" && !canRequestAdsRef.current) {
         bootstrap();
       }
     });
     return () => sub.remove();
-  }, [bootstrap, canRequestAds]);
+  }, [bootstrap]);
 
   const showPrivacyOptions = useCallback(async () => {
     const sdk = getAdsSdk();
     if (!sdk?.AdsConsent?.showPrivacyOptionsForm) return;
+
     try {
       const info = await sdk.AdsConsent.showPrivacyOptionsForm();
-      if (info && typeof info.canRequestAds === "boolean") {
-        setCanRequestAds(info.canRequestAds);
-      }
+      if (info) updatePrivacyRequirement(info);
+      // Kullanıcı tercihini değiştirdiyse aynı oturumda yeni canRequestAds
+      // değerini oku ve gerekirse SDK'yı ilk kez initialize et.
+      await syncConsentAndSdk(sdk);
     } catch (e) {
       console.warn("[ads] showPrivacyOptionsForm failed", e);
     }
-  }, []);
+  }, [syncConsentAndSdk, updatePrivacyRequirement]);
 
   const value = useMemo<AdsContextValue>(
     () => ({
       canRequestAds,
       adsEnabled,
+      consentReady,
       privacyOptionsRequired,
       showPrivacyOptions,
     }),
-    [canRequestAds, privacyOptionsRequired, showPrivacyOptions]
+    [canRequestAds, consentReady, privacyOptionsRequired, showPrivacyOptions]
   );
 
   return <AdsContext.Provider value={value}>{children}</AdsContext.Provider>;
