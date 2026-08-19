@@ -30,6 +30,8 @@ import { Platform, Pressable, StyleProp, View, ViewStyle } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { runOnJS } from "react-native-reanimated";
 
+import { markUserInteracted } from "@/src/ads/userActivity";
+
 interface Props {
   /**
    * Her yeni fiziksel parmak dokunuşunda bir kez çağrılır. Aynı fiziksel
@@ -64,6 +66,9 @@ export function MultiTouchTapArea({
 
   // Stable JS callback — runOnJS() bunu worklet'ten çağıracak.
   const fireTapJS = React.useCallback(() => {
+    // Kullanici sayaca dokundu → soguk acilis reklami artik gosterilmesin
+    // (calisan ekranin uzerine binmesini ve kazara tiklamayi onler).
+    markUserInteracted();
     if (disabledRef.current) return;
     const cb = onTapRef.current;
     if (typeof cb === "function") cb();

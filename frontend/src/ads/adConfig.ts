@@ -95,12 +95,17 @@ export const INTERSTITIAL_COOLDOWN_MS = 10 * 60 * 1000;
 export const APP_OPEN_COOLDOWN_MS = 4 * 60 * 1000;
 
 /**
- * Soğuk açılışta reklamın yüklenmesi için tanınan süre. UMP onayı + SDK
- * init + reklam yüklemesi toplamı genelde 2-5 sn sürer; 8 sn hem reklamın
- * yetişmesine izin verir hem de kullanıcı uygulamayı kullanmaya başladıktan
- * çok sonra ekrana reklam düşmesini engeller.
+ * Soguk acilis reklami icin izin verilen azami sure.
+ *
+ * 8 sn'den 5 sn'ye CEKILDI: 8 saniye, kullanicinin uygulamayi acip
+ * kullanmaya baslamasi icin fazlasiyla yeterli bir sureydi ve reklam
+ * calisan ekranin uzerine binebiliyordu.
+ *
+ * Ayrica artik sure TEK BASINA yeterli degil — `src/ads/userActivity.ts`
+ * kapisi da var: kullanici herhangi bir seye dokunduysa soguk acilis
+ * reklami hic gosterilmez.
  */
-export const APP_OPEN_COLD_START_WINDOW_MS = 8 * 1000;
+export const APP_OPEN_COLD_START_WINDOW_MS = 5 * 1000;
 
 /** Google: App Open reklamları önbellekte en fazla 4 saat geçerlidir. */
 export const APP_OPEN_MAX_CACHE_MS = 4 * 60 * 60 * 1000;

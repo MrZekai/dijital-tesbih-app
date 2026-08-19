@@ -1,16 +1,16 @@
 // AdsProvider — UMP consent akışı + AdMob SDK initialize + canRequestAds context.
 // Expo Go / Web'de tamamen pasif (children'ı olduğu gibi render eder, sdk yok).
 //
-// v1.0.17 iyileştirmeleri:
-//  1) Onay akışı başarısız olsa bile (ağ yok, form kapatıldı) SDK yine de
-//     initialize edilir ve `canRequestAds` UMP'nin verdiği gerçek değere
-//     göre belirlenir. Eskiden `allowed=false` olduğunda `initialize()` hiç
-//     çağrılmıyordu ve uygulama ömrü boyunca REKLAM HİÇ GÖSTERİLMİYORDU.
-//  2) Ağ hatasında tek seferlik yeniden deneme (uygulama öne geldiğinde).
-//  3) AdMob politikası: onay veren kullanıcının tercihini değiştirebilmesi
+// Politika:
+//  1) FAIL-CLOSED. Onay durumu güvenilir biçimde belirlenemiyorsa reklam
+//     İSTENMEZ. Karar daima UMP'nin `canRequestAds` alanından gelir.
+//  2) SDK bir kez initialize edilir; reklam isteği yalnızca izin varsa.
+//  3) Yeniden deneme SADECE ağ/form hatasında yapılır — kullanıcı onayı
+//     bilinçli reddettiyse tekrar tekrar form gösterilmez.
+//  4) AdMob politikası: onay veren kullanıcının tercihini değiştirebilmesi
 //     için "Gizlilik Seçenekleri" formu (Ayarlar ekranından açılır).
-//  4) Uygulama içeriği dinî/genel izleyiciye uygun olduğu için maksimum
-//     reklam içerik derecesi "G" olarak ayarlanır.
+//  5) Uygulama içeriği genel izleyiciye uygun olduğu için maksimum reklam
+//     içerik derecesi "G".
 
 import React, {
   createContext,
@@ -25,7 +25,7 @@ import React, {
 import { AppState } from "react-native";
 
 import { adsEnabled, adTestDeviceIds } from "./adConfig";
-import { getAdsSdk } from "./sdk";
+import { getAdsSdk, type ConsentInfo } from "./sdk";
 
 interface AdsContextValue {
   canRequestAds: boolean;
@@ -53,6 +53,8 @@ export function AdsProvider({ children }: PropsWithChildren) {
   const running = useRef(false);
   const initialized = useRef(false);
   const aliveRef = useRef(true);
+  // Yeniden deneme YALNIZCA ag/form hatasinda; kullanici reddettiyse hayir.
+  const retryOnForeground = useRef(false);
 
   const bootstrap = useCallback(async () => {
     if (!adsEnabled) return;
@@ -63,28 +65,60 @@ export function AdsProvider({ children }: PropsWithChildren) {
       const sdk = getAdsSdk();
       if (!sdk) return;
 
-      // 1) UMP onayı topla. Hata olsa bile akışa devam ederiz.
+      // ═══════════════════════════════════════════════════════════════
+      // UMP ONAY AKISI — FAIL-CLOSED
+      //
+      // ONCEKI SURUMDEKI CIDDI HATA:
+      //   `getConsentInfo()` basarisiz oldugunda kod `allowed = true`
+      //   yapiyordu; yani onay durumu BILINMEDIGI halde reklam istemeye
+      //   izin veriliyordu. AB/Ingiltere'deki bir kullanici icin bu, onay
+      //   alinmadan reklam istemek anlamina gelebilirdi → GDPR ve
+      //   Google "EU user consent policy" ihlali riski.
+      //
+      // YENI DAVRANIS: onay durumu guvenilir bicimde belirlenemiyorsa
+      // reklam ISTENMEZ. "Herhalde uygundur" varsayimi yapilmaz.
+      //
+      // `gatherConsent()` = requestInfoUpdate + loadAndShowConsentFormIfRequired
+      // ve guncel bilgiyi dondurur. Form YALNIZCA durum REQUIRED iken
+      // gosterilir; kullanici bir kez yanitladiktan sonra tekrar acilmaz —
+      // yani kullanici her acilista onay ekranina bogulmaz.
+      // ═══════════════════════════════════════════════════════════════
+      let info: ConsentInfo | null = null;
+      let attemptFailed = false;
+
       try {
-        await sdk.AdsConsent.gatherConsent();
+        info = await sdk.AdsConsent.gatherConsent();
       } catch (e) {
+        attemptFailed = true;
         console.warn("[ads] UMP gatherConsent failed", e);
+        // Form/ag hatasi: SDK'nin CIHAZDA SAKLI onay durumunu okumayi dene.
+        // UMP karari yerel olarak onbellege alir; cevrimdisiyken de onceki
+        // gecerli onay okunabilir.
+        try {
+          info = await sdk.AdsConsent.getConsentInfo();
+        } catch (e2) {
+          console.warn("[ads] getConsentInfo also failed", e2);
+          info = null;
+        }
       }
 
-      // 2) Gerçek onay durumunu oku.
-      let allowed = false;
-      try {
-        const info = await sdk.AdsConsent.getConsentInfo();
-        allowed = !!info.canRequestAds;
-        const req = info.privacyOptionsRequirementStatus;
-        if (aliveRef.current) {
-          setPrivacyOptionsRequired(req === "REQUIRED" || req === "required");
-        }
-      } catch (e) {
-        // Onay bilgisi okunamadıysa (ör. ağ yok): AB dışında UMP zaten
-        // sessizce geçer, bu yüzden reklam istemeyi engellemiyoruz.
-        console.warn("[ads] getConsentInfo failed", e);
-        allowed = true;
+      // Bilgi yoksa → reklam YOK. Bilincli fail-closed.
+      const allowed = !!info?.canRequestAds;
+      if (!allowed) {
+        console.log(
+          `[ads] canRequestAds=false (status=${
+            info?.status ?? "bilinmiyor"
+          }) — reklam istenmeyecek`
+        );
       }
+
+      const req = info?.privacyOptionsRequirementStatus;
+      if (aliveRef.current) {
+        setPrivacyOptionsRequired(req === "REQUIRED" || req === "required");
+      }
+
+      // Sadece ag/form hatasinda tekrar dene.
+      retryOnForeground.current = attemptFailed;
 
       if (!aliveRef.current) return;
 
@@ -135,12 +169,14 @@ export function AdsProvider({ children }: PropsWithChildren) {
     };
   }, [bootstrap]);
 
-  // Ağ ilk açılışta yoksa reklam bir daha hiç yüklenmesin istemiyoruz:
-  // uygulama öne geldiğinde ve hâlâ izin alınamadıysa tekrar dene.
+  // Ilk acilista ag yoksa reklam bir daha hic yuklenmesin istemiyoruz:
+  // uygulama one geldiginde tekrar dene — AMA yalnizca onceki deneme
+  // HATA aldiysa. Kullanici onayi bilincli reddettiyse tekrar denemek
+  // kullaniciyi formla rahatsiz etmek olurdu (Google da bunu istemiyor).
   useEffect(() => {
     if (!adsEnabled) return;
     const sub = AppState.addEventListener("change", (next) => {
-      if (next === "active" && !canRequestAds) {
+      if (next === "active" && !canRequestAds && retryOnForeground.current) {
         bootstrap();
       }
     });

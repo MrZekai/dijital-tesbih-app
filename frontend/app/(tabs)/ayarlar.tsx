@@ -438,12 +438,25 @@ export default function Ayarlar() {
             </Text>
           </View>
           <View style={styles.rowInfo}>
-            <Text style={{ color: theme.textMuted }}>Veri Saklama</Text>
+            <Text style={{ color: theme.textMuted }}>Zikir Verileri</Text>
             <Text style={{ color: theme.text }}>Yalnızca Cihaz</Text>
           </View>
+          {/* DUZELTME (Play Data Safety tutarliligi):
+              Eski metin "hicbir sunucuya gonderilmez" diyordu. Uygulamada
+              Google AdMob SDK'si bulundugu icin bu ifade artik DOGRU DEGIL
+              ve Play Console'daki Veri Guvenligi beyaniyla celisirdi
+              (yaniltici beyan = politika ihlali riski).
+              Yeni metin kapsami net ayiriyor: kullanicinin kendi zikir
+              verileri cihazda kalir; reklam SDK'sinin veri isledigi ise
+              acikca belirtiliyor. */}
           <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: spacing.sm }}>
-            Zikir kayıtlarınız yalnızca bu cihazda saklanır ve hiçbir sunucuya
-            gönderilmez.
+            Zikir kayıtlarınız, hedefleriniz ve istatistikleriniz yalnızca bu
+            cihazda saklanır; tarafımızca hiçbir sunucuya gönderilmez.
+          </Text>
+          <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: 6 }}>
+            Uygulamadaki reklamlar Google AdMob tarafından sunulur. AdMob,
+            reklam gösterimi ve ölçümü için reklam kimliği gibi bazı cihaz ve
+            kullanım verilerini kendi politikaları kapsamında işleyebilir.
           </Text>
           {/* Gizlilik Politikası — Play Console gereklilikleriyle uyumlu,
               tarayıcıda açılan resmi politika linki. */}

@@ -37,6 +37,7 @@ import {
 } from "./adConfig";
 import { useAds } from "./AdsProvider";
 import { getAdsSdk } from "./sdk";
+import { hasUserInteracted } from "./userActivity";
 
 type AdInstance = {
   load: () => void;
@@ -138,12 +139,29 @@ export function useAppOpenAd() {
         loadedAtRef.current = Date.now();
         console.log(`[ads:app-open] LOADED unitId=${appOpenUnitId}`);
 
-        // SOĞUK AÇILIŞ: uygulama yeni açıldıysa ve pencere içindeysek
-        // reklamı hemen göster.
+        // ── SOGUK ACILIS KAPISI ──────────────────────────────────────
+        // Reklam ancak SU UC KOSULUN HEPSI saglanirsa gosterilir:
+        //   1) Bu oturumda soguk acilis reklami henuz gosterilmedi,
+        //   2) Acilistan bu yana kisa pencere (bkz. adConfig) asilmadi,
+        //   3) KULLANICI HENUZ HICBIR SEYE DOKUNMADI.
+        //
+        // (3) kritik: kullanici zikir cekmeye baslamissa reklam ekrani
+        // kaplamamali. Hem kotu deneyim hem de kazara tiklama (gecersiz
+        // trafik) riski. Dokunma olduysa bu oturumun soguk acilis
+        // reklami IPTAL edilir; arka plandan donus reklami etkilenmez.
         const sinceColdStart = Date.now() - coldStartAtRef.current;
-        if (
+        const withinWindow = sinceColdStart <= APP_OPEN_COLD_START_WINDOW_MS;
+        const untouched = !hasUserInteracted();
+
+        if (!coldStartUsedRef.current && (!withinWindow || !untouched)) {
+          // Pencere kacti ya da kullanici zaten kullanmaya basladi →
+          // bu oturum icin soguk acilis reklamini kalici olarak kapat.
+          coldStartUsedRef.current = true;
+          console.log(
+            `[ads:app-open] soguk acilis atlandi (pencere=${withinWindow}, dokunulmamis=${untouched})`
+          );
+        } else if (
           !coldStartUsedRef.current &&
-          sinceColdStart <= APP_OPEN_COLD_START_WINDOW_MS &&
           AppState.currentState === "active"
         ) {
           coldStartUsedRef.current = true;

@@ -5,6 +5,7 @@ import { BANNER_SLOT_HEIGHT } from "@/src/ads/adConfig";
 import { BottomBanner } from "@/src/ads/BottomBanner";
 import { useAppOpenAd } from "@/src/ads/useAppOpenAd";
 import { useRespectfulInterstitial } from "@/src/ads/useRespectfulInterstitial";
+import { markUserInteracted } from "@/src/ads/userActivity";
 import { BlurView } from "expo-blur";
 import { Tabs, usePathname } from "expo-router";
 import React from "react";
@@ -52,7 +53,13 @@ export default function TabsLayout() {
   return (
     <View style={styles.root}>
       <Tabs
-      screenListeners={{ tabPress: () => showInterstitial() }}
+      screenListeners={{
+        tabPress: () => {
+          // Sekme degisimi de bir kullanici etkilesimidir.
+          markUserInteracted();
+          showInterstitial();
+        },
+      }}
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
