@@ -18,11 +18,16 @@ function ok(label, condition) {
   }
 }
 
-console.log("\n== v1.0.20 Play Store hardening ==");
+console.log("\n== Play Store hardening baseline (v1.0.20+) ==");
 
 const app = JSON.parse(read("app.json"));
-ok("versionName 1.0.20", app.expo.version === "1.0.20");
-ok("versionCode 1024 (> Play Alpha 1023)", app.expo.android.versionCode === 1024);
+const versionParts = app.expo.version.split(".").map(Number);
+const atLeast1020 =
+  versionParts[0] > 1 ||
+  (versionParts[0] === 1 && versionParts[1] > 0) ||
+  (versionParts[0] === 1 && versionParts[1] === 0 && versionParts[2] >= 20);
+ok("versionName en az 1.0.20", atLeast1020);
+ok("versionCode en az 1024", app.expo.android.versionCode >= 1024);
 ok(
   "mağaza uygulama adı korunuyor",
   app.expo.name === "Zikirmatik: Dijital Tesbih"
@@ -77,7 +82,8 @@ ok(
 const appOpen = read("src/ads/useAppOpenAd.ts");
 ok(
   "geç yüklenen cold-start reklamı gate kapanınca gösterilmiyor",
-  appOpen.includes("!coldStartSettledRef.current")
+  appOpen.includes("coldStartSettledRef.current") &&
+    appOpen.includes("cold-start fırsatı geçti")
 );
 ok(
   "cold-start sert timeout var",
@@ -112,4 +118,4 @@ if (failures > 0) {
   console.log(`${failures} TEST BAŞARISIZ`);
   process.exit(1);
 }
-console.log("v1.0.20 PLAY STORE HARDENING TESTLERİ GEÇTİ");
+console.log("PLAY STORE HARDENING BASELINE TESTLERİ GEÇTİ");

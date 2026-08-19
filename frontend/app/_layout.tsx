@@ -52,9 +52,9 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  // App Open artık yalnız burada, uygulamanın gerçek root/loading aşamasında
-  // yönetilir. Tabs içinde mount edilmez; ana içerik açıldıktan sonra geç
-  // yüklenen reklam cold-start gerekçesiyle gösterilemez.
+  // App Open yalnız burada, gerçek root/loading aşamasında yönetilir.
+  // v1.0.21: aynı process/session içindeki background -> foreground dönüşlerinde
+  // App Open yoktur; yalnız cold-start splash fırsatı kullanılabilir.
   const { coldStartSettled } = useAppOpenAd({ gateColdStart: true });
 
   useEffect(() => {

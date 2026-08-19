@@ -8,8 +8,8 @@
 //      tek dokunuş TEK aşama ilerletir, 3x33 = 99 dokunuşta tamamlanır.
 //   2) Büyük Yazı Modu ölçekleme — fontSize/lineHeight doğru büyüyor,
 //      kapalıyken stil hiç değişmiyor.
-//   3) App Open bekleme (cooldown) politikası — soğuk açılışta bekleme
-//      uygulanmaz, sonraki gösterimlerde 4 dk uygulanır.
+//   3) Not: Eski App Open cooldown testi v1.0.21 ile kaldırıldı. Güncel
+//      cold-start-only politika `v1021ColdStartOnlyAppOpen.test.js` içindedir.
 
 "use strict";
 
@@ -128,22 +128,10 @@ console.log("\n== Büyük Yazı Modu ==");
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// 3) APP OPEN BEKLEME POLİTİKASI
-// src/ads/useAppOpenAd.ts içindeki foreground kontrolüyle aynı mantık.
+// 3) APP OPEN — v1.0.21 ile supersede edildi
+// Foreground cooldown davranışı artık ürün kodunda yoktur. Güncel regresyon
+// testi: tests/v1021ColdStartOnlyAppOpen.test.js
 // ─────────────────────────────────────────────────────────────────────────
-const APP_OPEN_COOLDOWN_MS = 4 * 60 * 1000;
-
-function mayShow(lastShown, now) {
-  if (lastShown === 0) return true; // hiç gösterilmedi → soğuk açılış
-  return now - lastShown >= APP_OPEN_COOLDOWN_MS;
-}
-
-console.log("\n== App Open bekleme süresi ==");
-{
-  assertEq("soğuk açılışta gösterilir", mayShow(0, 1000), true);
-  assertEq("1 dk sonra gösterilmez", mayShow(1_000_000, 1_060_000), false);
-  assertEq("4 dk sonra gösterilir", mayShow(1_000_000, 1_240_000), true);
-}
 
 // ─────────────────────────────────────────────────────────────────────────
 // 4) UX-2 — TUR (LAP) TAKIBI

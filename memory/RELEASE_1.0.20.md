@@ -1,3 +1,5 @@
+> **TARİHSEL KAYIT:** Bu sürüm v1.0.21 tarafından supersede edilmiştir. Güncel App Open politikası için `RELEASE_1.0.21.md` dosyasını esas alın.
+
 # Zikirmatik: Dijital Tesbih v1.0.20 — Play Store Hardening
 
 **versionName:** 1.0.20

@@ -91,8 +91,8 @@ export const interstitialUnitId = "";
 export const INTERSTITIAL_COOLDOWN_MS = 10 * 60 * 1000;
 
 // ── App Open zamanlama politikası ───────────────────────────────────────
-/** Açılış reklamı çok sık çıkmasın: iki gösterim arasında en az 4 dakika. */
-export const APP_OPEN_COOLDOWN_MS = 4 * 60 * 1000;
+// v1.0.21: App Open yalnız cold-start loading ekranında tek fırsat olarak
+// kullanılır. Background -> foreground reklamı ve session içi preload yoktur.
 
 /**
  * Cold-start loading kapısının sert üst sınırı. Bu süre dolunca ana içerik
@@ -101,8 +101,6 @@ export const APP_OPEN_COOLDOWN_MS = 4 * 60 * 1000;
  */
 export const APP_OPEN_COLD_START_MAX_WAIT_MS = 3 * 1000;
 
-/** Google: App Open reklamları önbellekte en fazla 4 saat geçerlidir. */
-export const APP_OPEN_MAX_CACHE_MS = 4 * 60 * 60 * 1000;
 
 // ── Banner yerleşimi ────────────────────────────────────────────────────
 /**

@@ -1,19 +1,21 @@
 // useAppOpenAd — App Open reklam yöneticisi.
 //
-// v1.0.20 Play Store / UX düzeltmesi:
-// - Cold-start reklamı yalnız native splash/loading aşamasında gösterilebilir.
-// - Ana içerik açıldıktan sonra geç yüklenen reklam cold-start gerekçesiyle
-//   ASLA ekrana bindirilmez; yalnız sonraki gerçek foreground fırsatı için tutulur.
-// - UMP formu bitmeden cold-start reklamı yüklenmez/gösterilmez.
-// - Splash bekleme süresi sınırlıdır; reklam/consent ağı uygulamayı kilitlemez.
+// v1.0.21 kullanıcı deneyimi sertleştirmesi:
+// - App Open YALNIZCA gerçek cold-start sırasında, native splash/loading
+//   kapısı açıkken gösterilebilir.
+// - Uygulama background -> foreground olduğunda App Open ASLA gösterilmez.
+// - Cold-start reklamı kapandıktan sonra yeni App Open preload edilmez.
+// - UMP formu bitmeden reklam yüklenmez/gösterilmez.
+// - Splash bekleme süresi sınırlıdır; ağ/consent/reklam hatası açılışı kilitlemez.
+//
+// Bu politika bilinçlidir: banner reklamlar uygulama içinde çalışmaya devam eder,
+// fakat uygulamaya geri dönüşte sorunlu/şaşırtıcı tam ekran reklam gösterilmez.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState } from "react-native";
 
 import {
   APP_OPEN_COLD_START_MAX_WAIT_MS,
-  APP_OPEN_COOLDOWN_MS,
-  APP_OPEN_MAX_CACHE_MS,
   adsEnabled,
   appOpenUnitId,
 } from "./adConfig";
@@ -49,21 +51,12 @@ export function useAppOpenAd(
 
   const adRef = useRef<AdInstance | null>(null);
   const cleanupsRef = useRef<(() => void)[]>([]);
-  const loadedAtRef = useRef(0);
   const isLoadingRef = useRef(false);
   const isShowingRef = useRef(false);
-  const lastShownRef = useRef(0);
-  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
-  const loadRef = useRef<() => void>(() => {});
 
-  const settleColdStart = useCallback((reason: string, applyCooldown = false) => {
+  const settleColdStart = useCallback((reason: string) => {
     if (coldStartSettledRef.current) return;
     coldStartSettledRef.current = true;
-    if (applyCooldown && lastShownRef.current === 0) {
-      // Ana içerik açıldıktan hemen sonra ilk background→foreground dönüşünde
-      // geç yüklenmiş reklamın patlamasını önler.
-      lastShownRef.current = Date.now();
-    }
     console.log(`[ads:app-open] cold-start tamamlandı (${reason})`);
     setColdStartSettled(true);
   }, []);
@@ -87,56 +80,49 @@ export function useAppOpenAd(
       // ignore
     }
     adRef.current = null;
-    loadedAtRef.current = 0;
     isLoadingRef.current = false;
   }, [clearListeners]);
 
-  const isAdUsable = useCallback(() => {
+  const showColdStartAd = useCallback(() => {
     const ad = adRef.current;
-    if (!ad?.loaded) return false;
-    if (Date.now() - loadedAtRef.current > APP_OPEN_MAX_CACHE_MS) return false;
+    if (
+      !ad?.loaded ||
+      isShowingRef.current ||
+      coldStartSettledRef.current ||
+      AppState.currentState !== "active"
+    ) {
+      return false;
+    }
+
+    isShowingRef.current = true;
+    coldStartShowingRef.current = true;
+    console.log("[ads:app-open] showing (cold-start/loading)");
+
+    ad.show().catch((e) => {
+      isShowingRef.current = false;
+      coldStartShowingRef.current = false;
+      console.warn("[ads:app-open] show failed", e);
+      discardAd();
+      settleColdStart("show hatası");
+    });
     return true;
-  }, []);
+  }, [discardAd, settleColdStart]);
 
-  const show = useCallback(
-    (reason: string, isColdStart = false) => {
-      const ad = adRef.current;
-      if (!ad || isShowingRef.current || !isAdUsable()) return false;
-
-      isShowingRef.current = true;
-      coldStartShowingRef.current = isColdStart;
-      lastShownRef.current = Date.now();
-      console.log(`[ads:app-open] showing (${reason})`);
-
-      ad.show().catch((e) => {
-        isShowingRef.current = false;
-        console.warn("[ads:app-open] show failed", e);
-        if (coldStartShowingRef.current) {
-          coldStartShowingRef.current = false;
-          settleColdStart("show hatası", true);
-        }
-      });
-      return true;
-    },
-    [isAdUsable, settleColdStart]
-  );
-
-  const load = useCallback(() => {
+  const loadColdStartAd = useCallback(() => {
+    // Cold-start kapısı bir kez kapandıktan sonra bu process/session içinde
+    // App Open reklamı tekrar yüklenmez. Background -> foreground dönüşlerinde
+    // bu fonksiyonun yeniden reklam hazırlaması özellikle engellenir.
+    if (coldStartSettledRef.current) return;
     if (!adsEnabled || !canRequestAds) return;
-    if (isLoadingRef.current || isShowingRef.current) return;
-
-    // Hazır ama bayat reklamı çöpe at; taze ise yeni istek yapma.
-    if (adRef.current?.loaded && !isAdUsable()) discardAd();
-    if (isAdUsable()) return;
+    if (isLoadingRef.current || isShowingRef.current || adRef.current) return;
 
     const sdk = getAdsSdk();
     if (!sdk?.AppOpenAd || !sdk?.AdEventType) {
       console.warn("[ads:app-open] SDK export bulunamadı");
-      settleColdStart("SDK yok", true);
+      settleColdStart("SDK yok");
       return;
     }
 
-    discardAd();
     isLoadingRef.current = true;
 
     try {
@@ -151,18 +137,22 @@ export function useAppOpenAd(
 
       const offLoaded = ad.addAdEventListener(AdEventType.LOADED, () => {
         isLoadingRef.current = false;
-        loadedAtRef.current = Date.now();
         console.log(`[ads:app-open] LOADED unitId=${appOpenUnitId}`);
 
-        // KRİTİK: yalnız splash/loading kapısı hâlâ açıksa cold-start göster.
+        // Timeout/splash kapısı kapanmışsa veya kullanıcı yükleme sırasında
+        // uygulamadan çıkmışsa reklamı daha sonra foreground'da göstermeyiz.
         if (
-          gateColdStart &&
-          !coldStartSettledRef.current &&
-          AppState.currentState === "active"
+          coldStartSettledRef.current ||
+          AppState.currentState !== "active"
         ) {
-          if (!show("soğuk açılış/loading", true)) {
-            settleColdStart("cold-start gösterilemedi", true);
-          }
+          discardAd();
+          settleColdStart("cold-start fırsatı geçti");
+          return;
+        }
+
+        if (!showColdStartAd()) {
+          discardAd();
+          settleColdStart("cold-start gösterilemedi");
         }
       });
 
@@ -174,9 +164,8 @@ export function useAppOpenAd(
             e?.message ?? String(err)
           }" unitId=${appOpenUnitId}`
         );
-        if (!coldStartSettledRef.current) {
-          settleColdStart("yükleme hatası", true);
-        }
+        discardAd();
+        settleColdStart("yükleme hatası");
       });
 
       const offOpened = ad.addAdEventListener(AdEventType.OPENED, () => {
@@ -190,11 +179,10 @@ export function useAppOpenAd(
         isShowingRef.current = false;
         console.log("[ads:app-open] CLOSED");
 
+        // KRİTİK v1.0.21: reklam kapanınca yalnız temizle. Yeni reklam
+        // preload ETME; aynı session'daki foreground dönüşlerinde App Open yok.
         discardAd();
         if (wasColdStart) settleColdStart("reklam kapandı");
-
-        // Bir sonraki gerçek foreground fırsatı için sessizce preload et.
-        setTimeout(() => loadRef.current(), 0);
       });
 
       cleanupsRef.current = [offLoaded, offError, offOpened, offClosed];
@@ -203,23 +191,13 @@ export function useAppOpenAd(
     } catch (e) {
       isLoadingRef.current = false;
       console.warn("[ads:app-open] load setup threw", e);
-      if (!coldStartSettledRef.current) settleColdStart("yükleme kurulamadı", true);
+      discardAd();
+      settleColdStart("yükleme kurulamadı");
     }
-  }, [
-    canRequestAds,
-    discardAd,
-    gateColdStart,
-    isAdUsable,
-    settleColdStart,
-    show,
-  ]);
-
-  useEffect(() => {
-    loadRef.current = load;
-  }, [load]);
+  }, [canRequestAds, discardAd, settleColdStart, showColdStartAd]);
 
   // Consent değerlendirmesi tamamlanınca reklam hakkı yoksa splash'i reklam
-  // için bekletmenin anlamı yok. Varsa yüklemeyi başlat.
+  // için bekletmenin anlamı yok. Varsa yalnız cold-start reklamını yükle.
   useEffect(() => {
     if (!adsEnabled) {
       settleColdStart("reklamlar kapalı");
@@ -230,38 +208,24 @@ export function useAppOpenAd(
       settleColdStart("UMP reklam isteğine izin vermiyor");
       return;
     }
-    load();
-  }, [canRequestAds, consentReady, load, settleColdStart]);
+    loadColdStartAd();
+  }, [canRequestAds, consentReady, loadColdStartAd, settleColdStart]);
 
   // Cold-start için sert üst sınır. İnternet/UMP/AdMob hiçbir koşulda
-  // uygulamanın açılmasını süresiz bloke edemez. Süre dolunca ana içerik
-  // açılır ve sonradan gelen LOADED olayı cold-start reklamı göstermez.
+  // uygulamanın açılmasını süresiz bloke edemez. Süre dolunca reklam isteği
+  // temizlenir; sonradan gelen bir reklam foreground dönüşünde gösterilemez.
   useEffect(() => {
     if (!gateColdStart || coldStartSettledRef.current) return;
     const timer = setTimeout(() => {
       if (isShowingRef.current && coldStartShowingRef.current) return;
-      settleColdStart("bekleme süresi doldu", true);
+      discardAd();
+      settleColdStart("bekleme süresi doldu");
     }, APP_OPEN_COLD_START_MAX_WAIT_MS);
     return () => clearTimeout(timer);
-  }, [gateColdStart, settleColdStart]);
+  }, [discardAd, gateColdStart, settleColdStart]);
 
-  // Gerçek background → foreground dönüşü. Cold-start splash kapısı bitmeden
-  // bu yol reklam göstermeye çalışmaz; consent form/reklam olaylarıyla yarışmaz.
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", (next) => {
-      const cameToForeground =
-        !!appStateRef.current.match(/inactive|background/) && next === "active";
-      appStateRef.current = next;
-      if (!cameToForeground || !coldStartSettledRef.current) return;
-      if (isShowingRef.current || !canRequestAds) return;
-
-      const sinceLast = Date.now() - lastShownRef.current;
-      if (lastShownRef.current > 0 && sinceLast < APP_OPEN_COOLDOWN_MS) return;
-
-      if (!show("öne geldi")) loadRef.current();
-    });
-    return () => sub.remove();
-  }, [canRequestAds, show]);
+  // Bilinçli olarak AppState background -> foreground listener YOKTUR.
+  // App Open yalnız bu hook'un ilk cold-start yaşam döngüsünde çalışır.
 
   useEffect(() => {
     return () => discardAd();
