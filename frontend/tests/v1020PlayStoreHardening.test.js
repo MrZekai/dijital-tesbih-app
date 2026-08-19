@@ -64,7 +64,7 @@ const rootLayout = read("app/_layout.tsx");
 const tabsLayout = read("app/(tabs)/_layout.tsx");
 ok(
   "App Open root loading/splash seviyesinde",
-  rootLayout.includes('useAppOpenAd({ gateColdStart: true })')
+  rootLayout.includes('useAppOpenAd({') && rootLayout.includes('gateColdStart: true')
 );
 ok(
   "App Open tabs layout'tan kaldırıldı",

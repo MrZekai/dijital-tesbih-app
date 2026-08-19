@@ -63,7 +63,7 @@ export function BottomBanner({
   tag,
 }: Props) {
   const { theme } = useStore();
-  const { canRequestAds, adsEnabled } = useAds();
+  const { canRequestAds, adsEnabled, fullScreenAdActive } = useAds();
   const sdk = getAdsSdk();
 
   const slotStyle = [
@@ -87,7 +87,11 @@ export function BottomBanner({
     </View>
   );
 
-  if (!adsEnabled || !canRequestAds || !sdk || !sdk.BannerAd) {
+  // App Open gibi tam ekran bir reklam gösterilirken banner native view'ını
+  // tamamen unmount et. Google App Open rehberi, App Open reklamının başka
+  // bir reklamın (ör. banner) üstünde gösterilmemesini önerir. Alanın kendisi
+  // korunur; yalnız BannerAd kaldırılır.
+  if (fullScreenAdActive || !adsEnabled || !canRequestAds || !sdk || !sdk.BannerAd) {
     return placeholder;
   }
 

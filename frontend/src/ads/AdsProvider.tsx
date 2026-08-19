@@ -36,6 +36,9 @@ interface AdsContextValue {
   privacyOptionsRequired: boolean;
   /** Ayarlar ekranından çağrılır — UMP gizlilik tercihleri formunu açar. */
   showPrivacyOptions: () => Promise<void>;
+  /** Tam ekran reklam görünürken banner gibi diğer reklam yüzeylerini gizle. */
+  fullScreenAdActive: boolean;
+  setFullScreenAdActive: (active: boolean) => void;
 }
 
 const AdsContext = createContext<AdsContextValue>({
@@ -44,6 +47,8 @@ const AdsContext = createContext<AdsContextValue>({
   consentReady: false,
   privacyOptionsRequired: false,
   showPrivacyOptions: async () => {},
+  fullScreenAdActive: false,
+  setFullScreenAdActive: () => {},
 });
 
 export function useAds(): AdsContextValue {
@@ -54,6 +59,7 @@ export function AdsProvider({ children }: PropsWithChildren) {
   const [canRequestAds, setCanRequestAds] = useState(false);
   const [consentReady, setConsentReady] = useState(!adsEnabled);
   const [privacyOptionsRequired, setPrivacyOptionsRequired] = useState(false);
+  const [fullScreenAdActive, setFullScreenAdActiveState] = useState(false);
 
   const running = useRef(false);
   const initialized = useRef(false);
@@ -64,6 +70,10 @@ export function AdsProvider({ children }: PropsWithChildren) {
   const setAdsAllowed = useCallback((allowed: boolean) => {
     canRequestAdsRef.current = allowed;
     if (aliveRef.current) setCanRequestAds(allowed);
+  }, []);
+
+  const setFullScreenAdActive = useCallback((active: boolean) => {
+    if (aliveRef.current) setFullScreenAdActiveState(active);
   }, []);
 
   const updatePrivacyRequirement = useCallback((info: {
@@ -220,8 +230,17 @@ export function AdsProvider({ children }: PropsWithChildren) {
       consentReady,
       privacyOptionsRequired,
       showPrivacyOptions,
+      fullScreenAdActive,
+      setFullScreenAdActive,
     }),
-    [canRequestAds, consentReady, privacyOptionsRequired, showPrivacyOptions]
+    [
+      canRequestAds,
+      consentReady,
+      privacyOptionsRequired,
+      showPrivacyOptions,
+      fullScreenAdActive,
+      setFullScreenAdActive,
+    ]
   );
 
   return <AdsContext.Provider value={value}>{children}</AdsContext.Provider>;

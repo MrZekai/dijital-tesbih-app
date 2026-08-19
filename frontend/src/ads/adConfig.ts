@@ -91,16 +91,22 @@ export const interstitialUnitId = "";
 export const INTERSTITIAL_COOLDOWN_MS = 10 * 60 * 1000;
 
 // ── App Open zamanlama politikası ───────────────────────────────────────
-// v1.0.21: App Open yalnız cold-start loading ekranında tek fırsat olarak
-// kullanılır. Background -> foreground reklamı ve session içi preload yoktur.
+// Google App Open formatı hem açılışta hem uygulamaya geri dönüşte kullanılabilir.
+// Buradaki değerler Google'ın zorunlu sayıları değil; Zikirmatik için bilinçli,
+// kullanıcı-dostu yerel güvenlik sınırlarıdır. AdMob panelinde ayrıca server-side
+// frequency cap uygulanmalıdır.
 
-/**
- * Cold-start loading kapısının sert üst sınırı. Bu süre dolunca ana içerik
- * açılır; sonradan yüklenen App Open reklamı cold-start için gösterilmez.
- * Böylece kullanıcı ana zikirmatiğe başladıktan sonra reklam ekrana düşmez.
- */
+/** Cold-start loading kapısının sert üst sınırı. */
 export const APP_OPEN_COLD_START_MAX_WAIT_MS = 3 * 1000;
 
+/** Tam ekran App Open gösterimleri arasında yerel minimum süre: 15 dakika. */
+export const APP_OPEN_MIN_INTERVAL_MS = 15 * 60 * 1000;
+
+/** Kısa uygulama geçişlerinde reklam gösterme; en az 60 sn uzakta kalınmalı. */
+export const APP_OPEN_RESUME_MIN_BACKGROUND_MS = 60 * 1000;
+
+/** Google App Open cache yaşam süresi üst sınırı: 4 saat. */
+export const APP_OPEN_MAX_CACHE_MS = 4 * 60 * 60 * 1000;
 
 // ── Banner yerleşimi ────────────────────────────────────────────────────
 /**

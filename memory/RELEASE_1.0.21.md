@@ -1,34 +1,37 @@
-# Zikirmatik: Dijital Tesbih v1.0.21 — Cold-Start Only App Open
+# RELEASE 1.0.21 — Policy-aligned AdMob App Open
 
-**versionName:** 1.0.21  
-**source versionCode:** 1027  
-**Önceki Play kapalı test artifact'i:** 1.0.20 (1025)
+## Amaç
 
-## Neden bu sürüm var?
+v1.0.20 gerçek cihaz testinde background -> foreground dönüşündeki App Open
+creative'inin kapatma deneyimi tutarsız gözlendi. v1.0.21 reklam sistemini Google
+AdMob'un App Open yerleşim mantığına göre yeniden sınırlar; reklamı tamamen tek
+seferlik hale getirmez.
 
-Gerçek cihaz testinde cold-start App Open reklamı normal kapanırken, uygulama
-background'a alınıp tekrar foreground'a getirildiğinde gösterilen ikinci App
-Open reklamında bazı creative'lerde kapatma / "uygulamaya dön" arayüzünün
-beklendiği gibi görünmediği gözlendi. Kullanıcı deneyimi ve release güvenliği
-önceliklendirildi.
+## Final reklam modeli
 
-## Yeni App Open politikası
+1. App Open yalnız root seviyesinde yönetilir.
+2. Cold start reklamı yalnız splash/loading kapısı açıkken gösterilebilir.
+3. Uygulamaya geri dönüşte App Open ancak kullanıcı en az 60 saniye uzakta
+   kaldıysa değerlendirilir.
+4. Tam ekran App Open gösterimleri arasında kod seviyesinde en az 15 dakika
+   bulunur; son gösterim zamanı AsyncStorage ile processler arasında korunur.
+5. Resume anında reklam önceden hazır değilse sonradan kullanıcının üzerine
+   düşmez; yalnız sonraki fırsat için preload edilir.
+6. Resume reklamından önce root loading gate açılır; banner/içerik üzerine
+   sürpriz tam ekran bindirme yapılmaz.
+7. App Open cache ömrü 4 saat ile sınırlıdır.
+8. Banner sekmelerde tek görünür slot olarak korunur ve AdMob panelindeki
+   automatic refresh ayarına göre oturum boyunca yenilenebilir.
+9. Interstitial gerçek production unit ID bulunmadığı ve utility akışında
+   doğal geçiş noktaları sınırlı olduğu için kapalı kalır.
+10. UMP fail-closed ve mevcut Play Store manifest/privacy hardening korunur.
 
-1. App Open yalnız gerçek process cold-start sırasında native splash/loading
-   kapısı açıkken yüklenebilir ve gösterilebilir.
-2. Ana içerik açıldıktan sonra App Open gösterilmez.
-3. Background -> foreground dönüşlerinde App Open gösterilmez.
-4. Cold-start reklamı kapandıktan sonra yeni App Open preload edilmez.
-5. Cold-start yükleme fırsatı 3 saniye içinde sonuçlanmazsa uygulama açılır;
-   geç gelen reklam çöpe atılır.
-6. Banner reklamlar sekme ekranlarında oturum boyunca çalışmaya devam eder; bu nedenle reklam geliri App Open ile tek gösterime düşmez. AdMob banner automatic refresh ayarı açıksa banner yeni reklam istekleri üretmeye devam eder.
-7. Interstitial reklam için gerçek bir AdMob interstitial unit ID bulunmadığından özellik kapalı kalır; sahte/test ID ile production davranışı oluşturulmaz.
-8. UMP / consent güvenlik akışı v1.0.20 hardening'i aynen korunur.
+## AdMob panelinde zorunlu operasyon ayarları
 
-## Emergent build kuralı
+- High-engagement ads: OFF (App Open kapatma seçeneği gecikmesini azaltmak için)
+- App Open ad unit frequency cap: 3 impression / 1 hour (önerilen konservatif
+  operasyon ayarı; Google tarafından zorunlu sabit sayı değildir)
+- Banner automatic refresh: Google optimized
 
-GitHub `main` kaynak otoritesidir. Emergent eski workspace/memory kullanmamalı;
-`frontend/app.json` içindeki **1.0.21 / 1027** tabanını esas almalıdır. Emergent
-Publish native artifact versionCode'unu artırırsa bu kabul edilebilir; final AAB
-mutlaka **1025'ten büyük** olmalı ve eski release ile aynı upload key ile
-imzalanmalıdır.
+Bu AdMob panel ayarları kaynak koddan değiştirilemez; yayın öncesi hesapta ayrıca
+kontrol edilmelidir.
