@@ -1,7 +1,12 @@
-// Zikirhane tema tokenları — koyu (varsayılan) ve açık tema.
+// Zikirhane tema tokenları — koyu (varsayılan), açık ve SİSTEM teması.
 // Renkler: koyu zümrüt yeşili + lacivert + siyah + yumuşak altın vurgular.
+//
+// v1.1.0: `system` seçeneği eklendi. Kalıcı veride `settings.theme` hâlâ
+// "dark" | "light" değerlerini alabilir (eski kayıtlar), artık "system" de
+// geçerlidir. Çözümleme `resolveThemeName()` ile yapılır.
 
 export type ThemeName = "dark" | "light";
+export type ThemePreference = ThemeName | "system";
 
 export interface ThemeTokens {
   name: ThemeName;
@@ -54,20 +59,33 @@ export const lightTheme: ThemeTokens = {
   bgCard: "#FFFFFF",
   surface: "#E8E2D2",
   border: "#D9CFB2",
-  borderStrong: "#8C7A46",
+  // Açık temada altın metin kontrastı düşüktü; kenarlık/vurgu için daha
+  // koyu bir ton kullanılır (WCAG AA hedefi).
+  borderStrong: "#7A6733",
   divider: "#E0D8BF",
   text: "#0D2B1D",
   textMuted: "#3B4A3F",
-  textSubtle: "#6A6355",
-  gold: "#8C7A46",
-  goldSoft: "#C6A664",
+  textSubtle: "#5A5346",
+  gold: "#7A6733",
+  goldSoft: "#B08F45",
   emerald: "#0D2B1D",
   emeraldDeep: "#083020",
   navy: "#1C2A48",
   danger: "#8B3A3A",
-  success: "#3F7A57",
+  success: "#2F6244",
   overlay: "rgba(244,241,230,0.75)",
 };
+
+/** Kullanıcı tercihini ve cihaz şemasını birleştirip somut temayı verir. */
+export function resolveThemeName(
+  preference: ThemePreference | undefined,
+  systemScheme: "light" | "dark" | null | undefined
+): ThemeName {
+  if (preference === "light") return "light";
+  if (preference === "dark") return "dark";
+  // "system" veya bilinmeyen/eksik değer
+  return systemScheme === "light" ? "light" : "dark";
+}
 
 export const getTheme = (name: ThemeName): ThemeTokens =>
   name === "light" ? lightTheme : darkTheme;

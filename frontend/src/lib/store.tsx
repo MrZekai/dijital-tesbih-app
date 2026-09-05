@@ -1,5 +1,14 @@
 // Zikirhane global store — React Context + AsyncStorage persistence.
 // Tüm veriler cihaz içinde saklanır (offline).
+//
+// v1.1.0 değişiklikleri:
+//  - Şema ve migration `./migration.ts` içine taşındı (test edilebilir,
+//    saf fonksiyonlar). Kalıcı anahtar `zikirhane:v1` DEĞİŞMEDİ.
+//  - Favoriler, son kullanılanlar ve seri (streak) eklendi.
+//  - Tema tercihi artık "system" olabilir; somut tema cihaz şemasıyla
+//    birleştirilerek çözülür.
+//  - Zikir adları çeviri anahtarlarına taşındığı için `topDhikrs()` artık
+//    ad DÖNDÜRMEZ; yalnızca id + sayım döndürür, adı arayüz çözer.
 
 import React, {
   createContext,
@@ -10,116 +19,39 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { AppState } from "react-native";
+import { AppState, useColorScheme } from "react-native";
 
 import { storage } from "@/src/utils/storage";
 
 import { BUILTIN_DHIKRS, type AnyDhikr, type CustomDhikr } from "./dhikrs";
-import { darkTheme, getTheme, lightTheme, type ThemeName, type ThemeTokens } from "./theme";
+import {
+  RECENT_LIMIT,
+  STORAGE_KEY,
+  computeStreak,
+  dateKey,
+  defaultState,
+  migrateState,
+  type DailyLogEntry,
+  type DhikrState,
+  type PersistedState,
+  type Settings,
+  type StreakInfo,
+  type TesbihatProgress,
+} from "./migration";
+import {
+  darkTheme,
+  getTheme,
+  lightTheme,
+  resolveThemeName,
+  type ThemeTokens,
+} from "./theme";
 
-const KEY = "zikirhane:v1";
-
-export interface DhikrState {
-  count: number;
-  target: number;
-  lastUsedAt: number | null;
-}
-
-export interface DailyLogEntry {
-  // key = YYYY-MM-DD
-  date: string;
-  total: number;
-  perDhikr: Record<string, number>;
-}
-
-export interface Settings {
-  theme: ThemeName;
-  sound: boolean;
-  vibration: boolean;
-  keepAwake: boolean;
-  bigText: boolean;
-  simpleMode: boolean;
-  dailyGoal: number;
-  reminderEnabled: boolean;
-  reminderHour: number;
-  reminderMinute: number;
-  onboardingDone: boolean;
-}
-
-/**
- * QA UX-3: "Namaz Sonrası Tesbihat" ekranından çıkınca ilerleme tamamen
- * kayboluyordu (kullanıcı 60. zikirde telefonu bıraksa baştan başlıyordu).
- * İlerleme artık kalıcı olarak saklanır ve kaldığı yerden devam eder.
- */
-export interface TesbihatProgress {
-  stepIdx: number;
-  count: number;
-  updatedAt: number;
-}
-
-export interface PersistedState {
-  version: 1;
-  activeDhikrId: string;
-  customDhikrs: CustomDhikr[];
-  dhikrStates: Record<string, DhikrState>;
-  totalCount: number;
-  dailyLog: Record<string, DailyLogEntry>;
-  // BUG-004 duzeltmesi: canli sayac (dhikrStates[id].count) "Sıfırla" ile
-  // silinebilir; "En Sık Yapılan Zikirler" gibi kalici istatistikler bu
-  // AYRI kumulatif alandan okunmali — Sıfırla bu alani ASLA etkilemez.
-  dhikrHistoryTotals: Record<string, number>;
-  esmaCounters: Record<number, number>;
-  esmaFavorites: number[];
-  settings: Settings;
-  /** Yarim kalmis Namaz Sonrasi Tesbihat ilerlemesi (yoksa null). */
-  tesbihatProgress: TesbihatProgress | null;
-  lastActionAt: number | null;
-}
-
-const defaultSettings: Settings = {
-  theme: "dark",
-  sound: false,
-  vibration: true,
-  keepAwake: false,
-  bigText: false,
-  simpleMode: false,
-  dailyGoal: 100,
-  reminderEnabled: false,
-  reminderHour: 20,
-  reminderMinute: 0,
-  onboardingDone: false,
-};
-
-const defaultState = (): PersistedState => {
-  const dhikrStates: Record<string, DhikrState> = {};
-  for (const d of BUILTIN_DHIKRS) {
-    dhikrStates[d.id] = {
-      count: 0,
-      target: d.defaultTarget,
-      lastUsedAt: null,
-    };
-  }
-  return {
-    version: 1,
-    activeDhikrId: "subhanallah",
-    customDhikrs: [],
-    dhikrStates,
-    totalCount: 0,
-    dailyLog: {},
-    dhikrHistoryTotals: {},
-    esmaCounters: {},
-    esmaFavorites: [],
-    settings: defaultSettings,
-    tesbihatProgress: null,
-    lastActionAt: null,
-  };
-};
-
-const todayKey = (d: Date = new Date()) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+export type {
+  DailyLogEntry,
+  DhikrState,
+  PersistedState,
+  Settings,
+  TesbihatProgress,
 };
 
 // BUG-002 + BUG-001 duzeltmesi icin PAYLASILAN saf artirma mantigi.
@@ -141,14 +73,14 @@ function applyIncrement(
   const nextCount = cur.count + 1;
   const justReachedTarget = nextCount === cur.target;
   const now = Date.now();
-  const dateKey = todayKey();
-  const prevEntry: DailyLogEntry = prev.dailyLog[dateKey] || {
-    date: dateKey,
+  const key = dateKey();
+  const prevEntry: DailyLogEntry = prev.dailyLog[key] || {
+    date: key,
     total: 0,
     perDhikr: {},
   };
   const newEntry: DailyLogEntry = {
-    date: dateKey,
+    date: key,
     total: prevEntry.total + 1,
     perDhikr: {
       ...prevEntry.perDhikr,
@@ -162,14 +94,19 @@ function applyIncrement(
       [id]: { count: nextCount, target: cur.target, lastUsedAt: now },
     },
     totalCount: prev.totalCount + 1,
-    dailyLog: { ...prev.dailyLog, [dateKey]: newEntry },
+    dailyLog: { ...prev.dailyLog, [key]: newEntry },
     dhikrHistoryTotals: {
       ...(prev.dhikrHistoryTotals || {}),
       [id]: ((prev.dhikrHistoryTotals || {})[id] || 0) + 1,
     },
+    // Son kullanılanlar: en yeni başta, tekrar yok, sınırlı uzunluk.
+    recentDhikrIds: [
+      id,
+      ...(prev.recentDhikrIds || []).filter((x) => x !== id),
+    ].slice(0, RECENT_LIMIT),
     lastActionAt: now,
   };
-  return { next, justReachedTarget, dateKey };
+  return { next, justReachedTarget, dateKey: key };
 }
 
 interface UndoEntry {
@@ -186,9 +123,6 @@ interface StoreValue {
   activeDhikr: AnyDhikr;
   activeDhikrState: DhikrState;
   increment: () => { justReachedTarget: boolean };
-  // BUG-002: Namaz Sonrası Tesbihat gibi ekranlarin, aktif zikirden
-  // BAGIMSIZ olarak belirli bir zikir id'sini istatistiklere isleyebilmesi
-  // icin genel amacli artirma fonksiyonu.
   incrementDhikrById: (id: string) => { justReachedTarget: boolean };
   undo: () => boolean;
   reset: () => void;
@@ -200,11 +134,12 @@ interface StoreValue {
     input: { name?: string; arabic?: string; target?: number }
   ) => void;
   deleteCustomDhikr: (id: string) => void;
+  toggleFavoriteDhikr: (id: string) => void;
+  isFavoriteDhikr: (id: string) => boolean;
   incEsma: (no: number) => void;
   resetEsma: (no: number) => void;
   toggleEsmaFavorite: (no: number) => void;
   updateSettings: (patch: Partial<Settings>) => void;
-  // UX-3: yarim kalmis tesbihat ilerlemesi
   setTesbihatProgress: (p: { stepIdx: number; count: number }) => void;
   clearTesbihatProgress: () => void;
   finishOnboarding: () => void;
@@ -213,7 +148,8 @@ interface StoreValue {
   todayTotal: () => number;
   weeklyTotals: () => { date: string; total: number }[];
   monthlyTotal: () => number;
-  topDhikrs: (limit?: number) => { id: string; name: string; count: number }[];
+  topDhikrs: (limit?: number) => { id: string; count: number }[];
+  streak: () => StreakInfo;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -223,6 +159,7 @@ const CONTAINER_KEY = "container";
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PersistedState>(defaultState);
   const [loaded, setLoaded] = useState(false);
+  const systemScheme = useColorScheme();
   const undoStack = useRef<UndoEntry[]>([]);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // BUG-001 duzeltmesi: uzun/hizli surekli dokunus oturumlarinda debounce
@@ -236,61 +173,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const raw = await storage.getItem(KEY, null);
+        const raw = await storage.getItem(STORAGE_KEY, null);
         if (raw && typeof raw === "string") {
-          const parsed = JSON.parse(raw) as PersistedState;
-          if (parsed && parsed.version === 1) {
-            // Merge new builtin dhikrs if any missing
-            const merged = { ...parsed };
-            for (const d of BUILTIN_DHIKRS) {
-              if (!merged.dhikrStates[d.id]) {
-                merged.dhikrStates[d.id] = {
-                  count: 0,
-                  target: d.defaultTarget,
-                  lastUsedAt: null,
-                };
-              }
-            }
-            merged.settings = { ...defaultSettings, ...parsed.settings };
-            // BUG-004 geri-uyumlu migration (v1.0.15 → v1.0.16):
-            // Yeni `dhikrHistoryTotals` alanı yoksa, KÜMÜLATİF geçmişi
-            // mevcut EN GÜVENİLİR kalıcı veriden yeniden inşa ederiz. İki
-            // kaynak vardır:
-            //   1) dailyLog[*].perDhikr toplamı → tarihsel kümülatif sayım
-            //   2) dhikrStates[id].count       → canlı sayaç (Sıfırla ile azalır)
-            // Kullanıcının geçmişini ASLA azaltmamak için ikisinin
-            // MAKSİMUMUNU alırız (TOPLAMA yapmayız → çift sayım olmaz):
-            //   - canlı=40,  geçmiş=40   → 40   (Case A)
-            //   - canlı=0,   geçmiş=2000 → 2000 (Case B)
-            //   - canlı=150, geçmiş=100  → 150  (Case C, en yüksek güvenilir değer)
-            // Migration YALNIZCA alan henüz yokken çalışır; varsa aynen
-            // korunur (Case D). Mevcut günlük/haftalık/aylık istatistikler
-            // (dailyLog/totalCount) hiç değiştirilmez.
-            // UX-3 alani eski kayitlarda yok → null'a normalize et.
-            if (merged.tesbihatProgress === undefined) {
-              merged.tesbihatProgress = null;
-            }
-            if (!merged.dhikrHistoryTotals) {
-              const historyFromDaily: Record<string, number> = {};
-              for (const entry of Object.values(merged.dailyLog || {})) {
-                for (const [id, c] of Object.entries(entry?.perDhikr || {})) {
-                  historyFromDaily[id] = (historyFromDaily[id] || 0) + (c || 0);
-                }
-              }
-              const seeded: Record<string, number> = {};
-              const ids = new Set<string>([
-                ...Object.keys(merged.dhikrStates || {}),
-                ...Object.keys(historyFromDaily),
-              ]);
-              for (const id of ids) {
-                const live = merged.dhikrStates[id]?.count || 0;
-                const hist = historyFromDaily[id] || 0;
-                seeded[id] = Math.max(live, hist);
-              }
-              merged.dhikrHistoryTotals = seeded;
-            }
-            setState(merged);
-          }
+          const parsed: unknown = JSON.parse(raw);
+          const migrated = migrateState(parsed);
+          if (migrated) setState(migrated);
         }
       } catch (e) {
         console.warn("[store] load failed", e);
@@ -301,8 +188,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Guvenli/sik persistans: debounce (200ms) + zorunlu maksimum bekleme
-  // (1.5s) + arka plana gecerken aninda flush. Asiri senkron yazma yok —
-  // sadece sinirli sikilikta yaziyoruz.
+  // (1.5s) + arka plana gecerken aninda flush.
   useEffect(() => {
     if (!loaded) return;
     pendingStateRef.current = state;
@@ -310,7 +196,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const flushNow = () => {
       const toSave = pendingStateRef.current;
       if (toSave) {
-        storage.setItem(KEY, JSON.stringify(toSave));
+        storage.setItem(STORAGE_KEY, JSON.stringify(toSave));
       }
       if (persistTimer.current) {
         clearTimeout(persistTimer.current);
@@ -335,13 +221,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [state, loaded]);
 
   // Uygulama arka plana/inaktif duruma gecerken bekleyen degisiklikleri
-  // ANINDA diske yaz — arka plana alinma/oldurulme senaryolarinda veri
-  // kaybini en aza indirir.
+  // ANINDA diske yaz.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next) => {
       if (next === "background" || next === "inactive") {
         if (pendingStateRef.current) {
-          storage.setItem(KEY, JSON.stringify(pendingStateRef.current));
+          storage.setItem(STORAGE_KEY, JSON.stringify(pendingStateRef.current));
         }
       }
     });
@@ -374,26 +259,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     let justReachedTarget = false;
     setStateSafe((prev) => {
       const id = prev.activeDhikrId;
-      const { next, justReachedTarget: jr, dateKey } = applyIncrement(prev, id);
+      const { next, justReachedTarget: jr, dateKey: key } = applyIncrement(prev, id);
       justReachedTarget = jr;
-      undoStack.current.push({ dhikrId: id, dateKey, ts: Date.now() });
-      // Keep last 200 entries in undo stack
+      undoStack.current.push({ dhikrId: id, dateKey: key, ts: Date.now() });
       if (undoStack.current.length > 200) undoStack.current.shift();
       return next;
     });
     return { justReachedTarget };
   };
 
-  // BUG-002: Namaz Sonrası Tesbihat (ve ileride benzer akislar) icin — aktif
-  // zikirden bagimsiz, belirtilen zikir id'sine dogrudan sayim ekler. AYNI
-  // `applyIncrement` mantigini kullanir, bu yuzden toplam/günlük/haftalık/
-  // aylık istatistikler ve "En Sık Yapılan Zikirler" dogru sekilde guncellenir.
   const incrementDhikrById: StoreValue["incrementDhikrById"] = (id) => {
     let justReachedTarget = false;
     setStateSafe((prev) => {
-      const { next, justReachedTarget: jr, dateKey } = applyIncrement(prev, id);
+      const { next, justReachedTarget: jr, dateKey: key } = applyIncrement(prev, id);
       justReachedTarget = jr;
-      undoStack.current.push({ dhikrId: id, dateKey, ts: Date.now() });
+      undoStack.current.push({ dhikrId: id, dateKey: key, ts: Date.now() });
       if (undoStack.current.length > 200) undoStack.current.shift();
       return next;
     });
@@ -417,8 +297,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           perDhikr: perD,
         };
       }
-      // BUG-004 tutarliligi: undo, eklenmis olan kumulatif gecmis sayimini
-      // da geri alir (aksi halde undo sonrasi "hayalet" bir sayim kalirdi).
       const nextHistory: Record<string, number> = {
         ...(prev.dhikrHistoryTotals || {}),
       };
@@ -447,18 +325,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (!cur) return prev;
       return {
         ...prev,
-        dhikrStates: {
-          ...prev.dhikrStates,
-          [id]: { ...cur, count: 0 },
-        },
+        dhikrStates: { ...prev.dhikrStates, [id]: { ...cur, count: 0 } },
       };
     });
-    // Clear undo stack for this dhikr's counts
     undoStack.current = [];
   };
 
   const setActiveDhikr: StoreValue["setActiveDhikr"] = (id) => {
-    setStateSafe((prev) => ({ ...prev, activeDhikrId: id }));
+    setStateSafe((prev) => ({
+      ...prev,
+      activeDhikrId: id,
+      recentDhikrIds: [
+        id,
+        ...(prev.recentDhikrIds || []).filter((x) => x !== id),
+      ].slice(0, RECENT_LIMIT),
+    }));
   };
 
   const setTargetForActive: StoreValue["setTargetForActive"] = (target) => {
@@ -533,9 +414,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         customDhikrs: prev.customDhikrs.filter((c) => c.id !== id),
         dhikrStates: nextStates,
         activeDhikrId: nextActive,
+        favoriteDhikrIds: (prev.favoriteDhikrIds || []).filter((x) => x !== id),
+        recentDhikrIds: (prev.recentDhikrIds || []).filter((x) => x !== id),
       };
     });
   };
+
+  const toggleFavoriteDhikr: StoreValue["toggleFavoriteDhikr"] = (id) => {
+    setStateSafe((prev) => {
+      const cur = prev.favoriteDhikrIds || [];
+      return {
+        ...prev,
+        favoriteDhikrIds: cur.includes(id)
+          ? cur.filter((x) => x !== id)
+          : [...cur, id],
+      };
+    });
+  };
+
+  const isFavoriteDhikr: StoreValue["isFavoriteDhikr"] = (id) =>
+    (state.favoriteDhikrIds || []).includes(id);
 
   const incEsma: StoreValue["incEsma"] = (no) => {
     setStateSafe((prev) => ({
@@ -611,13 +509,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         // gecmis de dahil. (Sadece aktif zikir "Sıfırla" bunu ETKİLEMEZ.)
         dhikrHistoryTotals: {},
         tesbihatProgress: null,
+        recentDhikrIds: [],
       };
     });
     undoStack.current = [];
   };
 
   const todayTotal: StoreValue["todayTotal"] = () => {
-    const e = state.dailyLog[todayKey()];
+    const e = state.dailyLog[dateKey()];
     return e?.total || 0;
   };
 
@@ -626,7 +525,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const k = todayKey(d);
+      const k = dateKey(d);
       out.push({ date: k, total: state.dailyLog[k]?.total || 0 });
     }
     return out;
@@ -637,7 +536,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     for (let i = 0; i < 30; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const k = todayKey(d);
+      const k = dateKey(d);
       sum += state.dailyLog[k]?.total || 0;
     }
     return sum;
@@ -649,14 +548,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return [...allDhikrs]
       .map((d) => ({
         id: d.id,
-        name: d.name,
         count: (state.dhikrHistoryTotals || {})[d.id] || 0,
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, limit);
   };
 
-  const theme = getTheme(state.settings.theme);
+  const streak: StoreValue["streak"] = () => computeStreak(state.dailyLog);
+
+  const themeName = resolveThemeName(state.settings.theme, systemScheme);
+  const theme = getTheme(themeName);
 
   const value: StoreValue = {
     state,
@@ -674,6 +575,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addCustomDhikr,
     updateCustomDhikr,
     deleteCustomDhikr,
+    toggleFavoriteDhikr,
+    isFavoriteDhikr,
     incEsma,
     resetEsma,
     toggleEsmaFavorite,
@@ -686,6 +589,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     weeklyTotals,
     monthlyTotal,
     topDhikrs,
+    streak,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
