@@ -21,8 +21,11 @@
 // "görünmeyen gösterim" (invisible impression) ihlali oluşur.
 
 import React, { useRef, useState } from "react";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
+import { Text } from "@/src/components/AppText";
+
+import { useT } from "@/src/i18n";
 import { useStore } from "@/src/lib/store";
 
 import { BANNER_SLOT_HEIGHT, bannerUnitId } from "./adConfig";
@@ -63,6 +66,7 @@ export function BottomBanner({
   tag,
 }: Props) {
   const { theme } = useStore();
+  const t = useT();
   const { canRequestAds, adsEnabled, fullScreenAdActive } = useAds();
   const sdk = getAdsSdk();
 
@@ -83,7 +87,9 @@ export function BottomBanner({
       testID={testID ?? "bottom-banner-placeholder"}
       pointerEvents="none"
     >
-      <Text style={[styles.label, { color: theme.textSubtle }]}>REKLAM</Text>
+      <Text style={[styles.label, { color: theme.textSubtle }]}>
+        {t("ads.label")}
+      </Text>
     </View>
   );
 
@@ -104,6 +110,8 @@ export function BottomBanner({
         testID={testID}
         explicitWidth={explicitWidth}
         tag={tag ?? "unknown"}
+        adLabel={t("ads.label")}
+        failedLabel={t("ads.failed")}
       />
     </AdBoundary>
   );
@@ -113,6 +121,8 @@ interface SlotProps extends Props {
   sdk: NonNullable<ReturnType<typeof getAdsSdk>>;
   theme: ReturnType<typeof useStore>["theme"];
   tag: string;
+  adLabel: string;
+  failedLabel: string;
 }
 
 function BannerSlot({
@@ -122,6 +132,8 @@ function BannerSlot({
   testID,
   explicitWidth,
   tag,
+  adLabel,
+  failedLabel,
 }: SlotProps) {
   const bannerRef = useRef<unknown>(null);
   const [adStatus, setAdStatus] = useState<"loading" | "loaded" | "failed">(
@@ -180,7 +192,7 @@ function BannerSlot({
       ]}
       testID={testID ?? "bottom-banner-ad"}
     >
-      <Text style={[styles.label, { color: theme.textSubtle }]}>REKLAM</Text>
+      <Text style={[styles.label, { color: theme.textSubtle }]}>{adLabel}</Text>
       {/* Reklam yüklenemese bile bileşen MOUNTED kalır — SDK'nin kendi
           otomatik yenileme döngüsü çalıştığında slot kendiliğinden dolar.
           Alan hiçbir koşulda daraltılmaz. */}
@@ -209,7 +221,7 @@ function BannerSlot({
       {adStatus === "failed" ? (
         // Alan korunur, ama boş kutunun ne olduğu belli olsun.
         <Text style={[styles.hint, { color: theme.textSubtle }]}>
-          Reklam yüklenemedi
+          {failedLabel}
         </Text>
       ) : null}
     </View>
