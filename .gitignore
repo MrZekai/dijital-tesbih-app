@@ -86,3 +86,11 @@ android-sdk/
 credentials.json
 *.key
 .credentials
+
+# Yayin paketleri ve imzalama (asla commit edilmez)
+*.aab
+*.apk
+*.keystore
+*.jks
+*.p12
+upload.der
