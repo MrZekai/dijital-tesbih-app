@@ -1,4 +1,8 @@
-// İstatistikler — günlük, haftalık, aylık ve toplam.
+// İstatistikler — günlük, haftalık, aylık, toplam ve seri (streak).
+//
+// v1.1.0: hafta günü adları `Intl` ile locale'den gelir (sabit "Pzt/Sal…"
+// listesi kaldırıldı), sayılar locale biçiminde gösterilir, seri kartı
+// eklendi ve tüm metinler çeviri anahtarlarına taşındı.
 
 import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -8,22 +12,29 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ConfirmSheet } from "@/src/components/ConfirmSheet";
 import { StatusBarScrim } from "@/src/components/StatusBarScrim";
+import { useI18n } from "@/src/i18n";
+import { formatWeekdayShort } from "@/src/i18n/format";
+import { dhikrName } from "@/src/lib/dhikrs";
 import { useBottomChromeHeight } from "@/src/lib/layout";
+import { useDirection } from "@/src/lib/rtl";
 import { useStore } from "@/src/lib/store";
+import type { ThemeTokens } from "@/src/lib/theme";
 import { fonts, radius, spacing } from "@/src/lib/theme";
-
-const DAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
 export default function Istatistikler() {
   const {
     theme,
     state,
+    allDhikrs,
     todayTotal,
     weeklyTotals,
     monthlyTotal,
     topDhikrs,
+    streak,
     resetAllStats,
   } = useStore();
+  const { t, n: fmt, bcp47 } = useI18n();
+  const dir = useDirection();
   const bottomChrome = useBottomChromeHeight();
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -33,27 +44,43 @@ export default function Istatistikler() {
   const month = monthlyTotal();
   const maxWeek = Math.max(1, ...week.map((w) => w.total));
   const dailyGoal = state.settings.dailyGoal;
-  const goalPercent = Math.min(100, Math.round((today / Math.max(1, dailyGoal)) * 100));
+  const goalPercent = Math.min(
+    100,
+    Math.round((today / Math.max(1, dailyGoal)) * 100)
+  );
   const top = topDhikrs(3);
+  const { current: currentStreak, best: bestStreak } = streak();
+
+  const nameOf = (id: string) => {
+    const d = allDhikrs.find((x) => x.id === id);
+    return d ? dhikrName(d, t) : id;
+  };
 
   return (
-    <SafeAreaView edges={["top"]} style={[styles.container, { backgroundColor: theme.bg }]}>
+    <SafeAreaView
+      edges={["top"]}
+      style={[styles.container, { backgroundColor: theme.bg }]}
+    >
       <StatusBarScrim />
       <ScrollView
         contentContainerStyle={{
           paddingTop: spacing.lg,
-          // Sekme cubugu + SABIT reklam alani + guvenli alan.
           paddingBottom: bottomChrome + spacing.lg,
           paddingHorizontal: spacing.xl,
           gap: spacing.lg,
         }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.h1, { color: theme.text, fontFamily: fonts.display }]}>
-          İstatistikler
+        <Text
+          style={[
+            styles.h1,
+            { color: theme.text, fontFamily: fonts.display, textAlign: dir.textAlign },
+          ]}
+        >
+          {t("stats.title")}
         </Text>
 
-        {/* Daily goal card */}
+        {/* Günlük hedef kartı */}
         <View
           style={[
             styles.goalCard,
@@ -61,25 +88,38 @@ export default function Istatistikler() {
           ]}
           testID="daily-goal-card"
         >
-          <View style={styles.goalHeader}>
+          <View style={[styles.goalHeader, { flexDirection: dir.row }]}>
             <View>
-              <Text style={[styles.goalLabel, { color: theme.textMuted }]}>
-                BUGÜNKÜ ZİKİR
+              <Text
+                style={[
+                  styles.goalLabel,
+                  { color: theme.textMuted, textAlign: dir.textAlign },
+                ]}
+              >
+                {t("stats.today")}
               </Text>
               <Text
                 style={[
                   styles.goalValue,
-                  { color: theme.gold, fontFamily: fonts.display },
+                  {
+                    color: theme.gold,
+                    fontFamily: fonts.display,
+                    textAlign: dir.textAlign,
+                  },
                 ]}
               >
-                {today}
+                {fmt(today)}
               </Text>
             </View>
-            <View style={styles.goalRight}>
+            <View
+              style={{ alignItems: dir.isRTL ? "flex-start" : "flex-end" }}
+            >
               <Text style={[styles.goalLabel, { color: theme.textMuted }]}>
-                HEDEF
+                {t("settings.section_goal")}
               </Text>
-              <Text style={[styles.goalGoal, { color: theme.text }]}>{dailyGoal}</Text>
+              <Text style={[styles.goalGoal, { color: theme.text }]}>
+                {fmt(dailyGoal)}
+              </Text>
             </View>
           </View>
           <View style={[styles.progressBg, { backgroundColor: theme.divider }]}>
@@ -90,34 +130,74 @@ export default function Istatistikler() {
               ]}
             />
           </View>
-          <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: 4 }}>
+          <Text
+            style={{
+              color: theme.textSubtle,
+              fontSize: 12,
+              marginTop: 4,
+              textAlign: dir.textAlign,
+            }}
+            testID="goal-progress-line"
+          >
             {goalPercent >= 100
-              ? "Bugünkü hedefinize ulaştınız."
-              : `${dailyGoal - today} zikir kaldı`}
+              ? t("stats.goal_reached")
+              : t("stats.remaining", { count: Math.max(0, dailyGoal - today) })}
           </Text>
         </View>
 
-        {/* Stat pills */}
-        <View style={styles.row}>
-          <StatBox label="Haftalık" value={weekSum} theme={theme} />
-          <StatBox label="Aylık" value={month} theme={theme} />
-          <StatBox label="Toplam" value={state.totalCount} theme={theme} />
+        {/* Özet kutuları */}
+        <View style={[styles.row, { flexDirection: dir.row }]}>
+          <StatBox label={t("stats.weekly")} value={fmt(weekSum)} theme={theme} />
+          <StatBox label={t("stats.monthly")} value={fmt(month)} theme={theme} />
+          <StatBox
+            label={t("stats.total")}
+            value={fmt(state.totalCount)}
+            theme={theme}
+          />
         </View>
 
-        {/* Weekly bar chart */}
+        {/* Seri (streak) */}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: theme.bgCard, borderColor: theme.border },
+          ]}
+          testID="streak-card"
+        >
+          <View style={[styles.row, { flexDirection: dir.row }]}>
+            <StatBox
+              label={t("stats.streak_current")}
+              value={t("stats.days", { count: currentStreak })}
+              theme={theme}
+              small
+            />
+            <StatBox
+              label={t("stats.streak_best")}
+              value={t("stats.days", { count: bestStreak })}
+              theme={theme}
+              small
+            />
+          </View>
+        </View>
+
+        {/* Haftalık grafik */}
         <View
           style={[
             styles.card,
             { backgroundColor: theme.bgCard, borderColor: theme.border },
           ]}
         >
-          <Text style={[styles.cardTitle, { color: theme.text }]}>
-            Son 7 Gün
+          <Text
+            style={[
+              styles.cardTitle,
+              { color: theme.text, textAlign: dir.textAlign },
+            ]}
+          >
+            {t("stats.weekly")}
           </Text>
-          <View style={styles.chart} testID="weekly-chart">
-            {week.map((d, i) => {
-              const day = new Date(d.date);
-              const dow = (day.getDay() + 6) % 7; // Mon=0
+          <View style={[styles.chart, { flexDirection: dir.row }]} testID="weekly-chart">
+            {week.map((d) => {
+              const day = new Date(`${d.date}T00:00:00`);
               const h = Math.max(4, (d.total / maxWeek) * 120);
               return (
                 <View key={d.date} style={styles.barCol}>
@@ -130,17 +210,22 @@ export default function Istatistikler() {
                       },
                     ]}
                   />
-                  <Text style={{ color: theme.textSubtle, fontSize: 11 }}>
-                    {DAY_LABELS[dow]}
+                  <Text
+                    style={{ color: theme.textSubtle, fontSize: 11 }}
+                    numberOfLines={1}
+                  >
+                    {formatWeekdayShort(day, bcp47)}
                   </Text>
-                  <Text style={{ color: theme.text, fontSize: 11 }}>{d.total}</Text>
+                  <Text style={{ color: theme.text, fontSize: 11 }}>
+                    {fmt(d.total)}
+                  </Text>
                 </View>
               );
             })}
           </View>
         </View>
 
-        {/* Top dhikrs */}
+        {/* En sık yapılan zikirler */}
         <View
           style={[
             styles.card,
@@ -148,16 +233,30 @@ export default function Istatistikler() {
           ]}
           testID="top-dhikrs-list"
         >
-          <Text style={[styles.cardTitle, { color: theme.text }]}>
-            En Sık Yapılan Zikirler
+          <Text
+            style={[
+              styles.cardTitle,
+              { color: theme.text, textAlign: dir.textAlign },
+            ]}
+          >
+            {t("stats.top_dhikrs")}
           </Text>
-          {top.filter((t) => t.count > 0).length === 0 ? (
-            <Text style={{ color: theme.textSubtle, fontSize: 13 }}>
-              Henüz kayıt yok. İlk zikrinizi çekmeye başlayın.
+          {top.filter((x) => x.count > 0).length === 0 ? (
+            <Text
+              style={{
+                color: theme.textSubtle,
+                fontSize: 13,
+                textAlign: dir.textAlign,
+              }}
+            >
+              {t("stats.no_data")}
             </Text>
           ) : (
-            top.map((t, i) => (
-              <View key={t.id} style={styles.topRow}>
+            top.map((x, i) => (
+              <View
+                key={x.id}
+                style={[styles.topRow, { flexDirection: dir.row }]}
+              >
                 <View
                   style={[
                     styles.topBadge,
@@ -165,36 +264,57 @@ export default function Istatistikler() {
                   ]}
                 >
                   <Text style={{ color: theme.gold, fontWeight: "700" }}>
-                    {i + 1}
+                    {fmt(i + 1)}
                   </Text>
                 </View>
-                <Text style={{ color: theme.text, fontSize: 15, flex: 1 }}>
-                  {t.name}
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontSize: 15,
+                    flex: 1,
+                    textAlign: dir.textAlign,
+                  }}
+                  numberOfLines={2}
+                >
+                  {nameOf(x.id)}
                 </Text>
-                <Text style={{ color: theme.gold, fontSize: 15, fontWeight: "600" }}>
-                  {t.count}
+                <Text
+                  style={{ color: theme.gold, fontSize: 15, fontWeight: "600" }}
+                >
+                  {fmt(x.count)}
                 </Text>
               </View>
             ))
           )}
         </View>
 
-        {/* Reset all */}
+        {/* Tümünü sıfırla */}
         <View
           style={[
             styles.card,
             { backgroundColor: theme.bgCard, borderColor: theme.border },
           ]}
         >
-          <Text style={[styles.cardTitle, { color: theme.text }]}>Tüm Verileri Sıfırla</Text>
-          <Text style={{ color: theme.textMuted, fontSize: 13, marginBottom: 12 }}>
-            Tüm zikir sayaçları, günlük kayıtlar ve Esma sayaçları silinir. Bu işlem
-            geri alınamaz.
+          <Text
+            style={[
+              styles.cardTitle,
+              { color: theme.text, textAlign: dir.textAlign },
+            ]}
+          >
+            {t("stats.reset_all")}
           </Text>
-          {/* DÜZELTME: Buton daha önce `<Text onPress>` idi — dokunma alanı
-              yalnızca yazının kendisiydi ve basılı görsel geri bildirimi
-              yoktu. Artık tam bir Pressable. */}
-          <View style={{ flexDirection: "row" }}>
+          <Text
+            style={{
+              color: theme.textMuted,
+              fontSize: 13,
+              marginBottom: 12,
+              textAlign: dir.textAlign,
+              writingDirection: dir.writingDirection,
+            }}
+          >
+            {t("stats.reset_all_message")}
+          </Text>
+          <View style={{ flexDirection: dir.row }}>
             <Pressable
               onPress={() => setConfirmReset(true)}
               style={({ pressed }) => ({
@@ -207,22 +327,23 @@ export default function Istatistikler() {
               })}
               testID="reset-all-btn"
               accessibilityRole="button"
-              accessibilityLabel="Tüm verileri sıfırla"
+              accessibilityLabel={t("stats.reset_all")}
             >
-              <Text style={{ color: theme.danger, fontSize: 13, fontWeight: "600" }}>
-                Tümünü Sıfırla
+              <Text
+                style={{ color: theme.danger, fontSize: 13, fontWeight: "600" }}
+              >
+                {t("common.reset")}
               </Text>
             </Pressable>
           </View>
         </View>
-
       </ScrollView>
 
       <ConfirmSheet
         visible={confirmReset}
-        title="Tüm istatistikler sıfırlansın mı?"
-        message="Bu işlem tüm zikir sayaçlarını ve geçmiş verileri silecek."
-        confirmLabel="Sıfırla"
+        title={t("stats.reset_all_title")}
+        message={t("stats.reset_all_message")}
+        confirmLabel={t("common.reset")}
         destructive
         onConfirm={() => {
           resetAllStats();
@@ -240,10 +361,12 @@ function StatBox({
   label,
   value,
   theme,
+  small,
 }: {
   label: string;
-  value: number;
-  theme: any;
+  value: string;
+  theme: ThemeTokens;
+  small?: boolean;
 }) {
   return (
     <View
@@ -252,15 +375,19 @@ function StatBox({
         { backgroundColor: theme.bgCard, borderColor: theme.border },
       ]}
     >
-      <Text style={{ color: theme.textSubtle, fontSize: 12 }}>{label}</Text>
+      <Text style={{ color: theme.textSubtle, fontSize: 12 }} numberOfLines={2}>
+        {label}
+      </Text>
       <Text
         style={{
           color: theme.gold,
-          fontSize: 24,
+          fontSize: small ? 18 : 24,
           fontWeight: "600",
           fontFamily: fonts.display,
           marginTop: 2,
         }}
+        numberOfLines={1}
+        adjustsFontSizeToFit
       >
         {value}
       </Text>
@@ -282,13 +409,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   goalHeader: {
-    flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
   },
   goalLabel: {
-    // BUG-011: textTransform kaldirildi, metin JSX'te dogrudan Türkçe
-    // buyuk harfle yazildi (device locale'ine bagimli olmadan).
     fontSize: 12,
     letterSpacing: 1,
   },
@@ -296,9 +420,6 @@ const styles = StyleSheet.create({
     fontSize: 42,
     fontWeight: "300",
     marginTop: 2,
-  },
-  goalRight: {
-    alignItems: "flex-end",
   },
   goalGoal: {
     fontSize: 22,
@@ -316,7 +437,6 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   row: {
-    flexDirection: "row",
     gap: spacing.md,
   },
   statBox: {
@@ -337,7 +457,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   chart: {
-    flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
     height: 160,
@@ -353,7 +472,6 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   topRow: {
-    flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
     paddingVertical: 6,

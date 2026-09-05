@@ -10,28 +10,31 @@ import { Text } from "@/src/components/AppText";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useT } from "@/src/i18n";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
+// Adımlar çeviri ANAHTARLARI tutar; metin render sırasında çözülür.
 const STEPS = [
   {
     icon: "sparkles-outline" as const,
-    title: "Zikirlerini Kolayca Say",
-    desc: "Ekranın herhangi bir yerine dokunarak zikrini rahatça çek. Tek elle, akıcı ve sade.",
+    titleKey: "onboarding.t1" as const,
+    descKey: "onboarding.d1" as const,
   },
   {
     icon: "trophy-outline" as const,
-    title: "Hedeflerini ve İlerlemeni Takip Et",
-    desc: "Günlük, haftalık ve aylık istatistiklerinle manevi yolculuğunu görebilirsin.",
+    titleKey: "onboarding.t2" as const,
+    descKey: "onboarding.d2" as const,
   },
   {
     icon: "moon-outline" as const,
-    title: "Her Dokunuşta Huzur Bul",
-    desc: "Sade tasarım, yumuşak animasyonlar ve dinginlik dolu bir zikir deneyimi.",
+    titleKey: "onboarding.t3" as const,
+    descKey: "onboarding.d3" as const,
   },
 ];
 
 export default function Onboarding() {
+  const t = useT();
   const { theme, finishOnboarding } = useStore();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
@@ -86,14 +89,14 @@ export default function Onboarding() {
           entering={FadeIn.delay(80).duration(400)}
           style={[styles.title, { color: theme.gold, fontFamily: fonts.display }]}
         >
-          {cur.title}
+          {t(cur.titleKey)}
         </Animated.Text>
         <Animated.Text
           key={`d-${step}`}
           entering={FadeIn.delay(160).duration(400)}
           style={[styles.desc, { color: theme.textMuted }]}
         >
-          {cur.desc}
+          {t(cur.descKey)}
         </Animated.Text>
       </View>
 
@@ -119,7 +122,7 @@ export default function Onboarding() {
           testID="onboarding-next"
         >
           <Text style={[styles.ctaText, { color: theme.bg }]}>
-            {isLast ? "Başla" : "Devam"}
+            {isLast ? t("onboarding.start") : t("onboarding.next")}
           </Text>
         </Pressable>
       </View>

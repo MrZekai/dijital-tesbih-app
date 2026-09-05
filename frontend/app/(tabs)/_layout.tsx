@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useT } from "@/src/i18n";
 import { useFontScale } from "@/src/lib/fontScale";
 import { useTabBarHeight } from "@/src/lib/layout";
 import { useStore } from "@/src/lib/store";
@@ -27,6 +28,7 @@ const TAB_ROUTES = ["/", "/zikirlerim", "/istatistikler", "/ayarlar"];
 
 export default function TabsLayout() {
   const { theme } = useStore();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const isDark = theme.name === "dark";
   const { width: screenW } = useWindowDimensions();
@@ -97,7 +99,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Ana Sayfa",
+          title: t("tabs.home"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="ellipse-outline" size={size} color={color} />
           ),
@@ -107,7 +109,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="zikirlerim"
         options={{
-          title: "Zikirlerim",
+          title: t("tabs.my_dhikrs"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="list-outline" size={size} color={color} />
           ),
@@ -117,7 +119,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="istatistikler"
         options={{
-          title: "İstatistikler",
+          title: t("tabs.stats"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="stats-chart-outline" size={size} color={color} />
           ),
@@ -127,7 +129,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="ayarlar"
         options={{
-          title: "Ayarlar",
+          title: t("tabs.settings"),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),

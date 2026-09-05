@@ -19,7 +19,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BANNER_SLOT_HEIGHT } from "@/src/ads/adConfig";
 import { BottomBanner } from "@/src/ads/BottomBanner";
 import { ConfirmSheet } from "@/src/components/ConfirmSheet";
-import { ESMA_LIST, type EsmaEntry } from "@/src/lib/esma";
+import { useI18n } from "@/src/i18n";
+import { normalizeForSearch } from "@/src/i18n/format";
+import { ESMA_LIST, esmaMeaning, type EsmaEntry } from "@/src/lib/esma";
+import { useDirection } from "@/src/lib/rtl";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
@@ -33,6 +36,8 @@ export default function EsmaScreen() {
     resetEsma,
     toggleEsmaFavorite,
   } = useStore();
+  const { t, n: fmt, bcp47, lang } = useI18n();
+  const dir = useDirection();
   const insets = useSafeAreaInsets();
   const { width: screenW } = useWindowDimensions();
   const [query, setQuery] = useState("");
@@ -45,23 +50,21 @@ export default function EsmaScreen() {
     if (filter === "favorites") {
       list = list.filter((e) => state.esmaFavorites.includes(e.no));
     }
-    const norm = (s: string) =>
-      s
-        .toLocaleLowerCase("tr")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/'/g, "");
+    // Arama artık locale duyarlı: Türkçe'ye sabitlenmiş küçük harf
+    // dönüşümü kaldırıldı, Arapça harekeleri de normalleştiriliyor.
+    const norm = (v: string) => normalizeForSearch(v, bcp47).replace(/['’]/g, "");
     const q = norm(query.trim());
     if (q) {
       list = list.filter(
         (e) =>
-          norm(e.turkish).includes(q) ||
-          norm(e.meaning).includes(q) ||
+          norm(e.latin).includes(q) ||
+          norm(e.arabic).includes(q) ||
+          norm(esmaMeaning(e, lang).text).includes(q) ||
           String(e.no).includes(q)
       );
     }
     return list;
-  }, [filter, query, state.esmaFavorites]);
+  }, [bcp47, filter, lang, query, state.esmaFavorites]);
 
   const isFav = (no: number) => state.esmaFavorites.includes(no);
 
@@ -78,43 +81,58 @@ export default function EsmaScreen() {
           },
         ]}
       >
-        <View style={styles.headerRow}>
+        <View style={[styles.headerRow, { flexDirection: dir.row }]}>
           <Pressable
             onPress={() => router.back()}
             hitSlop={12}
             style={[styles.backBtn, { borderColor: theme.border }]}
             testID="esma-back"
           >
-            <Ionicons name="chevron-back" size={22} color={theme.text} />
+            <Ionicons name={dir.backIcon} size={22} color={theme.text} />
           </Pressable>
           <Text style={[styles.title, { color: theme.text, fontFamily: fonts.display }]}>
-            Esmaül Hüsna
+            {t("esma.title")}
           </Text>
           <View style={{ width: 40 }} />
         </View>
 
-        <View style={[styles.searchBox, { borderColor: theme.border, backgroundColor: theme.bgCard }]}>
+        <View
+          style={[
+            styles.searchBox,
+            {
+              borderColor: theme.border,
+              backgroundColor: theme.bgCard,
+              flexDirection: dir.row,
+            },
+          ]}
+        >
           <Ionicons name="search" size={16} color={theme.textSubtle} />
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="İsim, anlam veya numara ara"
+            placeholder={t("esma.search_placeholder")}
             placeholderTextColor={theme.textSubtle}
-            style={{ color: theme.text, flex: 1, fontSize: 14 }}
+            style={{
+              color: theme.text,
+              flex: 1,
+              fontSize: 14,
+              textAlign: dir.textAlign,
+              writingDirection: dir.writingDirection,
+            }}
             testID="esma-search"
           />
         </View>
 
-        <View style={styles.chipsRow}>
+        <View style={[styles.chipsRow, { flexDirection: dir.row }]}>
           <FilterChip
-            label="Tümü"
+            label={t("mydhikrs.filter_all")}
             active={filter === "all"}
             onPress={() => setFilter("all")}
             theme={theme}
             testID="esma-filter-all"
           />
           <FilterChip
-            label={`Favoriler (${state.esmaFavorites.length})`}
+            label={`${t("common.favorites")} (${fmt(state.esmaFavorites.length)})`}
             active={filter === "favorites"}
             onPress={() => setFilter("favorites")}
             theme={theme}
@@ -169,10 +187,10 @@ export default function EsmaScreen() {
               <Text
                 style={{ color: theme.text, fontSize: 15, fontWeight: "600", marginTop: 4 }}
               >
-                {item.turkish}
+                {item.latin}
               </Text>
               <Text style={{ color: theme.textMuted, fontSize: 12, marginTop: 2 }}>
-                {item.meaning}
+                {esmaMeaning(item, lang).text}
               </Text>
             </View>
             <Pressable
@@ -227,10 +245,10 @@ export default function EsmaScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: theme.text, fontSize: 18, fontWeight: "600" }}>
-                  {detail.turkish}
+                  {detail.latin}
                 </Text>
                 <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                  {detail.meaning}
+                  {esmaMeaning(detail, lang).text}
                 </Text>
               </View>
               <Pressable onPress={() => setDetail(null)} hitSlop={10} testID="esma-detail-close">
@@ -287,7 +305,9 @@ export default function EsmaScreen() {
                   color={isFav(detail.no) ? theme.gold : theme.textMuted}
                 />
                 <Text style={{ color: theme.textMuted, fontSize: 13 }}>
-                  {isFav(detail.no) ? "Favorilerden çıkar" : "Favorilere ekle"}
+                  {isFav(detail.no)
+                    ? t("mydhikrs.remove_favorite")
+                    : t("mydhikrs.add_favorite")}
                 </Text>
               </Pressable>
               <Pressable
@@ -306,8 +326,8 @@ export default function EsmaScreen() {
 
       <ConfirmSheet
         visible={confirmResetNo !== null}
-        title="İsim sayacı sıfırlansın mı?"
-        confirmLabel="Sıfırla"
+        title={t("esma.reset_title")}
+        confirmLabel={t("common.reset")}
         destructive
         onConfirm={() => {
           if (confirmResetNo !== null) resetEsma(confirmResetNo);

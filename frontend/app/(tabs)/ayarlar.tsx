@@ -1,72 +1,109 @@
-// Ayarlar — tema, ses, titreşim, büyük yazı, sade mod, ekran açık, bildirim, günlük hedef.
+// Ayarlar — dil, tema, ses, titreşim, büyük yazı, sade mod, ekran açık,
+// bildirim, günlük hedef, yedekleme ve uygulama bilgileri.
+//
+// v1.1.0: Dil seçici (27 dil), üç durumlu tema (koyu/açık/sistem), yerel
+// yedekleme ve sıfırlama onayı ayarı eklendi; tüm metinler i18n'e taşındı.
 
 import { Ionicons } from "@expo/vector-icons";
-import { usePathname } from "expo-router";
 import * as Application from "expo-application";
+import { usePathname } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Keyboard, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+import {
+  Keyboard,
+  Linking,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  View,
+} from "react-native";
 
 import { Text, TextInput } from "@/src/components/AppText";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useAds } from "@/src/ads/AdsProvider";
+import { StatusBarScrim } from "@/src/components/StatusBarScrim";
+import { useI18n, type LanguageCode } from "@/src/i18n";
+import { formatTime } from "@/src/i18n/format";
+import { exportBackup } from "@/src/lib/backup";
+import { useBottomChromeHeight } from "@/src/lib/layout";
 import {
   cancelDailyReminder,
   requestNotificationPermission,
   scheduleDailyReminder,
 } from "@/src/lib/notifications";
-import { StatusBarScrim } from "@/src/components/StatusBarScrim";
-import { useBottomChromeHeight } from "@/src/lib/layout";
-import { useAds } from "@/src/ads/AdsProvider";
+import { useDirection } from "@/src/lib/rtl";
 import { useStore } from "@/src/lib/store";
+import type { ThemePreference, ThemeTokens } from "@/src/lib/theme";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 import { parsePositiveInteger } from "@/src/lib/validation";
 
 const GOAL_PRESETS = [33, 100, 300, 500, 1000];
 
+const PRIVACY_URL = "https://sites.google.com/view/hedefzikirmatik/ana-sayfa";
+
 export default function Ayarlar() {
   const { theme, state, updateSettings } = useStore();
   const { privacyOptionsRequired, showPrivacyOptions } = useAds();
+  const { t, n: fmt, bcp47, lang, languages, setLanguage } = useI18n();
+  const dir = useDirection();
   const bottomChrome = useBottomChromeHeight();
   const s = state.settings;
   const [customGoal, setCustomGoal] = useState("");
   const [goalError, setGoalError] = useState<string | null>(null);
   const [goalApplied, setGoalApplied] = useState(false);
   const [permBlockedAt, setPermBlockedAt] = useState<number | null>(null);
+  const [langPickerOpen, setLangPickerOpen] = useState(false);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
-  // BUG-016 duzeltmesi: onceden `useFocusEffect`'in blur temizligi kullanildi,
-  // ancak test agent'i navigasyon hedefi Ana Sayfa (Tabs'in ilk/varsayilan
-  // rotasi) oldugunda bu temizligin GUVENILMEZ calistigini tespit etti
-  // (react-navigation'in focus/blur olay zamanlamasi index rotasi icin
-  // farkli davranabiliyor). Bunun yerine expo-router'in `usePathname()`'ini
-  // kullaniyoruz — bu, navigasyon "focus" event'lerinden BAGIMSIZ olarak
-  // dogrudan router state'ini okur ve HANGI sekmeye gidildiginden bagimsiz,
-  // tutarli sekilde calisir.
+  const reminderStrings = {
+    channelName: t("notif.channel_name"),
+    title: t("notif.title"),
+    bodies: [t("notif.body_1"), t("notif.body_2"), t("notif.body_3")],
+  };
+
+  // BUG-016 duzeltmesi: `usePathname()` navigasyon focus/blur olaylarindan
+  // BAGIMSIZ olarak router state'ini okur ve hangi sekmeye gidildiginden
+  // bagimsiz tutarli calisir.
   const pathname = usePathname();
   useEffect(() => {
     if (!pathname.includes("ayarlar")) {
       setCustomGoal("");
       setGoalError(null);
       setGoalApplied(false);
+      setExportMsg(null);
     }
   }, [pathname]);
+
+  // Dil değiştiğinde planlı hatırlatıcı ESKİ dilde kalırdı; yeniden planla.
+  useEffect(() => {
+    if (!s.reminderEnabled) return;
+    scheduleDailyReminder(s.reminderHour, s.reminderMinute, {
+      channelName: t("notif.channel_name"),
+      title: t("notif.title"),
+      bodies: [t("notif.body_1"), t("notif.body_2"), t("notif.body_3")],
+    }).catch(() => {});
+    // Yalnızca dil değişiminde çalışsın; saat değişimleri kendi
+    // işleyicilerinde zaten yeniden planlıyor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
 
   const onToggleReminder = async (val: boolean) => {
     if (val) {
       const p = await requestNotificationPermission();
       if (!p.granted) {
         updateSettings({ reminderEnabled: false });
-        if (!p.canAskAgain) {
-          setPermBlockedAt(Date.now());
-        }
+        if (!p.canAskAgain) setPermBlockedAt(Date.now());
         return;
       }
-      const ok = await scheduleDailyReminder(s.reminderHour, s.reminderMinute);
-      if (ok) {
-        updateSettings({ reminderEnabled: true });
-      }
+      setPermBlockedAt(null);
+      updateSettings({ reminderEnabled: true });
+      await scheduleDailyReminder(s.reminderHour, s.reminderMinute, reminderStrings);
     } else {
-      await cancelDailyReminder();
       updateSettings({ reminderEnabled: false });
+      await cancelDailyReminder();
     }
   };
 
@@ -74,7 +111,7 @@ export default function Ayarlar() {
     const nh = (s.reminderHour + delta + 24) % 24;
     updateSettings({ reminderHour: nh });
     if (s.reminderEnabled) {
-      await scheduleDailyReminder(nh, s.reminderMinute);
+      await scheduleDailyReminder(nh, s.reminderMinute, reminderStrings);
     }
   };
 
@@ -82,25 +119,16 @@ export default function Ayarlar() {
     const nm = (s.reminderMinute + delta + 60) % 60;
     updateSettings({ reminderMinute: nm });
     if (s.reminderEnabled) {
-      await scheduleDailyReminder(s.reminderHour, nm);
+      await scheduleDailyReminder(s.reminderHour, nm, reminderStrings);
     }
   };
 
-  // BUG-003: hem burada hem Özel Zikir Ekle'de AYNI paylaşılan doğrulama
-  // mantığı (`parsePositiveInteger`) kullanılır.
-  //
-  // QA BUG-014: Rapor iki eksik bildirdi:
-  //   1) Gecersiz deger (0, -5) sessizce reddediliyor, HATA MESAJI YOK.
-  //      → `setGoalError` zaten ekleniyordu; mesaj metni daha acik hale
-  //        getirildi ve alan temizlenmiyor (kullanici ne yazdigini gorsun).
-  //   2) "Uygula"dan sonra sayisal KLAVYE ACIK KALIYOR ve alt gezinme
-  //      cubugunu kapatiyor. → Klavye her iki durumda da kapatilir.
+  // BUG-003 / BUG-014: hem burada hem Özel Zikir Ekle'de AYNI paylaşılan
+  // doğrulama mantığı kullanılır; hata mesajı gösterilir ve klavye kapanır.
   const onApplyCustomGoal = () => {
     const result = parsePositiveInteger(customGoal);
     if (!result.valid || !result.value) {
-      setGoalError(
-        result.error || "Hedef 1 veya daha büyük bir tam sayı olmalıdır."
-      );
+      setGoalError(t(result.errorKey ?? "validation.positive_integer"));
       setGoalApplied(false);
       Keyboard.dismiss();
       return;
@@ -112,59 +140,150 @@ export default function Ayarlar() {
     Keyboard.dismiss();
   };
 
+  const onExport = async () => {
+    setExporting(true);
+    setExportMsg(null);
+    const version = Application.nativeApplicationVersion ?? "unknown";
+    const res = await exportBackup(state, version, t("settings.export"));
+    setExporting(false);
+    setExportMsg(res.ok ? t("settings.export_done") : t("settings.export_failed"));
+  };
+
+  const themeOptions: [ThemePreference, string][] = [
+    ["dark", t("settings.theme_dark")],
+    ["light", t("settings.theme_light")],
+    ["system", t("settings.theme_system")],
+  ];
+
+  const currentLanguageName =
+    languages.find((l) => l.code === lang)?.nativeName ?? lang;
+
   return (
     <SafeAreaView
       edges={["top"]}
       style={[styles.container, { backgroundColor: theme.bg }]}
     >
-      {/* BUG-013: kaydirilan icerik durum cubugunun altina sizmasin. */}
       <StatusBarScrim />
       <ScrollView
         contentContainerStyle={{
           paddingTop: spacing.lg,
-          // Sekme cubugu + SABIT reklam alani + guvenli alan.
           paddingBottom: bottomChrome + spacing.lg,
           paddingHorizontal: spacing.xl,
           gap: spacing.lg,
         }}
         showsVerticalScrollIndicator={false}
-        // BUG-003 kök neden düzeltmesi: bu prop olmadan, klavye açıkken bu
-        // ScrollView içindeki başka bir kontrole (örn. "Uygula" butonu)
-        // yapılan İLK dokunuş sadece klavyeyi kapatıyor, buton basılmıyordu.
-        // "Özel Zikir Ekle" ekranı bunu zaten doğru yapıyordu — aynı davranış
-        // burada da uygulandı.
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.h1, { color: theme.text, fontFamily: fonts.display }]}>
-          Ayarlar
+        <Text
+          style={[
+            styles.h1,
+            {
+              color: theme.text,
+              fontFamily: fonts.display,
+              textAlign: dir.textAlign,
+            },
+          ]}
+        >
+          {t("settings.title")}
         </Text>
 
-        {/* Görünüm */}
-        <Section title="GÖRÜNÜM" theme={theme}>
-          <SettingRow
-            icon="contrast-outline"
-            label="Koyu Tema"
-            theme={theme}
-            testID="setting-theme"
-            right={
-              <Switch
-                value={s.theme === "dark"}
-                onValueChange={(v) => updateSettings({ theme: v ? "dark" : "light" })}
-                trackColor={{ true: theme.gold, false: theme.border }}
-                thumbColor={theme.bg}
-                testID="theme-switch"
-              />
-            }
-          />
-          {/* Büyük Yazı Modu — v1.0.17'de gerçekten çalışır hale getirildi.
-              Artık uygulamadaki TÜM yazılar %22 büyür (bkz.
-              src/lib/fontScale.tsx + src/components/AppText.tsx). Kullanıcı
-              ne olduğunu anlasın diye açıklama ve canlı önizleme eklendi. */}
+        {/* ── Görünüm ─────────────────────────────────────────────── */}
+        <Section title={t("settings.section_appearance")} theme={theme} dir={dir}>
+          <Pressable
+            onPress={() => setLangPickerOpen(true)}
+            style={[styles.settingRow, { flexDirection: dir.row }]}
+            testID="setting-language"
+            accessibilityRole="button"
+            accessibilityLabel={t("settings.language")}
+          >
+            <View
+              style={[styles.settingIcon, { backgroundColor: theme.emeraldDeep }]}
+            >
+              <Ionicons name="language-outline" size={18} color={theme.gold} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  color: theme.text,
+                  fontSize: 15,
+                  fontWeight: "500",
+                  textAlign: dir.textAlign,
+                }}
+              >
+                {t("settings.language")}
+              </Text>
+              <Text
+                style={{
+                  color: theme.textSubtle,
+                  fontSize: 12,
+                  marginTop: 2,
+                  textAlign: dir.textAlign,
+                }}
+              >
+                {t("settings.language_desc")}
+              </Text>
+            </View>
+            <Text
+              style={{ color: theme.gold, fontSize: 14, fontWeight: "600" }}
+              numberOfLines={1}
+              testID="current-language"
+            >
+              {currentLanguageName}
+            </Text>
+            <Ionicons name={dir.forwardIcon} size={18} color={theme.textSubtle} />
+          </Pressable>
+
+          <View style={{ gap: spacing.sm }}>
+            <Text
+              style={{
+                color: theme.text,
+                fontSize: 15,
+                fontWeight: "500",
+                textAlign: dir.textAlign,
+              }}
+            >
+              {t("settings.theme")}
+            </Text>
+            <View style={[styles.segment, { flexDirection: dir.row }]}>
+              {themeOptions.map(([value, label]) => {
+                const on = (s.theme ?? "dark") === value;
+                return (
+                  <Pressable
+                    key={value}
+                    onPress={() => updateSettings({ theme: value })}
+                    style={[
+                      styles.segmentBtn,
+                      {
+                        borderColor: on ? theme.gold : theme.border,
+                        backgroundColor: on ? theme.emeraldDeep : "transparent",
+                      },
+                    ]}
+                    testID={`theme-${value}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                  >
+                    <Text
+                      style={{
+                        color: on ? theme.gold : theme.textMuted,
+                        fontSize: 13,
+                        fontWeight: on ? "700" : "500",
+                      }}
+                      numberOfLines={1}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
           <SettingRow
             icon="text-outline"
-            label="Büyük Yazı Modu"
-            description="Uygulamadaki tüm yazıları daha büyük ve okunaklı gösterir."
+            label={t("settings.big_text")}
+            description={t("settings.big_text_desc")}
             theme={theme}
+            dir={dir}
             testID="setting-bigtext"
             right={
               <Switch
@@ -183,23 +302,34 @@ export default function Ayarlar() {
             ]}
             testID="bigtext-preview"
           >
-            <Text style={{ color: theme.textSubtle, fontSize: 11, letterSpacing: 1 }}>
-              ÖNİZLEME
+            <Text
+              style={{
+                color: theme.text,
+                fontSize: 15,
+                textAlign: dir.textAlign,
+              }}
+            >
+              {t("dhikr.subhanallah")} · {t("dhikr.elhamdulillah")} ·{" "}
+              {t("dhikr.allahuekber")}
             </Text>
-            <Text style={{ color: theme.text, fontSize: 15, marginTop: 4 }}>
-              Sübhanallah · Elhamdülillah · Allahu Ekber
-            </Text>
-            <Text style={{ color: theme.textMuted, fontSize: 12, marginTop: 2 }}>
-              {s.bigText
-                ? "Büyük yazı açık — yazılar %22 daha büyük görünür."
-                : "Büyük yazı kapalı — standart boyut."}
+            <Text
+              style={{
+                color: theme.textMuted,
+                fontSize: 12,
+                marginTop: 2,
+                textAlign: dir.textAlign,
+              }}
+            >
+              {s.bigText ? t("settings.big_text_on") : t("settings.big_text_off")}
             </Text>
           </View>
+
           <SettingRow
             icon="leaf-outline"
-            label="Sade Kullanım Modu"
-            description="Kontrolleri sadeleştirir, sayaca odaklanmanızı sağlar."
+            label={t("settings.simple_mode")}
+            description={t("settings.simple_mode_desc")}
             theme={theme}
+            dir={dir}
             testID="setting-simple"
             right={
               <Switch
@@ -213,12 +343,13 @@ export default function Ayarlar() {
           />
         </Section>
 
-        {/* Geri bildirim */}
-        <Section title="GERİ BİLDİRİM" theme={theme}>
+        {/* ── Geri bildirim ───────────────────────────────────────── */}
+        <Section title={t("settings.section_feedback")} theme={theme} dir={dir}>
           <SettingRow
             icon="phone-portrait-outline"
-            label="Titreşim"
+            label={t("settings.vibration")}
             theme={theme}
+            dir={dir}
             testID="setting-vibration"
             right={
               <Switch
@@ -232,9 +363,10 @@ export default function Ayarlar() {
           />
           <SettingRow
             icon="volume-medium-outline"
-            label="Tesbih Tanesi Sesi"
-            description="İsteğe bağlı, çok hafif bir dokunuş sesi."
+            label={t("settings.bead_sound")}
+            description={t("settings.bead_sound_desc")}
             theme={theme}
+            dir={dir}
             testID="setting-sound"
             right={
               <Switch
@@ -248,9 +380,10 @@ export default function Ayarlar() {
           />
           <SettingRow
             icon="sunny-outline"
-            label="Ekranı Açık Tut"
-            description="Ana Sayfa açıkken ekran kapanmasın."
+            label={t("settings.keep_awake")}
+            description={t("settings.keep_awake_desc")}
             theme={theme}
+            dir={dir}
             testID="setting-keepawake"
             right={
               <Switch
@@ -262,15 +395,28 @@ export default function Ayarlar() {
               />
             }
           />
+          <SettingRow
+            icon="shield-outline"
+            label={t("home.reset_title")}
+            description={t("home.reset_message", { name: t("common.reset") })}
+            theme={theme}
+            dir={dir}
+            testID="setting-confirm-reset"
+            right={
+              <Switch
+                value={s.confirmReset !== false}
+                onValueChange={(v) => updateSettings({ confirmReset: v })}
+                trackColor={{ true: theme.gold, false: theme.border }}
+                thumbColor={theme.bg}
+                testID="confirm-reset-switch"
+              />
+            }
+          />
         </Section>
 
-        {/* Günlük hedef */}
-        <Section title="GÜNLÜK HEDEF" theme={theme}>
-          <Text style={{ color: theme.textMuted, fontSize: 13, marginBottom: spacing.sm }}>
-            İstatistiklerde ilerleme çubuğunu belirler. Şu an aktif hedef:{" "}
-            <Text style={{ color: theme.gold, fontWeight: "700" }}>{s.dailyGoal}</Text>
-          </Text>
-          <View style={styles.goalRow}>
+        {/* ── Günlük hedef ────────────────────────────────────────── */}
+        <Section title={t("settings.section_goal")} theme={theme} dir={dir}>
+          <View style={[styles.goalRow, { flexDirection: dir.row }]}>
             {GOAL_PRESETS.map((g) => (
               <Pressable
                 key={g}
@@ -289,6 +435,8 @@ export default function Ayarlar() {
                   },
                 ]}
                 testID={`goal-${g}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: s.dailyGoal === g }}
               >
                 <Text
                   style={{
@@ -297,63 +445,83 @@ export default function Ayarlar() {
                     fontWeight: "600",
                   }}
                 >
-                  {g}
+                  {fmt(g)}
                 </Text>
               </Pressable>
             ))}
           </View>
-          <View style={styles.goalInputRow}>
+          <View style={[styles.goalInputRow, { flexDirection: dir.row }]}>
             <TextInput
               value={customGoal}
-              onChangeText={(t) => {
-                setCustomGoal(t);
+              onChangeText={(v) => {
+                setCustomGoal(v);
                 setGoalError(null);
                 setGoalApplied(false);
               }}
               keyboardType="number-pad"
-              placeholder="Özel hedef (örn. 250)"
+              placeholder={t("settings.custom_goal_placeholder")}
               placeholderTextColor={theme.textSubtle}
               style={[
                 styles.input,
                 {
                   color: theme.text,
                   borderColor: goalError ? theme.danger : theme.border,
+                  textAlign: dir.textAlign,
                 },
               ]}
               testID="custom-goal-input"
               returnKeyType="done"
               onSubmitEditing={onApplyCustomGoal}
+              accessibilityLabel={t("settings.custom_goal_placeholder")}
             />
             <Pressable
               onPress={onApplyCustomGoal}
-              style={[
-                styles.applyBtn,
-                { backgroundColor: theme.gold },
-              ]}
+              style={[styles.applyBtn, { backgroundColor: theme.gold }]}
               testID="apply-goal-btn"
+              accessibilityRole="button"
+              accessibilityLabel={t("common.save")}
             >
-              <Text style={{ color: theme.bg, fontWeight: "700" }}>Uygula</Text>
+              <Text style={{ color: theme.bg, fontWeight: "700" }}>
+                {t("common.save")}
+              </Text>
             </Pressable>
           </View>
           {goalError ? (
-            <Text style={{ color: theme.danger, fontSize: 12, marginTop: 6 }}>
+            <Text
+              style={{
+                color: theme.danger,
+                fontSize: 12,
+                marginTop: 6,
+                textAlign: dir.textAlign,
+              }}
+              testID="goal-error-msg"
+            >
               {goalError}
             </Text>
           ) : null}
           {goalApplied ? (
-            <Text style={{ color: theme.gold, fontSize: 12, marginTop: 6 }} testID="goal-applied-msg">
-              Günlük hedef {s.dailyGoal} olarak güncellendi.
+            <Text
+              style={{
+                color: theme.gold,
+                fontSize: 12,
+                marginTop: 6,
+                textAlign: dir.textAlign,
+              }}
+              testID="goal-applied-msg"
+            >
+              {t("settings.goal_applied", { count: s.dailyGoal })}
             </Text>
           ) : null}
         </Section>
 
-        {/* Bildirim */}
-        <Section title="HATIRLATICI" theme={theme}>
+        {/* ── Hatırlatıcı ─────────────────────────────────────────── */}
+        <Section title={t("settings.section_reminder")} theme={theme} dir={dir}>
           <SettingRow
             icon="notifications-outline"
-            label="Günlük Hatırlatma"
-            description="Zikir çekmek için nazik bir günlük hatırlatıcı."
+            label={t("settings.daily_reminder")}
+            description={t("settings.daily_reminder_desc")}
             theme={theme}
+            dir={dir}
             testID="setting-reminder"
             right={
               <Switch
@@ -376,60 +544,125 @@ export default function Ayarlar() {
                 backgroundColor: theme.bgElevated,
               }}
             >
-              <Text style={{ color: theme.textMuted, fontSize: 13 }}>
-                Bildirim izni engellenmiş. Ayarlardan izin verebilirsiniz.
+              <Text
+                style={{
+                  color: theme.textMuted,
+                  fontSize: 13,
+                  textAlign: dir.textAlign,
+                }}
+              >
+                {t("settings.permission_blocked")}
               </Text>
               <Pressable
                 onPress={() => Linking.openSettings()}
                 style={{
                   marginTop: 8,
-                  alignSelf: "flex-start",
+                  alignSelf: dir.isRTL ? "flex-end" : "flex-start",
                   paddingHorizontal: spacing.md,
                   paddingVertical: 8,
                   borderRadius: radius.pill,
                   backgroundColor: theme.gold,
                 }}
                 testID="open-settings-btn"
+                accessibilityRole="button"
               >
                 <Text style={{ color: theme.bg, fontWeight: "700" }}>
-                  Ayarları Aç
+                  {t("settings.title")}
                 </Text>
               </Pressable>
             </View>
           ) : null}
           {s.reminderEnabled ? (
-            <View style={styles.timeRow}>
-              <Text style={{ color: theme.textMuted, fontSize: 13, flex: 1 }}>
-                Hatırlatma zamanı
-              </Text>
+            <View style={[styles.timeRow, { flexDirection: dir.row }]}>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    color: theme.textMuted,
+                    fontSize: 13,
+                    textAlign: dir.textAlign,
+                  }}
+                >
+                  {t("settings.reminder_time")}
+                </Text>
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontSize: 15,
+                    fontWeight: "600",
+                    textAlign: dir.textAlign,
+                  }}
+                  testID="reminder-time-text"
+                >
+                  {formatTime(s.reminderHour, s.reminderMinute, bcp47)}
+                </Text>
+              </View>
               <TimeStepper
                 value={s.reminderHour}
                 onDec={() => shiftHour(-1)}
                 onInc={() => shiftHour(1)}
                 theme={theme}
+                dir={dir}
                 testIDPrefix="hour"
               />
-              <Text style={{ color: theme.text, fontSize: 18, fontWeight: "700" }}>
-                :
-              </Text>
               <TimeStepper
                 value={s.reminderMinute}
                 onDec={() => shiftMinute(-5)}
                 onInc={() => shiftMinute(5)}
                 theme={theme}
+                dir={dir}
                 testIDPrefix="minute"
               />
             </View>
           ) : null}
         </Section>
 
-        {/* Uygulama Hakkında */}
-        <Section title="UYGULAMA" theme={theme}>
-          <View style={styles.rowInfo}>
-            <Text style={{ color: theme.textMuted }}>Sürüm</Text>
-            {/* BUG-012: sabit kodlanmış "1.0.0" yerine yüklü native paketten
-                gerçek sürüm/derleme numarası okunur — app.json'daki değerden
-                bağımsız olarak her zaman kurulu APK ile eşleşir. */}
+        {/* ── Verileriniz ─────────────────────────────────────────── */}
+        <Section title={t("settings.section_data")} theme={theme} dir={dir}>
+          <SettingRow
+            icon="save-outline"
+            label={t("settings.export")}
+            description={t("settings.export_desc")}
+            theme={theme}
+            dir={dir}
+            testID="setting-export"
+            right={
+              <Pressable
+                onPress={onExport}
+                disabled={exporting}
+                style={[
+                  styles.applyBtn,
+                  { backgroundColor: exporting ? theme.border : theme.gold },
+                ]}
+                testID="export-btn"
+                accessibilityRole="button"
+                accessibilityLabel={t("settings.export")}
+              >
+                <Text style={{ color: theme.bg, fontWeight: "700" }}>
+                  {exporting ? t("common.loading") : t("common.save")}
+                </Text>
+              </Pressable>
+            }
+          />
+          {exportMsg ? (
+            <Text
+              style={{
+                color: theme.gold,
+                fontSize: 12,
+                textAlign: dir.textAlign,
+              }}
+              testID="export-msg"
+            >
+              {exportMsg}
+            </Text>
+          ) : null}
+        </Section>
+
+        {/* ── Uygulama ────────────────────────────────────────────── */}
+        <Section title={t("settings.section_app")} theme={theme} dir={dir}>
+          <View style={[styles.rowInfo, { flexDirection: dir.row }]}>
+            <Text style={{ color: theme.textMuted }}>{t("settings.version")}</Text>
+            {/* BUG-012: sabit kodlanmış sürüm yerine yüklü native paketten
+                gerçek sürüm/derleme numarası okunur. */}
             <Text style={{ color: theme.text }} testID="app-version-text">
               {Application.nativeApplicationVersion ?? "—"}
               {Application.nativeBuildVersion
@@ -437,39 +670,46 @@ export default function Ayarlar() {
                 : ""}
             </Text>
           </View>
-          <View style={styles.rowInfo}>
-            <Text style={{ color: theme.textMuted }}>Zikir Verileri</Text>
-            <Text style={{ color: theme.text }}>Yalnızca Cihaz</Text>
-          </View>
-          <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: spacing.sm }}>
-            Zikir kayıtlarınız, sayaç geçmişiniz ve uygulama ayarlarınız cihazınızda
-            saklanır. Google AdMob; reklam sunumu, ölçüm ve güvenlik amacıyla belirli
-            cihaz ve uygulama kullanım verilerini Google politikalarına göre işleyebilir.
+
+          <Text
+            style={{
+              color: theme.textSubtle,
+              fontSize: 12,
+              marginTop: spacing.sm,
+              textAlign: dir.textAlign,
+              writingDirection: dir.writingDirection,
+            }}
+            testID="data-notice"
+          >
+            {t("settings.data_notice")}
           </Text>
-          {/* Gizlilik Politikası — Play Console gereklilikleriyle uyumlu,
-              tarayıcıda açılan resmi politika linki. */}
+
           <Pressable
-            onPress={() =>
-              Linking.openURL(
-                "https://sites.google.com/view/hedefzikirmatik/ana-sayfa"
-              ).catch(() => {})
-            }
-            style={styles.privacyRow}
+            onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}
+            style={[styles.privacyRow, { flexDirection: dir.row }]}
             testID="privacy-policy-row"
             accessibilityRole="link"
-            accessibilityLabel="Gizlilik Politikası"
+            accessibilityLabel={t("settings.privacy_policy")}
           >
             <View
               style={[styles.settingIcon, { backgroundColor: theme.emeraldDeep }]}
             >
-              <Ionicons name="shield-checkmark-outline" size={18} color={theme.gold} />
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={18}
+                color={theme.gold}
+              />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: theme.text, fontSize: 15, fontWeight: "500" }}>
-                Gizlilik Politikası
-              </Text>
-              <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: 2 }}>
-                Tarayıcıda aç
+              <Text
+                style={{
+                  color: theme.text,
+                  fontSize: 15,
+                  fontWeight: "500",
+                  textAlign: dir.textAlign,
+                }}
+              >
+                {t("settings.privacy_policy")}
               </Text>
             </View>
             <Ionicons name="open-outline" size={18} color={theme.textSubtle} />
@@ -480,13 +720,11 @@ export default function Ayarlar() {
               Bu satır yalnızca UMP "gerekli" dediğinde görünür. */}
           {privacyOptionsRequired ? (
             <Pressable
-              onPress={() => {
-                showPrivacyOptions();
-              }}
-              style={styles.privacyRow}
+              onPress={() => showPrivacyOptions()}
+              style={[styles.privacyRow, { flexDirection: dir.row }]}
               testID="ad-privacy-options-row"
               accessibilityRole="button"
-              accessibilityLabel="Reklam Gizlilik Seçenekleri"
+              accessibilityLabel={t("settings.ad_privacy_options")}
             >
               <View
                 style={[styles.settingIcon, { backgroundColor: theme.emeraldDeep }]}
@@ -494,20 +732,132 @@ export default function Ayarlar() {
                 <Ionicons name="options-outline" size={18} color={theme.gold} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ color: theme.text, fontSize: 15, fontWeight: "500" }}>
-                  Reklam Gizlilik Seçenekleri
-                </Text>
-                <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: 2 }}>
-                  Reklam ve gizlilik tercihlerinizi değiştirin.
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontSize: 15,
+                    fontWeight: "500",
+                    textAlign: dir.textAlign,
+                  }}
+                >
+                  {t("settings.ad_privacy_options")}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={theme.textSubtle} />
+              <Ionicons name={dir.forwardIcon} size={18} color={theme.textSubtle} />
             </Pressable>
           ) : null}
         </Section>
-
       </ScrollView>
+
+      <LanguagePicker
+        visible={langPickerOpen}
+        onClose={() => setLangPickerOpen(false)}
+        onPick={async (code) => {
+          setLangPickerOpen(false);
+          await setLanguage(code);
+        }}
+      />
     </SafeAreaView>
+  );
+}
+
+function LanguagePicker({
+  visible,
+  onClose,
+  onPick,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onPick: (code: LanguageCode) => void;
+}) {
+  const { theme } = useStore();
+  const { t, lang, languages } = useI18n();
+  const dir = useDirection();
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View
+          style={[
+            styles.modalSheet,
+            { backgroundColor: theme.bgCard, borderColor: theme.border },
+          ]}
+          testID="language-picker"
+        >
+          <Text
+            style={{
+              color: theme.text,
+              fontSize: 18,
+              fontWeight: "700",
+              textAlign: dir.textAlign,
+            }}
+          >
+            {t("settings.select_language")}
+          </Text>
+          <ScrollView
+            style={{ marginTop: spacing.md }}
+            contentContainerStyle={{ gap: 6, paddingBottom: spacing.xl }}
+            showsVerticalScrollIndicator={false}
+          >
+            {languages.map((l) => {
+              const on = l.code === lang;
+              return (
+                <Pressable
+                  key={l.code}
+                  onPress={() => onPick(l.code)}
+                  style={[
+                    styles.langRow,
+                    {
+                      borderColor: on ? theme.gold : theme.border,
+                      backgroundColor: on ? theme.emeraldDeep : "transparent",
+                      flexDirection: dir.row,
+                    },
+                  ]}
+                  testID={`lang-${l.code}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  accessibilityLabel={`${l.nativeName} — ${l.englishName}`}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        color: on ? theme.gold : theme.text,
+                        fontSize: 16,
+                        fontWeight: on ? "700" : "500",
+                        textAlign: dir.textAlign,
+                        writingDirection: l.rtl ? "rtl" : "ltr",
+                      }}
+                    >
+                      {l.nativeName}
+                    </Text>
+                    <Text
+                      style={{
+                        color: theme.textSubtle,
+                        fontSize: 12,
+                        marginTop: 1,
+                        textAlign: dir.textAlign,
+                      }}
+                    >
+                      {l.englishName}
+                    </Text>
+                  </View>
+                  {on ? (
+                    <Ionicons name="checkmark" size={18} color={theme.gold} />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -515,23 +865,23 @@ function Section({
   title,
   children,
   theme,
+  dir,
 }: {
   title: string;
   children: React.ReactNode;
-  theme: any;
+  theme: ThemeTokens;
+  dir: ReturnType<typeof useDirection>;
 }) {
   return (
     <View>
-      {/* BUG-011: textTransform kaldirildi — title prop'u cagiran yerlerde
-          zaten dogru Türkçe buyuk harfle geliyor (device locale'ine
-          bagimli olmadan). */}
       <Text
         style={{
           color: theme.textMuted,
           fontSize: 12,
           letterSpacing: 1.5,
           marginBottom: spacing.sm,
-          paddingLeft: 4,
+          paddingHorizontal: 4,
+          textAlign: dir.textAlign,
         }}
       >
         {title}
@@ -558,26 +908,43 @@ function SettingRow({
   description,
   right,
   theme,
+  dir,
   testID,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   description?: string;
   right?: React.ReactNode;
-  theme: any;
+  theme: ThemeTokens;
+  dir: ReturnType<typeof useDirection>;
   testID?: string;
 }) {
   return (
-    <View style={styles.settingRow} testID={testID}>
+    <View style={[styles.settingRow, { flexDirection: dir.row }]} testID={testID}>
       <View style={[styles.settingIcon, { backgroundColor: theme.emeraldDeep }]}>
         <Ionicons name={icon} size={18} color={theme.gold} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: theme.text, fontSize: 15, fontWeight: "500" }}>
+        <Text
+          style={{
+            color: theme.text,
+            fontSize: 15,
+            fontWeight: "500",
+            textAlign: dir.textAlign,
+          }}
+        >
           {label}
         </Text>
         {description ? (
-          <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: 2 }}>
+          <Text
+            style={{
+              color: theme.textSubtle,
+              fontSize: 12,
+              marginTop: 2,
+              textAlign: dir.textAlign,
+              writingDirection: dir.writingDirection,
+            }}
+          >
             {description}
           </Text>
         ) : null}
@@ -592,30 +959,44 @@ function TimeStepper({
   onDec,
   onInc,
   theme,
+  dir,
   testIDPrefix,
 }: {
   value: number;
   onDec: () => void;
   onInc: () => void;
-  theme: any;
+  theme: ThemeTokens;
+  dir: ReturnType<typeof useDirection>;
   testIDPrefix: string;
 }) {
   return (
-    <View style={styles.stepper}>
+    <View style={[styles.stepper, { flexDirection: dir.row }]}>
       <Pressable
         onPress={onDec}
         style={[styles.stepBtn, { borderColor: theme.border }]}
         testID={`${testIDPrefix}-dec`}
+        accessibilityRole="button"
+        hitSlop={6}
       >
         <Ionicons name="chevron-down" size={16} color={theme.gold} />
       </Pressable>
-      <Text style={{ color: theme.text, fontSize: 18, fontWeight: "700", minWidth: 32, textAlign: "center" }}>
+      <Text
+        style={{
+          color: theme.text,
+          fontSize: 18,
+          fontWeight: "700",
+          minWidth: 32,
+          textAlign: "center",
+        }}
+      >
         {String(value).padStart(2, "0")}
       </Text>
       <Pressable
         onPress={onInc}
         style={[styles.stepBtn, { borderColor: theme.border }]}
         testID={`${testIDPrefix}-inc`}
+        accessibilityRole="button"
+        hitSlop={6}
       >
         <Ionicons name="chevron-up" size={16} color={theme.gold} />
       </Pressable>
@@ -631,7 +1012,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   settingRow: {
-    flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
     paddingVertical: 4,
@@ -643,8 +1023,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  segment: {
+    gap: 8,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    alignItems: "center",
+  },
   goalRow: {
-    flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
   },
@@ -657,7 +1047,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   goalInputRow: {
-    flexDirection: "row",
     gap: 8,
     marginTop: spacing.md,
   },
@@ -677,13 +1066,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   timeRow: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 8,
     marginTop: spacing.sm,
   },
   stepper: {
-    flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
@@ -696,7 +1083,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   rowInfo: {
-    flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 4,
   },
@@ -707,13 +1093,31 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   privacyRow: {
-    flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
     paddingVertical: spacing.sm,
     marginTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "rgba(255,255,255,0.06)",
+    borderTopColor: "rgba(128,128,128,0.18)",
     paddingTop: spacing.md,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    maxHeight: "82%",
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: spacing.xl,
+  },
+  langRow: {
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+    borderRadius: radius.md,
+    borderWidth: 1,
   },
 });

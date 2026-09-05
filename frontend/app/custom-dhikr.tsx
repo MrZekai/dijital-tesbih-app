@@ -14,13 +14,17 @@ import {
 import { Text, TextInput } from "@/src/components/AppText";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useI18n } from "@/src/i18n";
 import { TARGET_PRESETS } from "@/src/lib/dhikrs";
+import { useDirection } from "@/src/lib/rtl";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 import { normalizeName, parsePositiveInteger } from "@/src/lib/validation";
 
 export default function CustomDhikrScreen() {
   const { theme, state, addCustomDhikr, updateCustomDhikr } = useStore();
+  const { t, n: fmt, bcp47 } = useI18n();
+  const dir = useDirection();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ id?: string }>();
   const editing = params.id
@@ -40,25 +44,25 @@ export default function CustomDhikrScreen() {
   const canSave = name.trim().length > 0 && target > 0;
 
   const findDuplicate = () => {
-    const norm = normalizeName(name);
+    // Locale duyarlı normalleştirme — Türkçe I/İ kuralı yalnızca Türkçe
+    // arayüzde uygulanır (bkz. validation.ts).
+    const norm = normalizeName(name, bcp47);
     if (!norm) return null;
     const dup = state.customDhikrs.find(
-      (c) => c.id !== editing?.id && normalizeName(c.name) === norm
+      (c) => c.id !== editing?.id && normalizeName(c.name, bcp47) === norm
     );
     return dup || null;
   };
 
   const onSave = () => {
     if (!canSave) {
-      setError("Zikir adı ve hedef gerekli.");
+      setError(t("custom.required"));
       return;
     }
     setError(null);
     const dup = findDuplicate();
     if (dup && !duplicateConfirmed) {
-      setError(
-        `"${dup.name}" adında bir zikir zaten var. Yine de kaydetmek için tekrar dokunun.`
-      );
+      setError(t("custom.duplicate", { name: dup.name }));
       setDuplicateConfirmed(true);
       return;
     }
@@ -75,7 +79,11 @@ export default function CustomDhikrScreen() {
       <View
         style={[
           styles.header,
-          { paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.xl },
+          {
+            flexDirection: dir.row,
+            paddingTop: insets.top + spacing.md,
+            paddingHorizontal: spacing.xl,
+          },
         ]}
       >
         <Pressable
@@ -83,11 +91,13 @@ export default function CustomDhikrScreen() {
           hitSlop={12}
           style={[styles.backBtn, { borderColor: theme.border }]}
           testID="custom-back"
+          accessibilityRole="button"
+          accessibilityLabel={t("common.close")}
         >
           <Ionicons name="close" size={22} color={theme.text} />
         </Pressable>
         <Text style={[styles.title, { color: theme.text, fontFamily: fonts.display }]}>
-          {editing ? "Zikri Düzenle" : "Özel Zikir Ekle"}
+          {editing ? t("custom.title_edit") : t("custom.title_new")}
         </Text>
         <View style={{ width: 40 }} />
       </View>
@@ -101,77 +111,113 @@ export default function CustomDhikrScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View>
-          <Text style={[styles.label, { color: theme.textMuted }]}>ZİKİR ADI</Text>
+          <Text
+            style={[
+              styles.label,
+              { color: theme.textMuted, textAlign: dir.textAlign },
+            ]}
+          >
+            {t("custom.name_label")}
+          </Text>
           <TextInput
             value={name}
-            onChangeText={(t) => {
-              setName(t);
+            onChangeText={(v) => {
+              setName(v);
               setDuplicateConfirmed(false);
               setError(null);
             }}
-            placeholder="Örn. Yâ Rezzâk"
+            placeholder={t("custom.name_placeholder")}
             placeholderTextColor={theme.textSubtle}
             style={[
               styles.input,
-              { color: theme.text, borderColor: theme.border, backgroundColor: theme.bgCard },
+              {
+                color: theme.text,
+                borderColor: theme.border,
+                backgroundColor: theme.bgCard,
+                textAlign: dir.textAlign,
+                writingDirection: dir.writingDirection,
+              },
             ]}
             testID="dhikr-name-input"
+            accessibilityLabel={t("custom.name_label")}
           />
         </View>
 
         <View>
-          <Text style={[styles.label, { color: theme.textMuted }]}>
-            ARAPÇA YAZILIŞI (İSTEĞE BAĞLI)
+          <Text
+            style={[
+              styles.label,
+              { color: theme.textMuted, textAlign: dir.textAlign },
+            ]}
+          >
+            {t("custom.arabic_label")}
           </Text>
           <TextInput
             value={arabic}
             onChangeText={setArabic}
-            placeholder="Örn. يَا رَزَّاق"
+            placeholder={t("custom.arabic_placeholder")}
             placeholderTextColor={theme.textSubtle}
             style={[
               styles.input,
-              { color: theme.text, borderColor: theme.border, backgroundColor: theme.bgCard },
+              {
+                color: theme.text,
+                borderColor: theme.border,
+                backgroundColor: theme.bgCard,
+                textAlign: "right",
+                writingDirection: "rtl",
+              },
             ]}
             testID="dhikr-transliteration-input"
+            accessibilityLabel={t("custom.arabic_label")}
           />
         </View>
 
         <View>
-          <Text style={[styles.label, { color: theme.textMuted }]}>HEDEF</Text>
-          <View style={styles.chips}>
-            {TARGET_PRESETS.map((t) => (
+          <Text
+            style={[
+              styles.label,
+              { color: theme.textMuted, textAlign: dir.textAlign },
+            ]}
+          >
+            {t("custom.target_label")}
+          </Text>
+          <View style={[styles.chips, { flexDirection: dir.row }]}>
+            {TARGET_PRESETS.map((n) => (
               <Pressable
-                key={t}
-                onPress={() => setTarget(t)}
+                key={n}
+                onPress={() => setTarget(n)}
                 style={[
                   styles.chip,
                   {
-                    borderColor: target === t ? theme.gold : theme.border,
-                    backgroundColor: target === t ? theme.emeraldDeep : "transparent",
+                    borderColor: target === n ? theme.gold : theme.border,
+                    backgroundColor:
+                      target === n ? theme.emeraldDeep : "transparent",
                   },
                 ]}
-                testID={`custom-target-${t}`}
+                testID={`custom-target-${n}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: target === n }}
               >
                 <Text
                   style={{
-                    color: target === t ? theme.gold : theme.text,
+                    color: target === n ? theme.gold : theme.text,
                     fontSize: 15,
                     fontWeight: "600",
                   }}
                 >
-                  {t}
+                  {fmt(n)}
                 </Text>
               </Pressable>
             ))}
           </View>
-          <View style={{ flexDirection: "row", gap: 8, marginTop: spacing.md }}>
+          <View style={{ flexDirection: dir.row, gap: 8, marginTop: spacing.md }}>
             <TextInput
               value={customTarget}
-              onChangeText={(t) => {
-                setCustomTarget(t);
+              onChangeText={(v) => {
+                setCustomTarget(v);
                 setTargetError(null);
               }}
-              placeholder="Özel hedef"
+              placeholder={t("custom.custom_target")}
               placeholderTextColor={theme.textSubtle}
               keyboardType="number-pad"
               style={[
@@ -197,13 +243,15 @@ export default function CustomDhikrScreen() {
                 } else {
                   // BUG-014: gecersiz girisler (0, negatif, ondalik) artik
                   // sessizce yok sayilmiyor — acik hata mesaji gosterilir.
-                  setTargetError(result.error || "Geçersiz değer.");
+                  setTargetError(t(result.errorKey ?? "custom.invalid"));
                 }
               }}
               style={[styles.applyBtn, { borderColor: theme.gold }]}
               testID="apply-custom-target"
             >
-              <Text style={{ color: theme.gold, fontWeight: "700" }}>Uygula</Text>
+              <Text style={{ color: theme.gold, fontWeight: "700" }}>
+                {t("common.save")}
+              </Text>
             </Pressable>
           </View>
           {targetError ? (
@@ -211,13 +259,32 @@ export default function CustomDhikrScreen() {
               {targetError}
             </Text>
           ) : null}
-          <Text style={{ color: theme.textSubtle, fontSize: 12, marginTop: 6 }}>
-            Seçili hedef: <Text style={{ color: theme.gold, fontWeight: "700" }}>{target}</Text>
+          <Text
+            style={{
+              color: theme.textSubtle,
+              fontSize: 12,
+              marginTop: 6,
+              textAlign: dir.textAlign,
+            }}
+          >
+            {t("custom.target_label")}:{" "}
+            <Text style={{ color: theme.gold, fontWeight: "700" }}>
+              {fmt(target)}
+            </Text>
           </Text>
         </View>
 
         {error ? (
-          <Text style={{ color: theme.danger, fontSize: 13 }}>{error}</Text>
+          <Text
+            style={{
+              color: theme.danger,
+              fontSize: 13,
+              textAlign: dir.textAlign,
+            }}
+            testID="custom-error"
+          >
+            {error}
+          </Text>
         ) : null}
 
         <Pressable
@@ -231,13 +298,14 @@ export default function CustomDhikrScreen() {
             },
           ]}
           testID="save-dhikr-btn"
+          accessibilityRole="button"
         >
           <Text style={{ color: theme.bg, fontSize: 16, fontWeight: "700" }}>
             {duplicateConfirmed
-              ? "Yine de Kaydet"
+              ? t("custom.save_anyway")
               : editing
-              ? "Değişiklikleri Kaydet"
-              : "Zikri Kaydet"}
+                ? t("custom.save_changes")
+                : t("custom.save")}
           </Text>
         </Pressable>
       </ScrollView>
@@ -248,7 +316,6 @@ export default function CustomDhikrScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: spacing.sm,
@@ -280,7 +347,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   chips: {
-    flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
   },

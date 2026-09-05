@@ -22,22 +22,33 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TesbihRing } from "@/src/components/TesbihRing";
 import { useRespectfulInterstitial } from "@/src/ads/useRespectfulInterstitial";
 import { useTesbihSounds } from "@/src/lib/sounds";
+import { useI18n } from "@/src/i18n";
+import { BUILTIN_DHIKRS, dhikrName } from "@/src/lib/dhikrs";
+import { useDirection } from "@/src/lib/rtl";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
 // BUG-002: bu id'ler `dhikrs.ts` icindeki BUILTIN_DHIKRS ile eslesir —
 // böylece tesbihat sayimlari AYNI canonical zikir kaydina (ve dolayisiyla
 // toplam/günlük/haftalık/aylık istatistiklere) akar.
+// Adımlar hazır zikir tanımlarından TÜRETİLİR — ad ve Arapça yazılış tek
+// kaynaktan gelir, çeviri otomatik olarak uygulanır.
+const stepDef = (id: string) => {
+  const d = BUILTIN_DHIKRS.find((x) => x.id === id)!;
+  return { id: d.id, def: d, arabic: d.arabic, target: 33 };
+};
 const STEPS = [
-  { id: "subhanallah", name: "Sübhanallah", arabic: "سُبْحَانَ ٱللَّٰهِ", target: 33 },
-  { id: "elhamdulillah", name: "Elhamdülillah", arabic: "ٱلْحَمْدُ لِلَّٰهِ", target: 33 },
-  { id: "allahuekber", name: "Allahu Ekber", arabic: "ٱللَّٰهُ أَكْبَرُ", target: 33 },
+  stepDef("subhanallah"),
+  stepDef("elhamdulillah"),
+  stepDef("allahuekber"),
 ];
 
 /** UX-3: Yarim kalmis tesbihat en fazla bu sure kadar hatirlanir (12 saat). */
 const RESUME_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
 export default function Tesbihat() {
+  const { t, n: fmt, c: fmtCounter } = useI18n();
+  const dir = useDirection();
   const {
     theme,
     state,
@@ -215,10 +226,10 @@ export default function Tesbihat() {
               { color: theme.gold, fontFamily: fonts.display },
             ]}
           >
-            Tesbihat Tamamlandı
+            {t("tesbihat.title")}
           </Text>
           <Text style={[styles.doneSub, { color: theme.textMuted }]}>
-            Allah kabul etsin.
+            {t("tesbihat.finished")}
           </Text>
           <View style={{ height: 40 }} />
           <Pressable
@@ -227,7 +238,7 @@ export default function Tesbihat() {
             testID="tesbihat-restart"
           >
             <Text style={{ color: theme.gold, fontSize: 15, fontWeight: "600" }}>
-              Yeniden Başla
+              {t("tesbihat.restart")}
             </Text>
           </Pressable>
           <Pressable
@@ -236,7 +247,7 @@ export default function Tesbihat() {
             testID="tesbihat-back"
           >
             <Text style={{ color: theme.bg, fontSize: 15, fontWeight: "700" }}>
-              Ana Sayfaya Dön
+              {t("common.back")}
             </Text>
           </Pressable>
         </View>
@@ -266,22 +277,22 @@ export default function Tesbihat() {
           style={[styles.backBtn, { borderColor: theme.border }]}
           testID="tesbihat-close"
         >
-          <Ionicons name="chevron-back" size={22} color={theme.text} />
+          <Ionicons name={dir.backIcon} size={22} color={theme.text} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: theme.text, fontFamily: fonts.display }]}>
-          Namaz Sonrası Tesbihat
+          {t("tesbihat.title")}
         </Text>
         <View style={{ width: 40 }} />
       </View>
 
       {/* Step indicator */}
-      <View style={styles.stepsRow}>
+      <View style={[styles.stepsRow, { flexDirection: dir.row }]}>
         {STEPS.map((s, i) => {
           const isActive = i === stepIdx;
           const isDone = i < stepIdx;
           return (
             <Animated.View
-              key={s.name}
+              key={s.id}
               style={[
                 styles.stepDot,
                 {
@@ -297,7 +308,7 @@ export default function Tesbihat() {
 
       {/* UX-3: Kaldigi yerden devam bildirimi + bastan baslama secenegi. */}
       {resumedNotice ? (
-        <View style={styles.resumeRow}>
+        <View style={[styles.resumeRow, { flexDirection: dir.row }]}>
           <View
             style={[
               styles.resumeChip,
@@ -306,7 +317,7 @@ export default function Tesbihat() {
           >
             <Ionicons name="play-back-outline" size={14} color={theme.gold} />
             <Text style={{ color: theme.gold, fontSize: 12 }}>
-              Kaldığınız yerden devam ediyorsunuz
+              {t("tesbihat.resume_body")}
             </Text>
             <Pressable onPress={restart} hitSlop={8} testID="tesbihat-restart-inline">
               <Text
@@ -317,7 +328,7 @@ export default function Tesbihat() {
                   textDecorationLine: "underline",
                 }}
               >
-                Baştan başla
+                {t("tesbihat.restart")}
               </Text>
             </Pressable>
           </View>
@@ -334,7 +345,7 @@ export default function Tesbihat() {
               { color: theme.gold, fontFamily: fonts.display },
             ]}
           >
-            {step.name}
+            {dhikrName(step.def, t)}
           </Text>
           <Text style={[styles.stepArabic, { color: theme.textMuted }]}>
             {step.arabic}
@@ -361,12 +372,12 @@ export default function Tesbihat() {
                 allowFontScaling={false}
                 testID="tesbihat-count"
               >
-                {count}
+                {fmtCounter(count)}
               </Text>
             </Animated.View>
           </View>
           <Text style={[styles.progressText, { color: theme.text }]}>
-            {count} / {step.target}
+            {fmt(count)} / {fmt(step.target)}
           </Text>
           <Text
             style={[
@@ -374,7 +385,7 @@ export default function Tesbihat() {
               { color: theme.textSubtle, marginTop: spacing.md },
             ]}
           >
-            DOKUN · SIRADAKİ ZİKİR OTOMATİK BAŞLAR
+            {t("tesbihat.step", { current: stepIdx + 1, total: STEPS.length })}
           </Text>
         </View>
       </Pressable>

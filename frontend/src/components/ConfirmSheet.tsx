@@ -4,6 +4,8 @@ import React from "react";
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 
 import { Text } from "@/src/components/AppText";
+import { useT } from "@/src/i18n";
+import { useDirection } from "@/src/lib/rtl";
 
 import { spacing, radius } from "@/src/lib/theme";
 import type { ThemeTokens } from "@/src/lib/theme";
@@ -25,14 +27,18 @@ export function ConfirmSheet({
   visible,
   title,
   message,
-  confirmLabel = "Onayla",
-  cancelLabel = "Vazgeç",
+  confirmLabel,
+  cancelLabel,
   destructive,
   onConfirm,
   onCancel,
   theme,
   testID,
 }: Props) {
+  const t = useT();
+  const dir = useDirection();
+  const confirmText = confirmLabel ?? t("common.confirm");
+  const cancelText = cancelLabel ?? t("common.cancel");
   return (
     <Modal
       visible={visible}
@@ -56,13 +62,26 @@ export function ConfirmSheet({
           ]}
           testID={testID}
         >
-          <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+          <Text
+            style={[styles.title, { color: theme.text, textAlign: dir.textAlign }]}
+          >
+            {title}
+          </Text>
           {message ? (
-            <Text style={[styles.message, { color: theme.textMuted }]}>
+            <Text
+              style={[
+                styles.message,
+                {
+                  color: theme.textMuted,
+                  textAlign: dir.textAlign,
+                  writingDirection: dir.writingDirection,
+                },
+              ]}
+            >
               {message}
             </Text>
           ) : null}
-          <View style={styles.row}>
+          <View style={[styles.row, { flexDirection: dir.row }]}>
             <Pressable
               onPress={onCancel}
               style={[
@@ -73,7 +92,7 @@ export function ConfirmSheet({
               testID={testID ? `${testID}-cancel` : undefined}
             >
               <Text style={[styles.btnText, { color: theme.textMuted }]}>
-                {cancelLabel}
+                {cancelText}
               </Text>
             </Pressable>
             <Pressable
@@ -95,7 +114,7 @@ export function ConfirmSheet({
                   },
                 ]}
               >
-                {confirmLabel}
+                {confirmText}
               </Text>
             </Pressable>
           </View>

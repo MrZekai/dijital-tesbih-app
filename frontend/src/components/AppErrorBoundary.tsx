@@ -22,6 +22,8 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { tStatic } from "@/src/i18n";
+
 interface Props {
   children: React.ReactNode;
   /** Log'larda ayırt etmek için (ör. "root", "ads"). */
@@ -56,18 +58,15 @@ export class AppErrorBoundary extends React.Component<Props, State> {
 
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Bir sorun oluştu</Text>
-        <Text style={styles.body}>
-          Zikir kayıtlarınız güvende — hepsi cihazınıza kaydedildi. Aşağıdaki
-          düğmeye dokunarak devam edebilirsiniz.
-        </Text>
+        <Text style={styles.title}>{tStatic("error.title")}</Text>
+        <Text style={styles.body}>{tStatic("error.body")}</Text>
         <Pressable
           onPress={this.reset}
           style={({ pressed }) => [styles.btn, { opacity: pressed ? 0.7 : 1 }]}
           testID="error-boundary-retry"
           accessibilityRole="button"
         >
-          <Text style={styles.btnText}>Yeniden Dene</Text>
+          <Text style={styles.btnText}>{tStatic("error.retry")}</Text>
         </Pressable>
       </View>
     );
