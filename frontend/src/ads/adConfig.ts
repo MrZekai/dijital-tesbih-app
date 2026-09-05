@@ -29,16 +29,25 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-// ── GERÇEK AdMob kimlikleri (Android) ───────────────────────────────────
+// ── AdMob kimlikleri ────────────────────────────────────────────────────
 // Uygulama kimliği app.json içinde de tanımlıdır:
 //   plugins > react-native-google-mobile-ads > androidAppId
 export const ADMOB_ANDROID_APP_ID = "ca-app-pub-1380972808968213~2930057843";
 
-/** Banner reklam birimi — sekme çubuğunun üstündeki sabit alan. */
-export const bannerUnitId = "ca-app-pub-1380972808968213/1326176029";
+/** ÜRETİM banner reklam birimi (DEĞİŞTİRME). */
+export const PROD_BANNER_UNIT_ID = "ca-app-pub-1380972808968213/1326176029";
 
-/** Uygulama Açılışı (App Open) reklam birimi. */
-export const appOpenUnitId = "ca-app-pub-1380972808968213/1789210450";
+/** ÜRETİM App Open reklam birimi (DEĞİŞTİRME). */
+export const PROD_APP_OPEN_UNIT_ID = "ca-app-pub-1380972808968213/1789210450";
+
+/**
+ * Google'ın RESMÎ örnek reklam birimleri.
+ * Yalnızca geliştirme/QA derlemelerinde kullanılır; canlı yayında ASLA.
+ * Kaynak: developers.google.com/admob/android/test-ads
+ */
+const TEST_BANNER_UNIT_ID = "ca-app-pub-3940256099942544/9214589741";
+const TEST_APP_OPEN_UNIT_ID = "ca-app-pub-3940256099942544/9257395921";
+const TEST_INTERSTITIAL_UNIT_ID = "ca-app-pub-3940256099942544/1033173712";
 
 // ─────────────────────────────────────────────────────────────────────────
 // REKLAM ANA ANAHTARI (ADVERTISING MASTER SWITCH)
@@ -60,8 +69,35 @@ const isExpoGo = Constants.executionEnvironment === "storeClient";
 // oluşturulmalı, kimlikler buraya eklenmeli ve bu koşul güncellenmelidir.)
 export const adsEnabled = ADS_ENABLED && !isExpoGo && Platform.OS === "android";
 
-// Artık test/prod ayrımı YOK — her ortamda gerçek birimler kullanılır.
-export const isProductionAds = true;
+/**
+ * ÜRETİM mi, GELİŞTİRME/QA mi?
+ *
+ * `__DEV__` Metro/debug derlemelerinde `true`, release derlemelerinde
+ * `false`'tur. Ayrıca QA'nın release yapılandırmasında da test reklamı
+ * kullanabilmesi için açık bir kaçış kapısı bırakıldı:
+ *   EXPO_PUBLIC_ADS_MODE=test
+ *
+ * KURAL (talimat md. 9): geliştirme ve QA derlemelerinde YALNIZCA Google'ın
+ * test birimleri kullanılır; canlı birimler SADECE production profilinde
+ * çalışır. Böylece "kendi reklamına tıklama → geçersiz trafik" riski
+ * tamamen ortadan kalkar.
+ *
+ * YAYIN ÖNCESİ KONTROL: `EXPO_PUBLIC_ADS_MODE` production build'inde
+ * TANIMSIZ olmalıdır (bkz. RELEASE_COMPATIBILITY_CHECKLIST.md).
+ */
+const forcedMode = (process.env.EXPO_PUBLIC_ADS_MODE || "").trim().toLowerCase();
+export const isProductionAds =
+  forcedMode === "production" ? true : forcedMode === "test" ? false : !__DEV__;
+
+/** Banner reklam birimi — sekme çubuğunun üstündeki sabit alan. */
+export const bannerUnitId = isProductionAds
+  ? PROD_BANNER_UNIT_ID
+  : TEST_BANNER_UNIT_ID;
+
+/** Uygulama Açılışı (App Open) reklam birimi. */
+export const appOpenUnitId = isProductionAds
+  ? PROD_APP_OPEN_UNIT_ID
+  : TEST_APP_OPEN_UNIT_ID;
 
 /**
  * Google'ın resmî "test cihazı" mekanizması. GERÇEK reklam birimiyle
@@ -85,7 +121,7 @@ export const adTestDeviceIds: string[] = (
 //   2) `interstitialEnabled` değerini `true` yapın.
 // Altyapının tamamı (yükleme, 10 dk bekleme, olay yönetimi) hazır bekliyor.
 export const interstitialEnabled = false;
-export const interstitialUnitId = "";
+export const interstitialUnitId = isProductionAds ? "" : TEST_INTERSTITIAL_UNIT_ID;
 
 /** İnterstitial cooldown — kullanıcıyı rahatsız etmemek için minimum 10 dk. */
 export const INTERSTITIAL_COOLDOWN_MS = 10 * 60 * 1000;
@@ -127,9 +163,17 @@ export const adDebugInfo = {
   ADS_ENABLED,
   adsEnabled,
   isExpoGo,
+  isProductionAds,
   platform: Platform.OS,
   bannerUnitId,
   appOpenUnitId,
   interstitialEnabled,
   testDeviceCount: adTestDeviceIds.length,
 };
+
+if (!isProductionAds) {
+  console.warn(
+    "[ads] TEST MODU: Google'in ornek reklam birimleri kullaniliyor. " +
+      "Bu derleme Play'e YUKLENMEMELIDIR."
+  );
+}
