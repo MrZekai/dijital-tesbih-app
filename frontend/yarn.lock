@@ -3745,7 +3745,7 @@ expo-doctor@1.19.8:
   resolved "https://registry.yarnpkg.com/expo-doctor/-/expo-doctor-1.19.8.tgz#e2132a728755cd42a98ad08e3feeb0503edb12e7"
   integrity sha512-ZHpQM+BfJe1DNaA+/ObtLYazC2x78tIV3kkfoSGR46Tj1EvzOFh1p9gFHsILI9TOyXPEcgxCkFw9AVvf8C4c1g==
 
-expo-file-system@~19.0.23:
+expo-file-system@19.0.23, expo-file-system@~19.0.23:
   version "19.0.23"
   resolved "https://registry.yarnpkg.com/expo-file-system/-/expo-file-system-19.0.23.tgz#ad2c88ed039ba0fd5a739338818f42304171eddd"
   integrity sha512-MeGkid9OeNILfT/qonaXHp4f2c15xaB28U/bcN7pqZej0Kx0+6+V7e9ZIXpPHm07zVatxA+QkMTPQEGfmvVOxA==
@@ -3784,6 +3784,13 @@ expo-linking@8.0.12:
   dependencies:
     expo-constants "~18.0.13"
     invariant "^2.2.4"
+
+expo-localization@17.0.9:
+  version "17.0.9"
+  resolved "https://registry.yarnpkg.com/expo-localization/-/expo-localization-17.0.9.tgz#92b2827a4b68e42c0cd0ad1d3f1abf0ebe50a4a0"
+  integrity sha512-k5eYHr7iLMob3M8cHH6bgDrDRmqnZG8xKGLhpx8ST+LsFXmSgYpJ/t0VwWm0gz64C/K669XhObdG3D6QwCGqhw==
+  dependencies:
+    rtl-detect "^1.0.2"
 
 expo-modules-autolinking@3.0.26:
   version "3.0.26"
@@ -3854,6 +3861,11 @@ expo-server@^1.0.7:
   version "1.0.7"
   resolved "https://registry.yarnpkg.com/expo-server/-/expo-server-1.0.7.tgz#fe700518f73651cb0736e79e3a4f2f8b2e2671b7"
   integrity sha512-mcmyML3oXcqFUXUxtdtCL1O00ztNI2v76d+MdniXRUgHNxIcHZ05zo+DqBaOOT6LQnPk4vA4YHqQl7iGUfRb3g==
+
+expo-sharing@14.0.8:
+  version "14.0.8"
+  resolved "https://registry.yarnpkg.com/expo-sharing/-/expo-sharing-14.0.8.tgz#cfd5fcf77ab5f64cf3d192a40a925abb316d3545"
+  integrity sha512-A1pPr2iBrxypFDCWVAESk532HK+db7MFXbvO2sCV9ienaFXAk7lIBm6bkqgE6vzRd9O3RGdEGzYx80cYlc089Q==
 
 expo-splash-screen@31.0.13:
   version "31.0.13"
@@ -6421,6 +6433,11 @@ rimraf@^3.0.2:
   integrity sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==
   dependencies:
     glob "^7.1.3"
+
+rtl-detect@^1.0.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/rtl-detect/-/rtl-detect-1.1.2.tgz#ca7f0330af5c6bb626c15675c642ba85ad6273c6"
+  integrity sha512-PGMBq03+TTG/p/cRB7HCLKJ1MgDIi07+QU1faSjiYRfmY5UsAttV9Hs08jDAHVwcOwmVLcSJkpwyfXszVjWfIQ==
 
 safe-array-concat@^1.1.3:
   version "1.1.4"
