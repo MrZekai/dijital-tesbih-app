@@ -28,9 +28,11 @@ const atLeast1020 =
   (versionParts[0] === 1 && versionParts[1] === 0 && versionParts[2] >= 20);
 ok("versionName en az 1.0.20", atLeast1020);
 ok("versionCode en az 1024", app.expo.android.versionCode >= 1024);
+// v1.1.0: uygulama uluslararasi hale geldi; varsayilan ad Ingilizce oldu.
+// Turkce ad Play Console magaza yerellestirmesinde korunur.
 ok(
-  "mağaza uygulama adı korunuyor",
-  app.expo.name === "Zikirmatik: Dijital Tesbih"
+  "uluslararasi uygulama adi",
+  app.expo.name === "Dhikr Counter: Digital Tasbih"
 );
 ok(
   "generic FOREGROUND_SERVICE blocked",
@@ -108,9 +110,19 @@ ok(
 );
 
 const settings = read("app/(tabs)/ayarlar.tsx");
+// v1.1.0: metin i18n'e tasindi; ekran artik ceviri anahtarini kullaniyor
+// ve gercek metin src/i18n/locales/*.ts icinde yasiyor.
+const enLocale = read("src/i18n/locales/en.ts");
 ok(
   "privacy metni cihaz-yerel zikir verisi ile AdMob'u ayırıyor",
-  settings.includes("Google AdMob") && settings.includes("Zikir Verileri")
+  settings.includes('t("settings.data_notice")') &&
+    enLocale.includes("Google AdMob") &&
+    enLocale.includes("stored on your device")
+);
+ok(
+  "gizlilik politikasi ve reklam gizlilik secenekleri erisilebilir",
+  settings.includes("privacy-policy-row") &&
+    settings.includes("ad-privacy-options-row")
 );
 
 console.log("\n----------------------------------");

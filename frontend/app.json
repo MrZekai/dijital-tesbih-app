@@ -1,19 +1,19 @@
 {
   "expo": {
-    "name": "Zikirmatik: Dijital Tesbih",
+    "name": "Dhikr Counter: Digital Tasbih",
     "slug": "frontend",
-    "version": "1.0.21",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "frontend",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.zikirhane.tesbih",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSUserTrackingUsageDescription": "Kişiselleştirilmiş reklamları göstermek ve reklam ölçümü yapmak için kullanılabilir."
+        "NSUserTrackingUsageDescription": "Used to show personalised ads and to measure ad performance."
       }
     },
     "android": {
@@ -23,7 +23,7 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.zikirhane.tesbih",
-      "versionCode": 1027,
+      "versionCode": 1029,
       "allowBackup": false,
       "permissions": [
         "VIBRATE",
@@ -69,7 +69,7 @@
         {
           "androidAppId": "ca-app-pub-1380972808968213~2930057843",
           "delayAppMeasurementInit": true,
-          "userTrackingUsageDescription": "Kişiselleştirilmiş reklamları göstermek ve reklam ölçümü yapmak için kullanılabilir."
+          "userTrackingUsageDescription": "Used to show personalised ads and to measure ad performance."
         }
       ],
       [
