@@ -94,6 +94,7 @@
         }
       ],
       "expo-asset",
+      "./plugins/withLocalizedAppName.js",
       "./plugins/withZikirmatikManifestCleanup.js"
     ],
     "experiments": {
