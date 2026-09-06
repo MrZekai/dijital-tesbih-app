@@ -24,7 +24,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAds } from "@/src/ads/AdsProvider";
 import { StatusBarScrim } from "@/src/components/StatusBarScrim";
-import { useI18n, type LanguageCode } from "@/src/i18n";
+import {
+  SYSTEM_LANGUAGE,
+  useI18n,
+  type LanguagePreference,
+} from "@/src/i18n";
 import { formatTime } from "@/src/i18n/format";
 import { exportBackup } from "@/src/lib/backup";
 import { useBottomChromeHeight } from "@/src/lib/layout";
@@ -46,7 +50,8 @@ const PRIVACY_URL = "https://sites.google.com/view/hedefzikirmatik/ana-sayfa";
 export default function Ayarlar() {
   const { theme, state, updateSettings } = useStore();
   const { privacyOptionsRequired, showPrivacyOptions } = useAds();
-  const { t, n: fmt, bcp47, lang, languages, setLanguage } = useI18n();
+  const { t, n: fmt, bcp47, lang, languages, setLanguage, preference } =
+    useI18n();
   const dir = useDirection();
   const bottomChrome = useBottomChromeHeight();
   const s = state.settings;
@@ -155,8 +160,13 @@ export default function Ayarlar() {
     ["system", t("settings.theme_system")],
   ];
 
-  const currentLanguageName =
+  const activeLanguageName =
     languages.find((l) => l.code === lang)?.nativeName ?? lang;
+  // "Sistem" seçiliyken hangi dile düşüldüğünü de göster: Sistem · Türkçe
+  const currentLanguageName =
+    preference === SYSTEM_LANGUAGE
+      ? `${t("settings.language_system")} · ${activeLanguageName}`
+      : activeLanguageName;
 
   return (
     <SafeAreaView
@@ -361,6 +371,25 @@ export default function Ayarlar() {
               />
             }
           />
+          {/* v1.1.0: ses ayarı İKİYE bölündü. Kullanıcı hedef dolunca ses
+              istiyor ama her dokunuşta tık sesi istemiyordu. */}
+          <SettingRow
+            icon="notifications-circle-outline"
+            label={t("settings.sound_complete")}
+            description={t("settings.sound_complete_desc")}
+            theme={theme}
+            dir={dir}
+            testID="setting-sound-complete"
+            right={
+              <Switch
+                value={s.soundComplete !== false}
+                onValueChange={(v) => updateSettings({ soundComplete: v })}
+                trackColor={{ true: theme.gold, false: theme.border }}
+                thumbColor={theme.bg}
+                testID="sound-complete-switch"
+              />
+            }
+          />
           <SettingRow
             icon="volume-medium-outline"
             label={t("settings.bead_sound")}
@@ -370,8 +399,11 @@ export default function Ayarlar() {
             testID="setting-sound"
             right={
               <Switch
-                value={s.sound}
-                onValueChange={(v) => updateSettings({ sound: v })}
+                value={s.soundTap === true}
+                onValueChange={(v) =>
+                  // `sound` eski sürümlerin okuduğu alan; senkron tutulur.
+                  updateSettings({ soundTap: v, sound: v })
+                }
                 trackColor={{ true: theme.gold, false: theme.border }}
                 thumbColor={theme.bg}
                 testID="sound-switch"
@@ -768,11 +800,14 @@ function LanguagePicker({
 }: {
   visible: boolean;
   onClose: () => void;
-  onPick: (code: LanguageCode) => void;
+  onPick: (code: LanguagePreference) => void;
 }) {
   const { theme } = useStore();
-  const { t, lang, languages } = useI18n();
+  const { t, lang, languages, preference, deviceTag } = useI18n();
   const dir = useDirection();
+  const systemOn = preference === SYSTEM_LANGUAGE;
+  const autoName =
+    languages.find((l) => l.code === lang)?.nativeName ?? lang;
 
   return (
     <Modal
@@ -806,8 +841,57 @@ function LanguagePicker({
             contentContainerStyle={{ gap: 6, paddingBottom: spacing.xl }}
             showsVerticalScrollIndicator={false}
           >
+            {/* Cihazı takip et — en üstte, varsayılan davranış. */}
+            <Pressable
+              onPress={() => onPick(SYSTEM_LANGUAGE)}
+              style={[
+                styles.langRow,
+                {
+                  borderColor: systemOn ? theme.gold : theme.border,
+                  backgroundColor: systemOn ? theme.emeraldDeep : "transparent",
+                  flexDirection: dir.row,
+                },
+              ]}
+              testID="lang-system"
+              accessibilityRole="button"
+              accessibilityState={{ selected: systemOn }}
+            >
+              <Ionicons
+                name="phone-portrait-outline"
+                size={18}
+                color={systemOn ? theme.gold : theme.textSubtle}
+              />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    color: systemOn ? theme.gold : theme.text,
+                    fontSize: 16,
+                    fontWeight: systemOn ? "700" : "500",
+                    textAlign: dir.textAlign,
+                  }}
+                >
+                  {t("settings.language_system")}
+                </Text>
+                <Text
+                  style={{
+                    color: theme.textSubtle,
+                    fontSize: 12,
+                    marginTop: 1,
+                    textAlign: dir.textAlign,
+                  }}
+                  testID="lang-system-detected"
+                >
+                  {autoName}
+                  {deviceTag ? ` · ${deviceTag}` : ""}
+                </Text>
+              </View>
+              {systemOn ? (
+                <Ionicons name="checkmark" size={18} color={theme.gold} />
+              ) : null}
+            </Pressable>
+
             {languages.map((l) => {
-              const on = l.code === lang;
+              const on = !systemOn && l.code === lang;
               return (
                 <Pressable
                   key={l.code}

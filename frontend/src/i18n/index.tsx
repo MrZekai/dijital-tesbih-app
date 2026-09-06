@@ -25,7 +25,7 @@ import React, {
   useState,
   type PropsWithChildren,
 } from "react";
-import { I18nManager, NativeModules, Platform } from "react-native";
+import { AppState, I18nManager, NativeModules, Platform } from "react-native";
 
 import { storage } from "@/src/utils/storage";
 
@@ -51,6 +51,12 @@ export const LANGUAGE_STORAGE_KEY = "zikirhane:lang:v1";
 
 export type TranslateValues = Record<string, string | number>;
 
+/** Kullanıcının dil TERCİHİ — somut bir dil ya da "cihazı takip et". */
+export type LanguagePreference = LanguageCode | "system";
+
+/** `zikirhane:lang:v1` içinde saklanan "cihazı takip et" değeri. */
+export const SYSTEM_LANGUAGE = "system" as const;
+
 export interface I18nValue {
   /** Seçili dil kodu. */
   lang: LanguageCode;
@@ -62,11 +68,15 @@ export interface I18nValue {
   ready: boolean;
   /** Kullanıcı dili elle mi seçti, yoksa cihazdan mı algılandı? */
   explicit: boolean;
+  /** Kayıtlı tercih: somut bir dil ya da "system". */
+  preference: LanguagePreference;
+  /** Cihazın bildirdiği ham dil etiketi (tanılama/Ayarlar için). */
+  deviceTag: string | null;
   /** RTL yönü değiştiği için yeniden başlatma öneriliyor mu? */
   restartRequired: boolean;
   dismissRestartNotice: () => void;
   languages: LanguageMeta[];
-  setLanguage: (code: LanguageCode) => Promise<void>;
+  setLanguage: (code: LanguagePreference) => Promise<void>;
   t: (key: AnyTranslationKey, values?: TranslateValues) => string;
   /** Locale'e uygun sayı (binlik ayırıcılı). */
   n: (value: number) => string;
@@ -80,6 +90,8 @@ const noopValue: I18nValue = {
   isRTL: false,
   ready: false,
   explicit: false,
+  preference: SYSTEM_LANGUAGE,
+  deviceTag: null,
   restartRequired: false,
   dismissRestartNotice: () => {},
   languages: LANGUAGES,
@@ -114,12 +126,20 @@ export function detectDeviceLanguageTag(): string | null {
     // modül yok / linklenmemiş
   }
 
+  // 2) React Native'in KENDİ I18nManager'ı. `NativeModules.I18nManager`
+  // Yeni Mimari'de (newArchEnabled) null dönebildiği için doğrudan
+  // `react-native`ten import edilen nesneyi kullanıyoruz.
   try {
     if (Platform.OS === "android") {
-      const constants =
-        (NativeModules?.I18nManager as { getConstants?: () => Record<string, unknown> })
-          ?.getConstants?.() ?? (NativeModules?.I18nManager as Record<string, unknown>);
-      candidates.push(constants?.localeIdentifier as string | undefined);
+      const c = (I18nManager as unknown as {
+        getConstants?: () => { localeIdentifier?: string };
+        localeIdentifier?: string;
+      });
+      candidates.push(c.getConstants?.().localeIdentifier ?? c.localeIdentifier);
+      const nm = NativeModules?.I18nManager as
+        | { localeIdentifier?: string }
+        | undefined;
+      candidates.push(nm?.localeIdentifier);
     } else if (Platform.OS === "ios") {
       const settings = (NativeModules?.SettingsManager as {
         settings?: Record<string, unknown>;
@@ -208,7 +228,9 @@ function warnMissing(lang: string, key: string) {
 // ── Sağlayıcı ──────────────────────────────────────────────────────────
 export function I18nProvider({ children }: PropsWithChildren) {
   const [lang, setLangState] = useState<LanguageCode>(DEFAULT_LANGUAGE);
-  const [explicit, setExplicit] = useState(false);
+  const [preference, setPreference] = useState<LanguagePreference>(SYSTEM_LANGUAGE);
+  const [deviceTag, setDeviceTag] = useState<string | null>(null);
+  const explicit = preference !== SYSTEM_LANGUAGE;
   const [ready, setReady] = useState(false);
   const [restartRequired, setRestartRequired] = useState(false);
   const alive = useRef(true);
@@ -232,44 +254,79 @@ export function I18nProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     alive.current = true;
     (async () => {
-      let resolved: LanguageCode = DEFAULT_LANGUAGE;
-      let wasExplicit = false;
+      const tag = detectDeviceLanguageTag();
+      let pref: LanguagePreference = SYSTEM_LANGUAGE;
       try {
         const saved = await storage.getItem(LANGUAGE_STORAGE_KEY, null);
-        const savedCode =
-          typeof saved === "string" ? resolveLanguage(saved) : null;
-        if (savedCode) {
-          resolved = savedCode;
-          wasExplicit = true;
-        } else {
-          resolved = detectSupportedLanguage() ?? DEFAULT_LANGUAGE;
+        if (typeof saved === "string") {
+          if (saved === SYSTEM_LANGUAGE) pref = SYSTEM_LANGUAGE;
+          else {
+            const code = resolveLanguage(saved);
+            if (code) pref = code;
+          }
         }
       } catch {
-        resolved = detectSupportedLanguage() ?? DEFAULT_LANGUAGE;
+        // okunamadıysa cihazı takip et
       }
 
+      const resolved =
+        pref === SYSTEM_LANGUAGE
+          ? (detectSupportedLanguage() ?? DEFAULT_LANGUAGE)
+          : pref;
+
       if (!alive.current) return;
+      setDeviceTag(tag);
+      setPreference(pref);
       setLangState(resolved);
-      setExplicit(wasExplicit);
       setReady(true);
 
-      // İlk açılışta yön native tarafla uyumsuzsa sessizce hizala. Bu
-      // aşamada henüz hiçbir ekran çizilmediği için yeniden başlatma
-      // uyarısı göstermeye gerek yoktur.
-      const meta = getLanguageMeta(resolved);
-      applyNativeDirection(!!meta?.rtl, false);
+      if (__DEV__) {
+        console.log(
+          `[i18n] cihaz="${tag ?? "?"}" tercih="${pref}" secilen="${resolved}"`
+        );
+      }
+
+      // İlk açılışta yön native tarafla uyumsuzsa sessizce hizala.
+      applyNativeDirection(!!getLanguageMeta(resolved)?.rtl, false);
     })();
     return () => {
       alive.current = false;
     };
   }, [applyNativeDirection]);
 
+  // Kullanıcı telefonun dilini değiştirip uygulamaya dönerse ve tercih
+  // "cihazı takip et" ise arayüz dili de anında güncellenir.
+  useEffect(() => {
+    if (preference !== SYSTEM_LANGUAGE) return;
+    const sub = AppState.addEventListener("change", (next) => {
+      if (next !== "active") return;
+      const tag = detectDeviceLanguageTag();
+      const code = detectSupportedLanguage() ?? DEFAULT_LANGUAGE;
+      if (!alive.current) return;
+      setDeviceTag(tag);
+      setLangState((cur) => {
+        if (cur === code) return cur;
+        applyNativeDirection(!!getLanguageMeta(code)?.rtl, true);
+        return code;
+      });
+    });
+    return () => sub.remove();
+  }, [applyNativeDirection, preference]);
+
   const setLanguage = useCallback(
-    async (code: LanguageCode) => {
+    async (code: LanguagePreference) => {
+      if (code === SYSTEM_LANGUAGE) {
+        const resolved = detectSupportedLanguage() ?? DEFAULT_LANGUAGE;
+        setPreference(SYSTEM_LANGUAGE);
+        setLangState(resolved);
+        await storage.setItem(LANGUAGE_STORAGE_KEY, SYSTEM_LANGUAGE);
+        applyNativeDirection(!!getLanguageMeta(resolved)?.rtl, true);
+        return;
+      }
       const meta = getLanguageMeta(code);
       if (!meta) return;
+      setPreference(meta.code);
       setLangState(meta.code);
-      setExplicit(true);
       await storage.setItem(LANGUAGE_STORAGE_KEY, meta.code);
       applyNativeDirection(meta.rtl, true);
     },
@@ -325,6 +382,8 @@ export function I18nProvider({ children }: PropsWithChildren) {
       isRTL: meta.rtl,
       ready,
       explicit,
+      preference,
+      deviceTag,
       restartRequired,
       dismissRestartNotice,
       languages: LANGUAGES,
@@ -335,8 +394,10 @@ export function I18nProvider({ children }: PropsWithChildren) {
     }),
     [
       c,
+      deviceTag,
       dismissRestartNotice,
       explicit,
+      preference,
       meta.bcp47,
       meta.code,
       meta.rtl,
@@ -373,4 +434,9 @@ export function useT(): I18nValue["t"] {
   return useContext(I18nContext).t;
 }
 
-export type { AnyTranslationKey, LanguageCode, LanguageMeta, TranslationKey };
+export type {
+  AnyTranslationKey,
+  LanguageCode,
+  LanguageMeta,
+  TranslationKey,
+};
