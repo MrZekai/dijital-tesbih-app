@@ -57,7 +57,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ConfirmSheet } from "@/src/components/ConfirmSheet";
 import { MultiTouchTapArea } from "@/src/components/MultiTouchTapArea";
-import { TesbihRing } from "@/src/components/TesbihRing";
+import { TesbihRingSvg } from "@/src/components/TesbihRingSvg";
 import { useI18n } from "@/src/i18n";
 import { normalizeForSearch } from "@/src/i18n/format";
 import {
@@ -132,7 +132,10 @@ export default function Home() {
   const simpleMode = s.simpleMode;
   const askBeforeReset = s.confirmReset !== false;
 
-  const playSound = useTesbihSounds(s.sound);
+  const playSound = useTesbihSounds({
+    tap: s.soundTap,
+    complete: s.soundComplete,
+  });
 
   useEffect(() => {
     const TAG = "zikirhane-home";
@@ -189,7 +192,17 @@ export default function Home() {
   const counterAnim = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
-  const glowAnim = useAnimatedStyle(() => ({ opacity: glow.value * 0.85 }));
+  // Hedef tamamlandığında ~900 ms süren ÖLÇÜLÜ kutlama:
+  // altın halka nefes alır, arkasında yumuşak bir hale büyüyüp söner.
+  // Abartılı konfeti/tam ekran efekt YOK — ibadet ekranı sakin kalmalı.
+  const glowAnim = useAnimatedStyle(() => ({
+    opacity: glow.value * 0.9,
+    transform: [{ scale: 0.94 + glow.value * 0.1 }],
+  }));
+  const haloAnim = useAnimatedStyle(() => ({
+    opacity: glow.value * 0.32,
+    transform: [{ scale: 0.8 + glow.value * 0.45 }],
+  }));
 
   // ── Türetilmiş değerler ──────────────────────────────────────────────
   const target = Math.max(1, activeDhikrState.target);
@@ -220,13 +233,19 @@ export default function Home() {
   // Halka boyutu: hem genişliğe hem KALAN YÜKSEKLİĞE göre — küçük
   // ekranlarda kontrollerle çakışmaz.
   const availableH = Math.max(
-    180,
-    screenH - insets.top - headerH - controlsH - bottomChrome - 90
+    190,
+    screenH - insets.top - headerH - controlsH - bottomChrome - 62
   );
+  // v1.1.0: halka belirgin biçimde büyütüldü (350 → 420) ve yatay pay
+  // 56 → 28'e indirildi. Yükseklik kısıtı yine geçerli: küçük ekranlarda
+  // kontrollerin üstüne binmez.
   const ringSize = Math.max(
-    170,
-    Math.min(screenW - 56, availableH, bigText ? 320 : 350)
+    180,
+    Math.min(screenW - 28, availableH, bigText ? 380 : 420)
   );
+
+  // Hiç zikir çekilmemişse ana sayfa boş hissettirmesin.
+  const isFirstUse = state.totalCount === 0 && quickItems.length === 0;
 
   const anyOverlayOpen = showDhikrPicker || showTargets || confirmReset;
 
@@ -388,12 +407,27 @@ export default function Home() {
               justifyContent: "center",
             }}
           >
-            <TesbihRing
+            <TesbihRingSvg
               size={ringSize}
               beadCount={Math.min(33, target)}
               color={theme.borderStrong}
               progressColor={theme.gold}
+              motifColor={theme.gold}
               progress={progress}
+              reduceMotion={s.simpleMode}
+            />
+            <Animated.View
+              style={[
+                styles.halo,
+                {
+                  width: ringSize,
+                  height: ringSize,
+                  borderRadius: ringSize / 2,
+                  backgroundColor: theme.gold,
+                  pointerEvents: "none",
+                },
+                haloAnim,
+              ]}
             />
             <Animated.View
               style={[
@@ -477,6 +511,57 @@ export default function Home() {
           if (h > 0 && h !== controlsH) setControlsH(h);
         }}
       >
+        {/* İlk kullanım: hiç sayım yoksa tek bir yönlendirme kartı.
+            Kullanıcı ilk açılışta boş bir ekranla karşılaşmasın. */}
+        {isFirstUse ? (
+          <Animated.View entering={FadeIn.duration(500)} style={styles.startWrap}>
+            <Pressable
+              onPress={() => {
+                haptic("light");
+                router.push("/tesbihat");
+              }}
+              style={[
+                styles.startCard,
+                {
+                  borderColor: theme.gold,
+                  backgroundColor: theme.emeraldDeep,
+                  flexDirection: dir.row,
+                },
+              ]}
+              testID="home-first-use-card"
+              accessibilityRole="button"
+              accessibilityLabel={t("tesbihat.title")}
+            >
+              <Ionicons name="moon-outline" size={18} color={theme.gold} />
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    color: theme.gold,
+                    fontSize: 13,
+                    fontWeight: "700",
+                    textAlign: dir.textAlign,
+                  }}
+                  numberOfLines={1}
+                >
+                  {t("tesbihat.title")}
+                </Text>
+                <Text
+                  style={{
+                    color: theme.textMuted,
+                    fontSize: 11,
+                    marginTop: 1,
+                    textAlign: dir.textAlign,
+                  }}
+                  numberOfLines={1}
+                >
+                  {t("tesbihat.subtitle")}
+                </Text>
+              </View>
+              <Ionicons name={dir.forwardIcon} size={16} color={theme.gold} />
+            </Pressable>
+          </Animated.View>
+        ) : null}
+
         {/* Hızlı zikir geçişi — favoriler + son kullanılanlar */}
         {!simpleMode && quickItems.length > 0 ? (
           <ScrollView
@@ -598,14 +683,16 @@ export default function Home() {
               testID="vibration-toggle"
             />
             <IconToggle
-              icon={s.sound ? "volume-medium" : "volume-mute-outline"}
+              icon={s.soundComplete ? "volume-medium" : "volume-mute-outline"}
               label={t("home.toggle_sound")}
-              active={s.sound}
+              active={s.soundComplete}
               onPress={() => {
-                const v = !s.sound;
-                updateSettings({ sound: v });
+                // Ana sayfadaki hızlı düğme TAMAMLANMA sesini yönetir;
+                // her dokunuştaki tane sesi Ayarlar'dan açılır.
+                const v = !s.soundComplete;
+                updateSettings({ soundComplete: v });
                 haptic("light");
-                if (v) playSound("tap");
+                if (v) playSound("target");
                 showToast(v ? t("home.sound_on") : t("home.sound_off"));
               }}
               theme={theme}
@@ -1104,6 +1191,7 @@ const styles = StyleSheet.create({
   },
   counterText: { fontWeight: "300", letterSpacing: -2, textAlign: "center" },
   glowRing: { position: "absolute", borderWidth: 2 },
+  halo: { position: "absolute" },
 
   metaRow: { alignItems: "center", gap: spacing.sm },
   metaPill: {
@@ -1125,6 +1213,15 @@ const styles = StyleSheet.create({
 
   controls: { position: "absolute", left: 0, right: 0, gap: spacing.sm },
   quickRow: { alignItems: "center", gap: 8, paddingBottom: 2 },
+  startWrap: { paddingHorizontal: spacing.xl },
+  startCard: {
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 10,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+  },
   quickChip: {
     alignItems: "center",
     gap: 5,
