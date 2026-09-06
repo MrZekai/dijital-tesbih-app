@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - global-v1.1.0
+      - global-v1.1.0-redesign
     paths:
       - "frontend/**"
       - ".github/workflows/android-qa-apk.yml"
