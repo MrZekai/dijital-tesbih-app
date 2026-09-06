@@ -122,6 +122,54 @@ ok("ana sayfada seri rozeti var", home.includes("home-streak"));
 ok("ana sayfada hizli zikir gecisi var", home.includes("home-quick-switch"));
 ok("sayac hala ana odak (MultiTouchTapArea)", home.includes("MultiTouchTapArea"));
 
+// ── 8) Uygulama adi 27 dilde yerellestirildi ──────────────────────────
+const nameplugin = require(path.join(ROOT, "plugins/withLocalizedAppName.js"));
+const langCodes = fs.readdirSync(path.join(ROOT, "src/i18n/locales"))
+  .filter((f) => f.endsWith(".ts") && f !== "index.ts" && f !== "en.ts")
+  .map((f) => f.replace(/\.ts$/, ""));
+const missingName = langCodes.filter((c) => !nameplugin.APP_NAMES[c]);
+ok(`her dil icin launcher adi var (${missingName.join(",")})`, missingName.length === 0);
+const missingQual = langCodes.filter((c) => !nameplugin.QUALIFIERS[c]);
+ok(`her dil icin Android niteleyici var (${missingQual.join(",")})`, missingQual.length === 0);
+const tooLong = Object.entries(nameplugin.APP_NAMES).filter(([, v]) => v.length > 20);
+ok(`launcher adlari kisa (<=20) (${tooLong.map((x) => x[0]).join(",")})`, tooLong.length === 0);
+ok("Turkce ad korunuyor", nameplugin.APP_NAMES.tr === "Zikirmatik");
+ok("varsayilan ad kisa", nameplugin.APP_NAMES.default === "Dhikr Counter");
+ok("app.json eklentiyi kullaniyor",
+  JSON.stringify(app.expo.plugins).includes("withLocalizedAppName"));
+
+// ── 9) Ses ayari ikiye bolundu ────────────────────────────────────────
+const mig = read("src/lib/migration.ts");
+ok("soundTap ve soundComplete alanlari var",
+  mig.includes("soundTap: boolean") && mig.includes("soundComplete: boolean"));
+ok("tamamlanma sesi varsayilan ACIK", /soundComplete:\s*true/.test(mig));
+ok("tane sesi varsayilan KAPALI", /soundTap:\s*false/.test(mig));
+ok("eski `sound` alani soundTap ile senkron",
+  mig.includes("settings.sound = settings.soundTap"));
+const homeSrc = read("app/(tabs)/index.tsx");
+ok("ana sayfa iki ayri ses tercihini kullaniyor",
+  homeSrc.includes("tap: s.soundTap") && homeSrc.includes("complete: s.soundComplete"));
+
+// ── 10) Sistem dili secenegi ──────────────────────────────────────────
+const i18n = read("src/i18n/index.tsx");
+ok("SYSTEM_LANGUAGE tercihi var", i18n.includes('SYSTEM_LANGUAGE = "system"'));
+ok("Yeni Mimari icin I18nManager.getConstants kullaniliyor",
+  i18n.includes("getConstants?.().localeIdentifier"));
+ok("cihaz dili degisince otomatik guncelleniyor",
+  i18n.includes("preference !== SYSTEM_LANGUAGE") && i18n.includes("AppState.addEventListener"));
+const settingsSrc = read("app/(tabs)/ayarlar.tsx");
+ok("Ayarlar'da sistem dili satiri var", settingsSrc.includes('testID="lang-system"'));
+
+// ── 11) Dini motifli SVG halka ────────────────────────────────────────
+const ring = read("src/components/TesbihRingSvg.tsx");
+ok("SVG halka Rub'el Hizb motifi ciziyor",
+  ring.includes("squarePath") && ring.includes("octagonPath"));
+ok("taneler tek tek doluyor", ring.includes("i < filled"));
+ok("ana sayfa yeni halkayi kullaniyor", homeSrc.includes("TesbihRingSvg"));
+ok("halka ust siniri buyutuldu", /bigText \? 380 : 420/.test(homeSrc));
+ok("ilk kullanim karti var", homeSrc.includes("home-first-use-card"));
+ok("tamamlama kutlamasi var", homeSrc.includes("haloAnim"));
+
 console.log("\n----------------------------------");
 if (failures > 0) { console.log(`${failures} TEST BAŞARISIZ`); process.exit(1); }
 console.log("TÜM TESTLER GEÇTİ");
