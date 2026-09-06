@@ -168,8 +168,6 @@ const bn: TranslationTable = {
   "validation.positive_integer": "একটি ধনাত্মক পূর্ণসংখ্যা লিখুন (যেমন ২৫০)।",
   "validation.min": "মান ০-এর বেশি হতে হবে।",
   "validation.max": "মান অত্যধিক বড়।",
-  "ads.label": "বিজ্ঞাপন",
-  "ads.failed": "বিজ্ঞাপন লোড হয়নি",
   "error.title": "কিছু একটা ভুল হয়েছে",
   "error.body": "অ্যাপে অপ্রত্যাশিত সমস্যা হয়েছে। আপনার সংরক্ষিত গণনা নিরাপদ।",
   "error.retry": "আবার চেষ্টা করুন",

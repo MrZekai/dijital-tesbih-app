@@ -168,8 +168,6 @@ const kk: TranslationTable = {
   "validation.positive_integer": "Оң бүтін сан енгізіңіз (мыс. 250).",
   "validation.min": "Мән 0-ден үлкен болуы керек.",
   "validation.max": "Мән тым үлкен.",
-  "ads.label": "ЖАРНАМА",
-  "ads.failed": "Жарнама жүктелмеді",
   "error.title": "Бірдеңе дұрыс болмады",
   "error.body": "Қолданбада күтпеген қате шықты. Сақталған санақтарыңыз қауіпсіз.",
   "error.retry": "Қайта көру",

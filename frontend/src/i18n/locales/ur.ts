@@ -168,8 +168,6 @@ const ur: TranslationTable = {
   "validation.positive_integer": "مثبت صحیح عدد درج کریں (مثلاً 250)۔",
   "validation.min": "قدر 0 سے بڑی ہونی چاہیے۔",
   "validation.max": "قدر بہت بڑی ہے۔",
-  "ads.label": "اشتہار",
-  "ads.failed": "اشتہار لوڈ نہیں ہو سکا",
   "error.title": "کچھ غلط ہو گیا",
   "error.body": "ایپ کو ایک غیر متوقع مسئلہ پیش آیا۔ آپ کے محفوظ شمار محفوظ ہیں۔",
   "error.retry": "دوبارہ کوشش کریں",

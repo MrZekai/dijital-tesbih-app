@@ -212,10 +212,6 @@ const en = {
   "validation.min": "The value must be greater than 0.",
   "validation.max": "The value is too large.",
 
-  // ── Reklam yüzeyi ────────────────────────────────────────────────────
-  "ads.label": "AD",
-  "ads.failed": "Ad could not load",
-
   // ── Hata sınırı ──────────────────────────────────────────────────────
   "error.title": "Something went wrong",
   "error.body": "The app hit an unexpected problem. Your saved counts are safe.",

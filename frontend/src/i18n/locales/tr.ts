@@ -168,8 +168,6 @@ const tr: TranslationTable = {
   "validation.positive_integer": "Geçerli bir pozitif tam sayı girin (örn. 250).",
   "validation.min": "Değer 0'dan büyük olmalı.",
   "validation.max": "Değer çok büyük.",
-  "ads.label": "REKLAM",
-  "ads.failed": "Reklam yüklenemedi",
   "error.title": "Bir sorun oluştu",
   "error.body": "Uygulama beklenmedik bir hatayla karşılaştı. Kayıtlı sayımlarınız güvende.",
   "error.retry": "Tekrar dene",

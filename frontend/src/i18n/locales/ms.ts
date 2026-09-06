@@ -165,8 +165,6 @@ const ms: TranslationTable = {
   "validation.positive_integer": "Masukkan nombor bulat positif (cth. 250).",
   "validation.min": "Nilai mesti lebih besar daripada 0.",
   "validation.max": "Nilai terlalu besar.",
-  "ads.label": "IKLAN",
-  "ads.failed": "Iklan gagal dimuatkan",
   "error.title": "Sesuatu tidak kena",
   "error.body": "Aplikasi menghadapi masalah tidak dijangka. Kiraan tersimpan anda selamat.",
   "error.retry": "Cuba lagi",

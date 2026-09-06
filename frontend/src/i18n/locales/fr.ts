@@ -171,8 +171,6 @@ const fr: TranslationTable = {
   "validation.positive_integer": "Saisissez un entier positif (ex. 250).",
   "validation.min": "La valeur doit être supérieure à 0.",
   "validation.max": "La valeur est trop grande.",
-  "ads.label": "PUBLICITÉ",
-  "ads.failed": "Impossible de charger l’annonce",
   "error.title": "Une erreur est survenue",
   "error.body": "L’application a rencontré un problème inattendu. Vos comptages enregistrés sont intacts.",
   "error.retry": "Réessayer",

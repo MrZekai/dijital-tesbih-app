@@ -168,8 +168,6 @@ const ps: TranslationTable = {
   "validation.positive_integer": "مثبت بشپړ عدد ولیکئ (بېلګه ۲۵۰).",
   "validation.min": "ارزښت باید له ۰ لوی وي.",
   "validation.max": "ارزښت ډېر لوی دی.",
-  "ads.label": "اعلان",
-  "ads.failed": "اعلان بار نه شو",
   "error.title": "یو څه ناسم شو",
   "error.body": "اپلیکېشن له ناڅاپي ستونزې سره مخ شو. ستاسو خوندي شمېرې خوندي دي.",
   "error.retry": "بیا هڅه وکړئ",

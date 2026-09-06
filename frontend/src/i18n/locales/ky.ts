@@ -168,8 +168,6 @@ const ky: TranslationTable = {
   "validation.positive_integer": "Оң бүтүн сан киргизиңиз (мис. 250).",
   "validation.min": "Маани 0дон чоң болушу керек.",
   "validation.max": "Маани өтө чоң.",
-  "ads.label": "ЖАРНАМА",
-  "ads.failed": "Жарнама жүктөлгөн жок",
   "error.title": "Бир нерсе туура эмес кетти",
   "error.body": "Колдонмодо күтүлбөгөн көйгөй чыкты. Сакталган эсептериңиз коопсуз.",
   "error.retry": "Кайра аракет кылуу",

@@ -1,32 +1,28 @@
-// BottomBanner — SABİT YÜKSEKLİKLİ, HER ZAMAN GÖRÜNÜR banner alanı.
+// BottomBanner — SABİT YÜKSEKLİKLİ, GÖRÜNMEZ ÇERÇEVELİ banner alanı.
 //
-// v1.0.17 yerleşim politikası
-// ───────────────────────────
-// Reklam alanı layout'ta ÖNCEDEN BELİRLENMİŞ, sabit yükseklikli
-// (`BANNER_SLOT_HEIGHT`) ve her zaman görünür bir bölgedir:
+// v1.1.0 yerleşim politikası
+// ──────────────────────────
+// Kullanıcı geri bildirimi: banner'ın üstündeki "REKLAM / Advertisement"
+// etiketi ve "Reklam yüklenemedi" mesajı ekranı kirletiyordu. İkisi de
+// KALDIRILDI.
 //
-//   - Alan HER DURUMDA ayrılır. Reklam yüklenmese de (no-fill), onay
-//     beklenirken de, SDK hazır değilken de yükseklik AYNI kalır.
-//     (Önceki sürümde no-fill durumunda alan 0'a daraltılıyordu; bu,
-//     ekran düzeninin aniden zıplamasına ve reklam alanının "kaybolmasına"
-//     yol açıyordu.)
-//   - Sekme ekranlarında banner ScrollView'ın İÇİNDE değil, sekme
-//     çubuğunun hemen ÜSTÜNDE sabittir → kullanıcı aşağı kaydırmasa bile
-//     görünür (bkz. app/(tabs)/_layout.tsx).
-//   - Alanın üstünde küçük "REKLAM" etiketi bulunur (Google'ın önerdiği
-//     içerik/reklam ayrımı).
+//   - Alan HER DURUMDA aynı yükseklikte ayrılır (`BANNER_SLOT_HEIGHT`).
+//     Reklam gelse de gelmese de düzen ZIPLAMAZ.
+//   - Reklam yokken alan TAMAMEN GÖRÜNMEZDİR: etiket yok, çerçeve yok,
+//     dolgu rengi yok, hata metni yok. Kullanıcı boş bir kutu görmez.
+//   - Yükleme hataları yalnızca geliştirme loglarına yazılır.
+//   - Banner yalnızca EKRANDA GÖRÜNÜR olduğunda mount edilir; görünmeyen
+//     ekranlarda mount edilmez (AdMob "görünmeyen gösterim" ihlali).
+//   - Alan sekme çubuğunun hemen üstünde sabittir ve tıklanabilir
+//     kontrollerle arasında güvenli boşluk bırakılır (yanlış tıklama
+//     önlemi) — bkz. `src/lib/layout.ts`.
 //
-// AdMob politika notu: Banner yalnızca EKRANDA GÖRÜNÜR olduğunda mount
-// edilir. Görünmeyen ekranlarda banner mount edilmez — aksi halde
-// "görünmeyen gösterim" (invisible impression) ihlali oluşur.
+// NOT: Google'ın yayıncı politikası reklamın içerikten AYIRT EDİLEBİLİR
+// olmasını ister; bunu ayrı bir "REKLAM" yazısı değil, banner'ın kendi
+// AdChoices işareti ve sekme çubuğundan ayrılmış konumu sağlar.
 
-import React, { useRef, useState } from "react";
+import React, { useRef } from "react";
 import { Platform, StyleSheet, View } from "react-native";
-
-import { Text } from "@/src/components/AppText";
-
-import { useT } from "@/src/i18n";
-import { useStore } from "@/src/lib/store";
 
 import { BANNER_SLOT_HEIGHT, bannerUnitId } from "./adConfig";
 import { useAds } from "./AdsProvider";
@@ -35,10 +31,9 @@ import { getAdsSdk } from "./sdk";
 interface Props {
   bottomInset?: number;
   testID?: string;
-  // Adaptive banner icin acik genislik (native olcumun guvensiz oldugu
-  // yerlerde). 0/undefined ise SDK ebeveynden olcer.
+  /** Adaptive banner için açık genişlik (native ölçümün güvensiz olduğu yerlerde). */
   explicitWidth?: number;
-  // Log/hata mesajlarinda ayirt etmek icin (ornek: "tabs", "esma").
+  /** Log/hata mesajlarında ayırt etmek için (örnek: "tabs", "esma"). */
   tag?: string;
 }
 
@@ -54,7 +49,7 @@ class AdBoundary extends React.Component<
     console.warn(`[ads:banner:${this.props.tag ?? "unknown"}] boundary caught`, err);
   }
   render() {
-    // Hata durumunda bile ALAN KORUNUR (düzen zıplamasın).
+    // Hata durumunda bile ALAN KORUNUR (düzen zıplamasın), ama görünmez.
     return this.state.failed ? this.props.fallback : this.props.children;
   }
 }
@@ -65,38 +60,22 @@ export function BottomBanner({
   explicitWidth,
   tag,
 }: Props) {
-  const { theme } = useStore();
-  const t = useT();
   const { canRequestAds, adsEnabled, fullScreenAdActive } = useAds();
   const sdk = getAdsSdk();
 
-  const slotStyle = [
-    styles.slot,
-    {
-      marginBottom: bottomInset,
-      backgroundColor: theme.bgElevated,
-      borderTopColor: theme.divider,
-    },
-  ];
-
-  // Boş (ama AYNI YÜKSEKLİKTE) yer tutucu — reklam pasifken / onay
-  // beklenirken / native modül yokken gösterilir.
+  // Boş — ama AYNI YÜKSEKLİKTE — yer tutucu. Hiçbir görsel iz bırakmaz.
   const placeholder = (
     <View
-      style={slotStyle}
+      style={[styles.slot, { marginBottom: bottomInset }]}
       testID={testID ?? "bottom-banner-placeholder"}
       pointerEvents="none"
-    >
-      <Text style={[styles.label, { color: theme.textSubtle }]}>
-        {t("ads.label")}
-      </Text>
-    </View>
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    />
   );
 
   // App Open gibi tam ekran bir reklam gösterilirken banner native view'ını
-  // tamamen unmount et. Google App Open rehberi, App Open reklamının başka
-  // bir reklamın (ör. banner) üstünde gösterilmemesini önerir. Alanın kendisi
-  // korunur; yalnız BannerAd kaldırılır.
+  // tamamen unmount et (Google App Open rehberi: reklam üstüne reklam yok).
   if (fullScreenAdActive || !adsEnabled || !canRequestAds || !sdk || !sdk.BannerAd) {
     return placeholder;
   }
@@ -105,13 +84,10 @@ export function BottomBanner({
     <AdBoundary tag={tag} fallback={placeholder}>
       <BannerSlot
         sdk={sdk}
-        theme={theme}
         bottomInset={bottomInset}
         testID={testID}
         explicitWidth={explicitWidth}
         tag={tag ?? "unknown"}
-        adLabel={t("ads.label")}
-        failedLabel={t("ads.failed")}
       />
     </AdBoundary>
   );
@@ -119,26 +95,17 @@ export function BottomBanner({
 
 interface SlotProps extends Props {
   sdk: NonNullable<ReturnType<typeof getAdsSdk>>;
-  theme: ReturnType<typeof useStore>["theme"];
   tag: string;
-  adLabel: string;
-  failedLabel: string;
 }
 
 function BannerSlot({
   sdk,
-  theme,
   bottomInset = 0,
   testID,
   explicitWidth,
   tag,
-  adLabel,
-  failedLabel,
 }: SlotProps) {
   const bannerRef = useRef<unknown>(null);
-  const [adStatus, setAdStatus] = useState<"loading" | "loaded" | "failed">(
-    "loading"
-  );
 
   const BannerAd = sdk.BannerAd as React.ComponentType<{
     ref?: React.MutableRefObject<unknown>;
@@ -149,11 +116,9 @@ function BannerSlot({
     onAdFailedToLoad?: (err: unknown) => void;
     onAdOpened?: () => void;
     onAdClosed?: () => void;
-    onPaid?: (event: unknown) => void;
   }>;
 
   const sizes = (sdk.BannerAdSize ?? {}) as Record<string, string>;
-  // v16 icin ANCHORED_ADAPTIVE_BANNER standardidir; yedekleme guvence icin.
   const size =
     sizes.ANCHORED_ADAPTIVE_BANNER ??
     sizes.ADAPTIVE_BANNER ??
@@ -169,83 +134,47 @@ function BannerSlot({
     });
   }
 
-  // Ilk mount log'u — hata ayiklama icin faydali.
-  const mountedRef = useRef(false);
-  if (!mountedRef.current) {
-    mountedRef.current = true;
-    console.log(
-      `[ads:banner:${tag}] mount unitId=${bannerUnitId} size=${size} explicitWidth=${
-        explicitWidth ?? "auto"
-      }`
-    );
-  }
-
   return (
     <View
-      style={[
-        styles.slot,
-        {
-          marginBottom: bottomInset,
-          backgroundColor: theme.bgElevated,
-          borderTopColor: theme.divider,
-        },
-      ]}
+      style={[styles.slot, { marginBottom: bottomInset }]}
       testID={testID ?? "bottom-banner-ad"}
     >
-      <Text style={[styles.label, { color: theme.textSubtle }]}>{adLabel}</Text>
-      {/* Reklam yüklenemese bile bileşen MOUNTED kalır — SDK'nin kendi
+      {/* Reklam yüklenemese bile bileşen MOUNTED kalır — SDK'nın kendi
           otomatik yenileme döngüsü çalıştığında slot kendiliğinden dolar.
-          Alan hiçbir koşulda daraltılmaz. */}
+          Alan hiçbir koşulda daraltılmaz ve boş kutu gösterilmez. */}
       <BannerAd
         ref={bannerRef}
         unitId={bannerUnitId}
         size={size}
         width={explicitWidth}
         onAdLoaded={() => {
-          setAdStatus("loaded");
-          console.log(`[ads:banner:${tag}] loaded`);
+          if (__DEV__) console.log(`[ads:banner:${tag}] loaded`);
         }}
         onAdFailedToLoad={(err) => {
-          // Google Mobile Ads hata objesi: { code, message }
-          const e = err as { code?: string; message?: string } | undefined;
-          setAdStatus("failed");
-          console.warn(
-            `[ads:banner:${tag}] failed code=${e?.code ?? "?"} message="${
-              e?.message ?? String(err)
-            }" unitId=${bannerUnitId}`
-          );
+          // Kullanıcıya HİÇBİR mesaj gösterilmez; yalnızca geliştirme logu.
+          if (__DEV__) {
+            const e = err as { code?: string; message?: string } | undefined;
+            console.warn(
+              `[ads:banner:${tag}] failed code=${e?.code ?? "?"} message="${
+                e?.message ?? String(err)
+              }"`
+            );
+          }
         }}
-        onAdOpened={() => console.log(`[ads:banner:${tag}] opened`)}
-        onAdClosed={() => console.log(`[ads:banner:${tag}] closed`)}
       />
-      {adStatus === "failed" ? (
-        // Alan korunur, ama boş kutunun ne olduğu belli olsun.
-        <Text style={[styles.hint, { color: theme.textSubtle }]}>
-          {failedLabel}
-        </Text>
-      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   slot: {
-    // SABİT yükseklik — reklam gelse de gelmese de alan aynı kalır.
+    // SABİT yükseklik — reklam gelse de gelmese de alan aynı kalır,
+    // ama kenarlık/dolgu/etiket YOKTUR.
     height: BANNER_SLOT_HEIGHT,
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 2,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    backgroundColor: "transparent",
     overflow: "hidden",
-  },
-  label: {
-    fontSize: 9,
-    letterSpacing: 1.5,
-    marginBottom: 1,
-  },
-  hint: {
-    fontSize: 10,
-    marginTop: 1,
   },
 });

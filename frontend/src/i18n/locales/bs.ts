@@ -171,8 +171,6 @@ const bs: TranslationTable = {
   "validation.positive_integer": "Unesite pozitivan cijeli broj (npr. 250).",
   "validation.min": "Vrijednost mora biti veća od 0.",
   "validation.max": "Vrijednost je prevelika.",
-  "ads.label": "REKLAMA",
-  "ads.failed": "Reklama nije učitana",
   "error.title": "Nešto je pošlo po zlu",
   "error.body": "Aplikacija je naišla na neočekivan problem. Vaša sačuvana brojanja su sigurna.",
   "error.retry": "Pokušaj ponovo",

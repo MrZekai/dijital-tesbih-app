@@ -168,8 +168,6 @@ const sq: TranslationTable = {
   "validation.positive_integer": "Vendosni një numër të plotë pozitiv (p.sh. 250).",
   "validation.min": "Vlera duhet të jetë më e madhe se 0.",
   "validation.max": "Vlera është shumë e madhe.",
-  "ads.label": "REKLAMË",
-  "ads.failed": "Reklama nuk u ngarkua",
   "error.title": "Diçka shkoi keq",
   "error.body": "Aplikacioni hasi një problem të papritur. Numërimet tuaja të ruajtura janë të sigurta.",
   "error.retry": "Provo sërish",

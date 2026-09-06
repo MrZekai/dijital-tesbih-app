@@ -168,8 +168,6 @@ const ha: TranslationTable = {
   "validation.positive_integer": "Shigar da lamba cikakkiya mai kyau (misali 250).",
   "validation.min": "Ƙimar dole ta fi 0.",
   "validation.max": "Ƙimar ta yi girma sosai.",
-  "ads.label": "TALLA",
-  "ads.failed": "Ba a iya ɗaukar talla ba",
   "error.title": "Wani abu ya ɓaci",
   "error.body": "Manhajar ta gamu da matsala da ba a zata ba. Ƙididdigarka da aka ajiye tana lafiya.",
   "error.retry": "Sake gwadawa",

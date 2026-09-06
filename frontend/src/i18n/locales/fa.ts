@@ -168,8 +168,6 @@ const fa: TranslationTable = {
   "validation.positive_integer": "یک عدد صحیح مثبت وارد کنید (مثلاً ۲۵۰).",
   "validation.min": "مقدار باید بزرگ‌تر از ۰ باشد.",
   "validation.max": "مقدار خیلی بزرگ است.",
-  "ads.label": "تبلیغ",
-  "ads.failed": "تبلیغ بارگذاری نشد",
   "error.title": "مشکلی پیش آمد",
   "error.body": "برنامه با مشکلی غیرمنتظره روبه‌رو شد. شمارش‌های ذخیره‌شده شما امن هستند.",
   "error.retry": "دوباره تلاش کن",

@@ -168,8 +168,6 @@ const so: TranslationTable = {
   "validation.positive_integer": "Geli tiro dhamaystiran oo togan (tusaale 250).",
   "validation.min": "Qiimuhu waa inuu ka weynaadaa 0.",
   "validation.max": "Qiimuhu aad buu u weyn yahay.",
-  "ads.label": "XAYEYSIIS",
-  "ads.failed": "Xayeysiiska lama soo rarin",
   "error.title": "Wax baa qaldamay",
   "error.body": "Abku wuxuu la kulmay dhibaato lama filaan ah. Tirintaada la kaydiyay waa badbaadsan tahay.",
   "error.retry": "Isku day mar kale",

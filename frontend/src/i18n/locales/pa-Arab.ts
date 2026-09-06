@@ -168,8 +168,6 @@ const pa_Arab: TranslationTable = {
   "validation.positive_integer": "مثبت پورا عدد لکھو (مثلاً 250)۔",
   "validation.min": "قدر 0 توں وڈی ہونی چاہیدی اے۔",
   "validation.max": "قدر بوہت وڈی اے۔",
-  "ads.label": "اشتہار",
-  "ads.failed": "اشتہار لَد نہ سکیا",
   "error.title": "کجھ غلط ہو گیا",
   "error.body": "ایپ نوں اک غیر متوقع مسئلہ آیا۔ تُہاڈیاں محفوظ گِنتیاں سلامت نیں۔",
   "error.retry": "دوبارہ کوشش کرو",

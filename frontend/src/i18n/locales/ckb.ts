@@ -168,8 +168,6 @@ const ckb: TranslationTable = {
   "validation.positive_integer": "ژمارەیەکی تەواوی ئەرێنی بنووسە (نموونە ٢٥٠).",
   "validation.min": "بەها دەبێت لە ٠ گەورەتر بێت.",
   "validation.max": "بەها زۆر گەورەیە.",
-  "ads.label": "ڕیکلام",
-  "ads.failed": "ڕیکلام بار نەبوو",
   "error.title": "شتێک هەڵە بوو",
   "error.body": "ئەپەکە تووشی کێشەیەکی چاوەڕوان‌نەکراو بوو. ژماردنە پاشەکەوتکراوەکانت پارێزراون.",
   "error.retry": "دووبارە هەوڵ بدەرەوە",
