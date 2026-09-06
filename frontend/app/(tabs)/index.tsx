@@ -76,12 +76,17 @@ const BRAND_MARK = require("@/assets/images/icon.png");
 
 // BUG-007: Büyük Yazı Modu'nda 4-5 haneli sayaçlar halkayla çakışıyordu.
 // Basamak sayısına göre dinamik font — sayaç her zaman tek satırda kalır.
+/**
+ * Sayac punto'su. v1.1.0-r2: rakam artik halkanin ICINDE ve hemen altinda
+ * hedef/tur satiri var; bu yuzden taban oran 0.38 -> 0.30'a cekildi.
+ * Boylece 5 haneli sayilarda bile merkez yigini halkayi tasirmaz.
+ */
 function counterFontFor(ringSize: number, digits: number): number {
-  const base = ringSize * 0.38;
+  const base = ringSize * 0.3;
   if (digits <= 2) return Math.round(base);
-  if (digits === 3) return Math.round(base * 0.82);
-  if (digits === 4) return Math.round(base * 0.64);
-  return Math.round(base * 0.52);
+  if (digits === 3) return Math.round(base * 0.84);
+  if (digits === 4) return Math.round(base * 0.68);
+  return Math.round(base * 0.56);
 }
 
 export default function Home() {
@@ -239,9 +244,11 @@ export default function Home() {
   // v1.1.0: halka belirgin biçimde büyütüldü (350 → 420) ve yatay pay
   // 56 → 28'e indirildi. Yükseklik kısıtı yine geçerli: küçük ekranlarda
   // kontrollerin üstüne binmez.
+  // v1.1.0-r2: sayac/hedef/tur halkanin ICINE alindi ve Geri Al/Sifirla
+  // satiri kaldirildi. Bosalan ~90dp halkaya verildi: ust sinir 420 -> 460.
   const ringSize = Math.max(
     180,
-    Math.min(screenW - 28, availableH, bigText ? 380 : 420)
+    Math.min(screenW - 24, availableH, bigText ? 400 : 460)
   );
 
   // Hiç zikir çekilmemişse ana sayfa boş hissettirmesin.
@@ -442,13 +449,13 @@ export default function Home() {
                 glowAnim,
               ]}
             />
-            {/* Sayaç halkanın TAM ORTASINDA durmalı. Mutlak konumlandirma
-                sart: aksi halde SVG'den sonra akip halkanin disina tasar ve
-                alttaki hedef/tur satirinin uzerine biner. */}
-            <Animated.View
-              style={[styles.counterWrap, counterAnim]}
-              pointerEvents="none"
-            >
+            {/* MERKEZ YIGINI — sayi, hedef ve tur bilgisi halkanin ICINDE.
+                Mutlak konumlandirma sart: normal akista SVG'den sonra gelir,
+                halka kutusunun disina tasar ve alttaki satirlarin uzerine
+                biner (v1.1.0 QA'sinda bu hata yasandi). Yigin tek parca
+                oldugu icin rakam ile hedef hapi ARTIK CAKISAMAZ. */}
+            <View style={styles.centerStack} pointerEvents="box-none">
+            <Animated.View style={counterAnim} pointerEvents="none">
               <Text
                 style={[
                   styles.counterText,
@@ -466,10 +473,9 @@ export default function Home() {
                 {fmtCounter(count)}
               </Text>
             </Animated.View>
-          </View>
 
-          {/* Hedef · tur bilgisi */}
-          <View style={[styles.metaRow, { flexDirection: dir.row }]}>
+            {/* Hedef · tur bilgisi — sayinin hemen altinda, halkanin icinde */}
+            <View style={[styles.metaRow, { flexDirection: dir.row }]}>
             <Pressable
               onPress={() => setShowTargets(true)}
               style={[styles.metaPill, { borderColor: theme.border }]}
@@ -499,6 +505,8 @@ export default function Home() {
                 </Text>
               </View>
             ) : null}
+            </View>
+            </View>
           </View>
         </View>
       </MultiTouchTapArea>
@@ -622,31 +630,6 @@ export default function Home() {
           </ScrollView>
         ) : null}
 
-        <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
-          <ControlPill
-            icon="arrow-undo-outline"
-            label={t("home.undo")}
-            onPress={() => {
-              undo();
-              haptic("light");
-            }}
-            theme={theme}
-            rowDirection={dir.row}
-            testID="undo-button"
-          />
-          <ControlPill
-            icon="refresh-outline"
-            label={t("home.reset")}
-            onPress={() => {
-              if (askBeforeReset) setConfirmReset(true);
-              else doReset();
-            }}
-            theme={theme}
-            rowDirection={dir.row}
-            testID="reset-button"
-          />
-        </View>
-
         {/* Bilgi baloncuğu — alan HER ZAMAN ayrılır (düzen zıplamaz). */}
         <View
           style={[styles.toastRow, { opacity: toast ? 1 : 0 }]}
@@ -673,8 +656,34 @@ export default function Home() {
           </View>
         </View>
 
-        {!simpleMode ? (
-          <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
+        {/* TEK kontrol satiri: Geri Al · Sifirla + ayar dugmeleri.
+            v1.1.0-r2: eskiden Geri Al/Sifirla AYRI bir satirdaydi; bu satir
+            kaldirilarak ~60dp kazanildi ve halka o kadar buyudu. */}
+        <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
+          <IconToggle
+            icon="arrow-undo-outline"
+            label={t("home.undo")}
+            active={false}
+            onPress={() => {
+              undo();
+              haptic("light");
+            }}
+            theme={theme}
+            testID="undo-button"
+          />
+          <IconToggle
+            icon="refresh-outline"
+            label={t("home.reset")}
+            active={false}
+            onPress={() => {
+              if (askBeforeReset) setConfirmReset(true);
+              else doReset();
+            }}
+            theme={theme}
+            testID="reset-button"
+          />
+          {!simpleMode ? (
+            <>
             <IconToggle
               icon={s.vibration ? "phone-portrait" : "phone-portrait-outline"}
               label={t("home.toggle_vibration")}
@@ -728,8 +737,9 @@ export default function Home() {
               theme={theme}
               testID="tesbihat-shortcut"
             />
-          </View>
-        ) : null}
+            </>
+          ) : null}
+        </View>
       </View>
 
       <ConfirmSheet
@@ -763,43 +773,6 @@ export default function Home() {
         onClose={() => setShowDhikrPicker(false)}
       />
     </View>
-  );
-}
-
-function ControlPill({
-  icon,
-  label,
-  onPress,
-  theme,
-  rowDirection,
-  testID,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-  theme: ReturnType<typeof useStore>["theme"];
-  rowDirection: "row" | "row-reverse";
-  testID: string;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.pill,
-        {
-          borderColor: theme.border,
-          backgroundColor: theme.bgCard + "cc",
-          flexDirection: rowDirection,
-          opacity: pressed ? 0.7 : 1,
-        },
-      ]}
-      testID={testID}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Ionicons name={icon} size={16} color={theme.gold} />
-      <Text style={[styles.pillLabel, { color: theme.text }]}>{label}</Text>
-    </Pressable>
   );
 }
 
@@ -1196,7 +1169,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   counterText: { fontWeight: "300", letterSpacing: -2, textAlign: "center" },
-  counterWrap: {
+  // Sayi + hedef + tur — halkanin merkezinde TEK parca yigin.
+  // Mutlak kaplama: normal akista SVG'nin altina duser ve tasar.
+  centerStack: {
     position: "absolute",
     left: 0,
     right: 0,
@@ -1204,6 +1179,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: "center",
     justifyContent: "center",
+    gap: 6,
+    paddingHorizontal: "12%",
   },
   glowRing: { position: "absolute", borderWidth: 2 },
   halo: { position: "absolute" },
@@ -1246,10 +1223,11 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     maxWidth: 160,
   },
+  // 6 dugme tek satirda: 6x48 + 5x6 = 318dp, en dar telefonda bile sigar.
   controlsRow: {
     justifyContent: "center",
-    gap: spacing.md,
-    paddingHorizontal: spacing.xl,
+    gap: 6,
+    paddingHorizontal: spacing.md,
   },
   pill: {
     alignItems: "center",
@@ -1260,7 +1238,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   pillLabel: { fontSize: 13, letterSpacing: 0.5, fontWeight: "600" },
-  iconToggleWrap: { alignItems: "center", gap: 3, minWidth: 56 },
+  iconToggleWrap: { alignItems: "center", gap: 3, width: 48 },
   iconToggle: {
     width: 44,
     height: 44,

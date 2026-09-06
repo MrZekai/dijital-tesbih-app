@@ -163,20 +163,23 @@ ok("Ayarlar'da sistem dili satiri var", settingsSrc.includes('testID="lang-syste
 // ── 11) Dini motifli SVG halka ────────────────────────────────────────
 const ring = read("src/components/TesbihRingSvg.tsx");
 ok("SVG halka Rub'el Hizb motifi ciziyor",
-  ring.includes("squarePath") && ring.includes("octagonPath"));
+  ring.includes("squarePath") && ring.includes("starPolygon")
+    && ring.includes("Rub'el Hizb"));
 ok("taneler tek tek doluyor", ring.includes("i < filled"));
 ok("ana sayfa yeni halkayi kullaniyor", homeSrc.includes("TesbihRingSvg"));
-ok("halka ust siniri buyutuldu", /bigText \? 380 : 420/.test(homeSrc));
+ok("halka ust siniri buyutuldu", /bigText \? 400 : 460/.test(homeSrc));
 ok("ilk kullanim karti var", homeSrc.includes("home-first-use-card"));
 ok("tamamlama kutlamasi var", homeSrc.includes("haloAnim"));
 
 // ── 12) Sayac halkanin ortasinda kalmali ──────────────────────────────
 // Regresyon: sayac sarmalayicisi mutlak konumlandirilmazsa SVG'den sonra
 // akar, halkanin disina tasar ve alttaki hedef/tur satirinin uzerine biner.
-ok("sayac sarmalayicisi mutlak konumlu",
-  /counterWrap:\s*\{[^}]*position:\s*"absolute"/s.test(homeSrc));
-ok("sayac counterWrap stilini kullaniyor",
-  homeSrc.includes("styles.counterWrap, counterAnim"));
+ok("merkez yigini mutlak konumlu",
+  /centerStack:\s*\{[^}]*position:\s*"absolute"/s.test(homeSrc));
+ok("sayi + hedef + tur halkanin icinde tek yigin",
+  homeSrc.includes("styles.centerStack"));
+ok("Geri Al / Sifirla ayri satirda degil",
+  !homeSrc.includes("ControlPill") && homeSrc.includes('testID="undo-button"'));
 
 console.log("\n----------------------------------");
 if (failures > 0) { console.log(`${failures} TEST BAŞARISIZ`); process.exit(1); }

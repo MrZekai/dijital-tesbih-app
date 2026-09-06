@@ -1,19 +1,27 @@
-// TesbihRingSvg — sayaç halkası + geleneksel İslami geometri motifi.
+// TesbihRingSvg — sayaç halkası + geleneksel İslam geometrisi motifi.
 //
 // v1.1.0'da eski `TesbihRing` (basit View noktaları) yerine gelir.
+// v1.1.0-r2'de merkez motifi yeniden çizildi: eski hâli genel bir
+// "mandala" gibi okunuyordu; artık merkezde RUB'EL HİZB (۞) var.
+//
+// MOTİF — Rub'el Hizb
+//   Kur'an-ı Kerim'de cüz/hizb bölümlerini işaretlemek için yüzyıllardır
+//   kullanılan sekiz köşeli yıldız. Biri 45° döndürülmüş İKİ KARE'nin
+//   üst üste binmesinden oluşur; ortasında küçük bir daire bulunur.
+//   Unicode'daki ۞ (U+06DE) karakterinin geometrik karşılığıdır.
+//   Etrafına sekiz köşeli girih yıldızı ({8/3} çokgeni) ve uçlara küçük
+//   noktalar eklenmiştir — Selçuklu/Osmanlı taş ve ahşap işçiliğindeki
+//   klasik düzen.
 //
 // KATMANLAR (arkadan öne)
-//   1. Yumuşak radyal zemin — halkanın içine derinlik verir.
-//   2. MOTİF: Rub'el Hizb (۞ — 45° döndürülmüş iki kare) + sekiz kollu
-//      girih rozeti + sekizgen. Altın, çok düşük opaklıkta filigran.
-//      Çok yavaş döner (120 sn/tur) — dikkat dağıtmaz, ekranı canlı tutar.
+//   1. Yumuşak radyal zemin.
+//   2. Rub'el Hizb + girih yıldızı — altın, düşük opaklıkta filigran,
+//      çok yavaş döner (180 sn/tur).
 //   3. Çift ince çember (mihrap kemeri hissi).
-//   4. TESBİH TANELERİ: ilerledikçe TEK TEK altına döner. Eski sürümde
-//      tek renk bir yay vardı; artık kaç tane çekildiği tanelerden okunur.
-//   5. Aktif tane vurgusu + ilerleme yayı.
+//   4. TESBİH TANELERİ — ilerledikçe tek tek altına döner.
 //
-// Dinî içerik notu: burada hiçbir metin, ayet veya sembolik iddia yoktur;
-// yalnızca geleneksel geometrik süsleme kullanılır.
+// Dinî içerik notu: burada hiçbir metin, ayet, hadis veya sembolik iddia
+// yoktur; yalnızca geleneksel geometrik süsleme kullanılır.
 
 import React, { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
@@ -54,12 +62,17 @@ function squarePath(half: number): string {
   return `M ${-half} ${-half} L ${half} ${-half} L ${half} ${half} L ${-half} ${half} Z`;
 }
 
-/** Sekizgen yolu — girih rozetinin dış çerçevesi. */
-function octagonPath(r: number): string {
+/**
+ * {8/3} yıldız çokgeni — sekiz nokta, her biri üç sonrakine bağlanır.
+ * Girih desenlerinin temel yıldızıdır.
+ */
+function starPolygon(r: number, step = 3): string {
   const pts: string[] = [];
-  for (let i = 0; i < 8; i++) {
-    const a = (Math.PI / 4) * i - Math.PI / 8;
+  let i = 0;
+  for (let n = 0; n < 8; n++) {
+    const a = (Math.PI / 4) * i - Math.PI / 2;
     pts.push(`${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)}`);
+    i = (i + step) % 8;
   }
   return `M ${pts.join(" L ")} Z`;
 }
@@ -78,7 +91,7 @@ export function TesbihRingSvg({
   React.useEffect(() => {
     if (reduceMotion) return;
     spin.value = withRepeat(
-      withTiming(360, { duration: 120000, easing: Easing.linear }),
+      withTiming(360, { duration: 180000, easing: Easing.linear }),
       -1,
       false
     );
@@ -122,12 +135,31 @@ export function TesbihRingSvg({
     return out;
   }, [beadR, beads, color, cx, cy, filled, progressColor, ringR]);
 
-  const motifR = size * 0.3;
-  const half = motifR * 0.72;
+  // Motif ölçüleri — sayaç rakamları ortada durduğu için filigran dar tutulur.
+  const motifR = size * 0.29;
+  const half = motifR * 0.66; // Rub'el Hizb karelerinin yarı kenarı
+  const tipR = motifR * 0.93; // yıldız uçlarındaki noktalar
+
+  const tipDots = useMemo(() => {
+    const out: React.ReactElement[] = [];
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI / 4) * i - Math.PI / 2;
+      out.push(
+        <Circle
+          key={i}
+          cx={tipR * Math.cos(a)}
+          cy={tipR * Math.sin(a)}
+          r={Math.max(1, size * 0.007)}
+          fill={gold}
+        />
+      );
+    }
+    return out;
+  }, [gold, size, tipR]);
 
   return (
     <View style={{ width: size, height: size }} pointerEvents="none">
-      {/* Motif katmanı — yavaşça döner. */}
+      {/* Motif katmanı — çok yavaş döner. */}
       <Animated.View style={[StyleSheet.absoluteFill, motifStyle]}>
         <Svg width={size} height={size}>
           <Defs>
@@ -140,31 +172,24 @@ export function TesbihRingSvg({
 
           <Circle cx={cx} cy={cy} r={size * 0.38} fill="url(#glowBg)" />
 
-          <G translateX={cx} translateY={cy} opacity={0.16}>
-            {/* Rub'el Hizb — iki kare, biri 45° döndürülmüş */}
-            <Path d={squarePath(half)} stroke={gold} strokeWidth={1.1} fill="none" />
+          <G translateX={cx} translateY={cy} opacity={0.22}>
+            {/* RUB'EL HİZB (۞) — biri 45° döndürülmüş iki kare */}
+            <Path d={squarePath(half)} stroke={gold} strokeWidth={1.4} fill="none" />
             <G rotation={45}>
-              <Path d={squarePath(half)} stroke={gold} strokeWidth={1.1} fill="none" />
+              <Path d={squarePath(half)} stroke={gold} strokeWidth={1.4} fill="none" />
             </G>
+            {/* Merkez daire — Rub'el Hizb'in ayırt edici parçası */}
+            <Circle r={motifR * 0.17} stroke={gold} strokeWidth={1.2} fill="none" />
 
-            {/* Girih rozeti: sekizgen + sekiz kol */}
-            <Path d={octagonPath(motifR * 0.5)} stroke={gold} strokeWidth={0.9} fill="none" />
-            <Path d={octagonPath(motifR * 0.26)} stroke={gold} strokeWidth={0.8} fill="none" />
-            {Array.from({ length: 8 }).map((_, i) => {
-              const a = (Math.PI / 4) * i;
-              const x1 = motifR * 0.26 * Math.cos(a);
-              const y1 = motifR * 0.26 * Math.sin(a);
-              const x2 = motifR * 0.72 * Math.cos(a);
-              const y2 = motifR * 0.72 * Math.sin(a);
-              return (
-                <Path
-                  key={i}
-                  d={`M ${x1} ${y1} L ${x2} ${y2}`}
-                  stroke={gold}
-                  strokeWidth={0.8}
-                />
-              );
-            })}
+            {/* Girih yıldızı {8/3} + uç noktaları */}
+            <Path
+              d={starPolygon(motifR * 0.93)}
+              stroke={gold}
+              strokeWidth={0.85}
+              fill="none"
+              opacity={0.85}
+            />
+            {tipDots}
           </G>
         </Svg>
       </Animated.View>
