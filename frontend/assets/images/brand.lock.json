@@ -1,0 +1,11 @@
+{
+  "source": "1028.aab (base/res/drawable-xxxhdpi-v4/splashscreen_logo.png)",
+  "note": "Google Play 1.0.21/1028 paketindeki resmi Zikirhane logosundan uretildi. Yeniden tasarlanmadi.",
+  "sha256": {
+    "icon.png": "63a9bea6e9898d7bb30341830060590068d91ed8f2bd60ca0c4a5771f2c68ec4",
+    "adaptive-icon.png": "63a9bea6e9898d7bb30341830060590068d91ed8f2bd60ca0c4a5771f2c68ec4",
+    "splash-icon.png": "56d031e5148e50420a2bed6cf6391246bd77106dcf51ebe66983944729cfec29",
+    "favicon.png": "8eafdd36db850cd788198d855cc0e1e8c0b684927e287ba3e0f2e898ef48b7bd",
+    "notification-icon.png": "5869350f66b9dc79c1b0c0e49a6cfb91507f00cfc97db028bdda8a31f6906a37"
+  }
+}

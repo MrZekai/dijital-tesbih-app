@@ -19,7 +19,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#06090E"
+        "backgroundColor": "#00200F"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.zikirhane.tesbih",
@@ -51,15 +51,20 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
-          "imageWidth": 180,
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 220,
           "resizeMode": "contain",
-          "backgroundColor": "#06090E"
+          "backgroundColor": "#06090E",
+          "dark": {
+            "image": "./assets/images/splash-icon.png",
+            "backgroundColor": "#06090E"
+          }
         }
       ],
       [
         "expo-notifications",
         {
+          "icon": "./assets/images/notification-icon.png",
           "color": "#C6A664",
           "defaultChannel": "zikirhane-daily"
         }
