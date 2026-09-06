@@ -1,9 +1,33 @@
-// Ana Sayfa — Zikir Sayacı.
-// Tüm ekran dokunulabilir. Sayaç tap ile artar. Uzun basma yok — tek dokunuş odaklı.
+// Ana Sayfa — Zikir Panosu (v1.1.0 yeniden tasarım).
 //
-// v1.1.0: tüm metinler i18n'e taşındı, RTL yerleşimi eklendi, sayaç
-// rakamları locale'e göre biçimlendiriliyor, zikir seçicide favori/arama
-// var ve "Sıfırla" onayı ayardan kapatılabiliyor.
+// TASARIM HEDEFİ
+// ──────────────
+// 1.0.21'deki ekran yalnızca "büyük sayaç + iki düğme" idi. Bu sürümde
+// sayaç HÂLÂ ekranın kahramanı; ama etrafına gerçekten kullanılan bilgi
+// ve kısayollar eklendi:
+//
+//   ┌────────────────────────────────────────────┐
+//   │ [logo] ZİKİRMATİK              [ 7 gün ]   │  marka + seri
+//   │ ──────────────────────────────────────────  │
+//   │ Bugün 128 · günlük hedefin %128'i          │  ilerleme şeridi
+//   │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░                   │
+//   │                                            │
+//   │            ( Sübhanallah ▾ )               │  aktif zikir
+//   │              سُبْحَانَ ٱللَّٰهِ                     │
+//   │                                            │
+//   │              ╭───────────╮                 │
+//   │              │    33     │  ← KAHRAMAN     │  sayaç halkası
+//   │              ╰───────────╯                 │
+//   │               33/33 · 2 tur                │
+//   │                                            │
+//   │  ★Salavat  ★Estağfirullah  Kelime-i…  →   │  hızlı geçiş
+//   │  [Geri Al]  [Sıfırla]                      │
+//   │  Titreşim  Ses  Ekran  Tesbihat            │
+//   └────────────────────────────────────────────┘
+//
+// Korunanlar: çoklu parmak sayımı (`MultiTouchTapArea`), ekranı açık tutma,
+// ses/titreşim, sıfırlama onayı, hedef ve zikir seçici, reklam alanının
+// üstünde güvenli boşluk, RTL, Büyük Yazı Modu, Sade Mod.
 
 import { Ionicons } from "@expo/vector-icons";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
@@ -11,6 +35,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -22,6 +47,7 @@ import {
 import { Text, TextInput } from "@/src/components/AppText";
 import * as Haptics from "expo-haptics";
 import Animated, {
+  FadeIn,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -34,53 +60,64 @@ import { MultiTouchTapArea } from "@/src/components/MultiTouchTapArea";
 import { TesbihRing } from "@/src/components/TesbihRing";
 import { useI18n } from "@/src/i18n";
 import { normalizeForSearch } from "@/src/i18n/format";
-import { TARGET_PRESETS, dhikrArabic, dhikrName } from "@/src/lib/dhikrs";
+import {
+  TARGET_PRESETS,
+  dhikrArabic,
+  dhikrName,
+  type AnyDhikr,
+} from "@/src/lib/dhikrs";
 import { useBottomChromeHeight } from "@/src/lib/layout";
 import { useDirection } from "@/src/lib/rtl";
 import { useTesbihSounds } from "@/src/lib/sounds";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
-// BUG-007: Büyük Yazı Modu'nda 4-5 haneli sayaçlar (örn. 1044) tesbih
-// halkasıyla çakışıyor ve satır kaydırabiliyordu. Basamak sayısına göre
-// dinamik font boyutu — sayaç her zaman tek satırda kalır.
-function getCounterFontSize(bigText: boolean, digitCount: number): number {
-  const base = bigText ? 152 : 128;
-  if (digitCount <= 2) return base;
-  if (digitCount === 3) return Math.round(base * 0.82);
-  if (digitCount === 4) return Math.round(base * 0.64);
-  return Math.round(base * 0.52); // 5+ hane
+const BRAND_MARK = require("@/assets/images/icon.png");
+
+// BUG-007: Büyük Yazı Modu'nda 4-5 haneli sayaçlar halkayla çakışıyordu.
+// Basamak sayısına göre dinamik font — sayaç her zaman tek satırda kalır.
+function counterFontFor(ringSize: number, digits: number): number {
+  const base = ringSize * 0.38;
+  if (digits <= 2) return Math.round(base);
+  if (digits === 3) return Math.round(base * 0.82);
+  if (digits === 4) return Math.round(base * 0.64);
+  return Math.round(base * 0.52);
 }
 
 export default function Home() {
   const {
     theme,
+    state,
+    allDhikrs,
     activeDhikr,
     activeDhikrState,
     increment,
     undo,
     reset,
+    setActiveDhikr,
     setTargetForActive,
     updateSettings,
-    state,
     todayTotal,
+    streak,
   } = useStore();
   const { t, c: fmtCounter, n: fmtNumber } = useI18n();
   const dir = useDirection();
   const insets = useSafeAreaInsets();
-  const { width: screenW } = useWindowDimensions();
+  const { width: screenW, height: screenH } = useWindowDimensions();
   const bottomChrome = useBottomChromeHeight();
+
   const [confirmReset, setConfirmReset] = useState(false);
   const [showTargets, setShowTargets] = useState(false);
   const [showDhikrPicker, setShowDhikrPicker] = useState(false);
   const [controlsH, setControlsH] = useState(0);
+  const [headerH, setHeaderH] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 1900);
+    toastTimer.current = setTimeout(() => setToast(null), 2100);
   }, []);
 
   useEffect(
@@ -90,30 +127,28 @@ export default function Home() {
     []
   );
 
-  const bigText = state.settings.bigText;
-  const simpleMode = state.settings.simpleMode;
-  const keepAwake = state.settings.keepAwake;
-  const vibration = state.settings.vibration;
-  const soundOn = state.settings.sound;
-  const askBeforeReset = state.settings.confirmReset !== false;
+  const s = state.settings;
+  const bigText = s.bigText;
+  const simpleMode = s.simpleMode;
+  const askBeforeReset = s.confirmReset !== false;
 
-  const playSound = useTesbihSounds(soundOn);
+  const playSound = useTesbihSounds(s.sound);
 
   useEffect(() => {
     const TAG = "zikirhane-home";
-    if (keepAwake) {
+    if (s.keepAwake) {
       activateKeepAwakeAsync(TAG).catch(() => {});
       return () => {
         deactivateKeepAwake(TAG);
       };
     }
-  }, [keepAwake]);
+  }, [s.keepAwake]);
 
   const scale = useSharedValue(1);
   const glow = useSharedValue(0);
 
-  const triggerHaptic = (kind: "light" | "success") => {
-    if (!vibration) return;
+  const haptic = (kind: "light" | "success") => {
+    if (!s.vibration) return;
     if (kind === "success") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } else {
@@ -122,10 +157,11 @@ export default function Home() {
   };
 
   const activeName = dhikrName(activeDhikr, t);
+  const activeArabic = dhikrArabic(activeDhikr);
 
   const doTap = () => {
     const { justReachedTarget } = increment();
-    triggerHaptic(justReachedTarget ? "success" : "light");
+    haptic(justReachedTarget ? "success" : "light");
     playSound(justReachedTarget ? "target" : "tap");
     scale.value = withSequence(
       withTiming(0.94, { duration: 90 }),
@@ -133,8 +169,8 @@ export default function Home() {
     );
     if (justReachedTarget) {
       glow.value = withSequence(
-        withTiming(1, { duration: 220 }),
-        withTiming(0, { duration: 700 })
+        withTiming(1, { duration: 240 }),
+        withTiming(0, { duration: 900 })
       );
       showToast(
         t("home.target_reached", {
@@ -147,28 +183,51 @@ export default function Home() {
 
   const doReset = () => {
     reset();
-    triggerHaptic("light");
+    haptic("light");
   };
 
   const counterAnim = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
+  const glowAnim = useAnimatedStyle(() => ({ opacity: glow.value * 0.85 }));
 
-  const glowAnim = useAnimatedStyle(() => ({
-    opacity: glow.value * 0.8,
-  }));
+  // ── Türetilmiş değerler ──────────────────────────────────────────────
+  const target = Math.max(1, activeDhikrState.target);
+  const count = activeDhikrState.count;
+  const laps = Math.floor(count / target);
+  const inLap = count % target;
+  const progress = count > 0 && inLap === 0 ? 1 : inLap / target;
 
-  const size = Math.min(screenW - 40, 360);
+  const today = todayTotal();
+  const goal = Math.max(1, s.dailyGoal);
+  const goalPct = Math.min(100, Math.round((today / goal) * 100));
+  const { current: streakDays } = streak();
 
-  const targetCount = Math.max(1, activeDhikrState.target);
-  const totalCount = activeDhikrState.count;
-  const completedLaps = Math.floor(totalCount / targetCount);
-  const countInLap = totalCount % targetCount;
-  const progress =
-    totalCount > 0 && countInLap === 0 ? 1 : countInLap / targetCount;
+  // Hızlı geçiş şeridi: önce favoriler, sonra son kullanılanlar.
+  const quickItems = useMemo(() => {
+    const favs = state.favoriteDhikrIds || [];
+    const recents = state.recentDhikrIds || [];
+    const ids: string[] = [];
+    for (const id of [...favs, ...recents]) {
+      if (!ids.includes(id)) ids.push(id);
+    }
+    return ids
+      .map((id) => allDhikrs.find((d) => d.id === id))
+      .filter((d): d is AnyDhikr => !!d)
+      .slice(0, 8);
+  }, [allDhikrs, state.favoriteDhikrIds, state.recentDhikrIds]);
 
-  const counterDigits = String(activeDhikrState.count).length;
-  const counterFontSize = getCounterFontSize(bigText, counterDigits);
+  // Halka boyutu: hem genişliğe hem KALAN YÜKSEKLİĞE göre — küçük
+  // ekranlarda kontrollerle çakışmaz.
+  const availableH = Math.max(
+    180,
+    screenH - insets.top - headerH - controlsH - bottomChrome - 90
+  );
+  const ringSize = Math.max(
+    170,
+    Math.min(screenW - 56, availableH, bigText ? 320 : 350)
+  );
+
   const anyOverlayOpen = showDhikrPicker || showTargets || confirmReset;
 
   return (
@@ -176,22 +235,95 @@ export default function Home() {
       <LinearGradient
         colors={[theme.emeraldDeep, theme.bg, theme.navy]}
         start={{ x: 0, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
+        end={{ x: 0.55, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <View style={{ flex: 1 }}>
+
+      {/* ── ÜST BLOK: marka · seri · günlük ilerleme · aktif zikir ── */}
+      <View
+        style={{ paddingTop: insets.top + spacing.sm }}
+        onLayout={(e) => {
+          const h = Math.round(e.nativeEvent.layout.height);
+          if (h > 0 && h !== headerH) setHeaderH(h);
+        }}
+      >
         <View
           style={[
-            styles.header,
-            { paddingTop: insets.top + spacing.md, paddingHorizontal: spacing.xl },
+            styles.brandRow,
+            { flexDirection: dir.row, paddingHorizontal: spacing.xl },
           ]}
         >
-          <Text style={[styles.brandTitle, { color: theme.gold }]}>
+          <Image
+            source={BRAND_MARK}
+            style={styles.brandMark}
+            accessibilityIgnoresInvertColors
+          />
+          <Text
+            style={[styles.brandTitle, { color: theme.gold }]}
+            numberOfLines={1}
+          >
             {t("home.brand")}
           </Text>
-          <Text style={[styles.todayLine, { color: theme.textMuted }]}>
-            {t("home.today", { count: todayTotal() })}
-          </Text>
+          <View style={{ flex: 1 }} />
+          {streakDays > 0 ? (
+            <Animated.View
+              entering={FadeIn.duration(400)}
+              style={[
+                styles.streakPill,
+                {
+                  borderColor: theme.gold,
+                  backgroundColor: theme.emeraldDeep,
+                  flexDirection: dir.row,
+                },
+              ]}
+              testID="home-streak"
+            >
+              <Ionicons name="flame-outline" size={13} color={theme.gold} />
+              <Text style={[styles.streakText, { color: theme.gold }]}>
+                {t("stats.days", { count: streakDays })}
+              </Text>
+            </Animated.View>
+          ) : null}
+        </View>
+
+        {/* Günlük hedef ilerleme şeridi */}
+        <Pressable
+          onPress={() => router.push("/(tabs)/istatistikler")}
+          style={[styles.goalStrip, { paddingHorizontal: spacing.xl }]}
+          testID="home-goal-strip"
+          accessibilityRole="button"
+          accessibilityLabel={
+            goalPct >= 100
+              ? t("stats.goal_reached")
+              : t("stats.remaining", { count: Math.max(0, goal - today) })
+          }
+        >
+          <View style={[styles.goalLine, { flexDirection: dir.row }]}>
+            <Text style={[styles.goalToday, { color: theme.text }]}>
+              {t("home.today", { count: today })}
+            </Text>
+            <View style={{ flex: 1 }} />
+            <Text style={[styles.goalPct, { color: theme.textMuted }]}>
+              {goalPct >= 100
+                ? t("stats.goal_reached")
+                : t("stats.goal_progress", { percent: goalPct })}
+            </Text>
+          </View>
+          <View style={[styles.track, { backgroundColor: theme.divider }]}>
+            <View
+              style={[
+                styles.fill,
+                {
+                  backgroundColor: goalPct >= 100 ? theme.success : theme.gold,
+                  width: `${goalPct}%`,
+                },
+              ]}
+            />
+          </View>
+        </Pressable>
+
+        {/* Aktif zikir */}
+        <View style={styles.activeBlock}>
           <Pressable
             onPress={() => setShowDhikrPicker(true)}
             style={[
@@ -217,7 +349,7 @@ export default function Home() {
             </Text>
             <Ionicons name="chevron-down" size={14} color={theme.gold} />
           </Pressable>
-          {dhikrArabic(activeDhikr) ? (
+          {activeArabic ? (
             <Text
               style={[
                 styles.arabic,
@@ -225,22 +357,91 @@ export default function Home() {
               ]}
               numberOfLines={1}
             >
-              {dhikrArabic(activeDhikr)}
+              {activeArabic}
             </Text>
           ) : null}
-          <View style={[styles.progressRow, { flexDirection: dir.row }]}>
+        </View>
+      </View>
+
+      {/* ── KAHRAMAN: sayaç ── */}
+      <MultiTouchTapArea
+        style={styles.tapArea}
+        onTap={doTap}
+        testID="counter-tap-area"
+        disabled={anyOverlayOpen}
+      >
+        <View
+          style={[
+            styles.centerCol,
+            { paddingBottom: bottomChrome + controlsH + spacing.sm },
+          ]}
+          accessible
+          accessibilityRole="adjustable"
+          accessibilityLabel={t("home.a11y_counter", { count, target })}
+          accessibilityHint={t("home.a11y_tap_area")}
+        >
+          <View
+            style={{
+              width: ringSize,
+              height: ringSize,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <TesbihRing
+              size={ringSize}
+              beadCount={Math.min(33, target)}
+              color={theme.borderStrong}
+              progressColor={theme.gold}
+              progress={progress}
+            />
+            <Animated.View
+              style={[
+                styles.glowRing,
+                {
+                  width: ringSize * 0.9,
+                  height: ringSize * 0.9,
+                  borderRadius: ringSize * 0.45,
+                  borderColor: theme.gold,
+                  pointerEvents: "none",
+                },
+                glowAnim,
+              ]}
+            />
+            <Animated.View style={counterAnim}>
+              <Text
+                style={[
+                  styles.counterText,
+                  {
+                    color: theme.text,
+                    fontFamily: fonts.display,
+                    fontSize: counterFontFor(ringSize, String(count).length),
+                  },
+                ]}
+                testID="counter-value"
+                allowFontScaling={false}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+              >
+                {fmtCounter(count)}
+              </Text>
+            </Animated.View>
+          </View>
+
+          {/* Hedef · tur bilgisi */}
+          <View style={[styles.metaRow, { flexDirection: dir.row }]}>
             <Pressable
               onPress={() => setShowTargets(true)}
-              style={[styles.progressPill, { borderColor: theme.border }]}
+              style={[styles.metaPill, { borderColor: theme.border }]}
               testID="target-selector"
               accessibilityRole="button"
               accessibilityLabel={t("home.choose_target")}
             >
-              <Text style={[styles.progressText, { color: theme.text }]}>
-                {fmtNumber(activeDhikrState.count)} / {fmtNumber(activeDhikrState.target)}
+              <Text style={[styles.metaText, { color: theme.text }]}>
+                {fmtNumber(count)} / {fmtNumber(target)}
               </Text>
             </Pressable>
-            {completedLaps > 0 ? (
+            {laps > 0 ? (
               <View
                 style={[
                   styles.lapBadge,
@@ -254,238 +455,220 @@ export default function Home() {
               >
                 <Ionicons name="checkmark-circle" size={12} color={theme.gold} />
                 <Text style={[styles.lapText, { color: theme.gold }]}>
-                  {t("home.laps", { count: completedLaps })}
+                  {t("home.laps", { count: laps })}
                 </Text>
               </View>
             ) : null}
           </View>
         </View>
+      </MultiTouchTapArea>
 
-        <MultiTouchTapArea
-          style={styles.tapArea}
-          onTap={doTap}
-          testID="counter-tap-area"
-          disabled={anyOverlayOpen}
+      {/* ── ALT BLOK: hızlı geçiş · kontroller ── */}
+      <View
+        style={[
+          styles.controls,
+          {
+            bottom: bottomChrome + spacing.md,
+            pointerEvents: "box-none",
+          },
+        ]}
+        onLayout={(e) => {
+          const h = Math.round(e.nativeEvent.layout.height);
+          if (h > 0 && h !== controlsH) setControlsH(h);
+        }}
+      >
+        {/* Hızlı zikir geçişi — favoriler + son kullanılanlar */}
+        {!simpleMode && quickItems.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.quickRow,
+              { flexDirection: dir.row, paddingHorizontal: spacing.xl },
+            ]}
+            testID="home-quick-switch"
+          >
+            {quickItems.map((d) => {
+              const on = d.id === activeDhikr.id;
+              const fav = (state.favoriteDhikrIds || []).includes(d.id);
+              return (
+                <Pressable
+                  key={d.id}
+                  onPress={() => {
+                    setActiveDhikr(d.id);
+                    haptic("light");
+                  }}
+                  style={[
+                    styles.quickChip,
+                    {
+                      borderColor: on ? theme.gold : theme.border,
+                      backgroundColor: on
+                        ? theme.emeraldDeep
+                        : theme.bgCard + "cc",
+                      flexDirection: dir.row,
+                    },
+                  ]}
+                  testID={`quick-${d.id}`}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                >
+                  {fav ? (
+                    <Ionicons name="star" size={11} color={theme.gold} />
+                  ) : null}
+                  <Text
+                    style={{
+                      color: on ? theme.gold : theme.textMuted,
+                      fontSize: 12,
+                      fontWeight: on ? "700" : "500",
+                    }}
+                    numberOfLines={1}
+                  >
+                    {dhikrName(d, t)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : null}
+
+        <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
+          <ControlPill
+            icon="arrow-undo-outline"
+            label={t("home.undo")}
+            onPress={() => {
+              undo();
+              haptic("light");
+            }}
+            theme={theme}
+            rowDirection={dir.row}
+            testID="undo-button"
+          />
+          <ControlPill
+            icon="refresh-outline"
+            label={t("home.reset")}
+            onPress={() => {
+              if (askBeforeReset) setConfirmReset(true);
+              else doReset();
+            }}
+            theme={theme}
+            rowDirection={dir.row}
+            testID="reset-button"
+          />
+        </View>
+
+        {/* Bilgi baloncuğu — alan HER ZAMAN ayrılır (düzen zıplamaz). */}
+        <View
+          style={[styles.toastRow, { opacity: toast ? 1 : 0 }]}
+          pointerEvents="none"
         >
           <View
             style={[
-              styles.centerCol,
-              { paddingBottom: bottomChrome + controlsH + spacing.md },
+              styles.toast,
+              { backgroundColor: theme.bgCard, borderColor: theme.gold },
             ]}
-            accessible
-            accessibilityRole="adjustable"
-            accessibilityLabel={t("home.a11y_counter", {
-              count: activeDhikrState.count,
-              target: activeDhikrState.target,
-            })}
-            accessibilityHint={t("home.a11y_tap_area")}
           >
-            <View
+            <Text
               style={{
-                width: size,
-                height: size,
-                alignItems: "center",
-                justifyContent: "center",
+                color: theme.text,
+                fontSize: 13,
+                textAlign: "center",
+                writingDirection: dir.writingDirection,
               }}
+              testID="home-toast"
+              numberOfLines={1}
             >
-              <TesbihRing
-                size={size}
-                beadCount={Math.min(33, activeDhikrState.target)}
-                color={theme.borderStrong}
-                progressColor={theme.gold}
-                progress={progress}
-              />
-              <Animated.View
-                style={[
-                  styles.glowRing,
-                  {
-                    width: size * 0.9,
-                    height: size * 0.9,
-                    borderRadius: size * 0.45,
-                    borderColor: theme.gold,
-                    pointerEvents: "none",
-                  },
-                  glowAnim,
-                ]}
-              />
-              <Animated.View style={counterAnim}>
-                <Text
-                  style={[
-                    styles.counterText,
-                    {
-                      color: theme.text,
-                      fontFamily: fonts.display,
-                      fontSize: counterFontSize,
-                    },
-                  ]}
-                  testID="counter-value"
-                  allowFontScaling={false}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                >
-                  {fmtCounter(activeDhikrState.count)}
-                </Text>
-              </Animated.View>
-            </View>
+              {toast ?? " "}
+            </Text>
           </View>
-        </MultiTouchTapArea>
-
-        <View
-          style={[
-            styles.controls,
-            {
-              bottom: bottomChrome + spacing.md,
-              paddingHorizontal: spacing.xl,
-              pointerEvents: "box-none",
-            },
-          ]}
-          onLayout={(e) => {
-            const h = Math.round(e.nativeEvent.layout.height);
-            if (h > 0 && h !== controlsH) setControlsH(h);
-          }}
-        >
-          <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
-            <ControlPill
-              icon="arrow-undo-outline"
-              label={t("home.undo")}
-              onPress={() => {
-                undo();
-                triggerHaptic("light");
-              }}
-              theme={theme}
-              rowDirection={dir.row}
-              testID="undo-button"
-            />
-            <ControlPill
-              icon="refresh-outline"
-              label={t("home.reset")}
-              onPress={() => {
-                if (askBeforeReset) setConfirmReset(true);
-                else doReset();
-              }}
-              theme={theme}
-              rowDirection={dir.row}
-              testID="reset-button"
-            />
-          </View>
-
-          <View
-            style={[styles.toastRow, { opacity: toast ? 1 : 0 }]}
-            pointerEvents="none"
-          >
-            <View
-              style={[
-                styles.toast,
-                { backgroundColor: theme.bgCard, borderColor: theme.gold },
-              ]}
-            >
-              <Text
-                style={{
-                  color: theme.text,
-                  fontSize: 13,
-                  textAlign: "center",
-                  writingDirection: dir.writingDirection,
-                }}
-                testID="home-toast"
-                numberOfLines={1}
-              >
-                {toast ?? " "}
-              </Text>
-            </View>
-          </View>
-
-          {!simpleMode ? (
-            <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
-              <IconToggle
-                icon={vibration ? "phone-portrait" : "phone-portrait-outline"}
-                label={t("home.toggle_vibration")}
-                active={vibration}
-                onPress={() => {
-                  const nextVal = !vibration;
-                  updateSettings({ vibration: nextVal });
-                  if (nextVal) {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  }
-                  showToast(
-                    nextVal ? t("home.vibration_on") : t("home.vibration_off")
-                  );
-                }}
-                theme={theme}
-                testID="vibration-toggle"
-              />
-              <IconToggle
-                icon={soundOn ? "volume-medium" : "volume-mute-outline"}
-                label={t("home.toggle_sound")}
-                active={soundOn}
-                onPress={() => {
-                  const nextVal = !soundOn;
-                  updateSettings({ sound: nextVal });
-                  triggerHaptic("light");
-                  if (nextVal) playSound("tap");
-                  showToast(nextVal ? t("home.sound_on") : t("home.sound_off"));
-                }}
-                theme={theme}
-                testID="sound-toggle"
-              />
-              <IconToggle
-                icon={keepAwake ? "sunny" : "sunny-outline"}
-                label={t("home.toggle_screen")}
-                active={keepAwake}
-                onPress={() => {
-                  const nextVal = !keepAwake;
-                  updateSettings({ keepAwake: nextVal });
-                  triggerHaptic("light");
-                  showToast(nextVal ? t("home.screen_on") : t("home.screen_off"));
-                }}
-                theme={theme}
-                testID="keepawake-toggle"
-              />
-              <IconToggle
-                icon="apps-outline"
-                label={t("home.tesbihat")}
-                active={false}
-                onPress={() => {
-                  triggerHaptic("light");
-                  router.push("/tesbihat");
-                }}
-                theme={theme}
-                testID="tesbihat-shortcut"
-              />
-            </View>
-          ) : null}
         </View>
 
-        <ConfirmSheet
-          visible={confirmReset}
-          title={t("home.reset_title")}
-          message={t("home.reset_message", { name: activeName })}
-          confirmLabel={t("home.reset")}
-          destructive
-          onConfirm={() => {
-            setConfirmReset(false);
-            doReset();
-          }}
-          onCancel={() => setConfirmReset(false)}
-          theme={theme}
-          testID="reset-confirm"
-        />
-
-        <TargetPickerSheet
-          visible={showTargets}
-          current={activeDhikrState.target}
-          onPick={(n) => {
-            setTargetForActive(n);
-            setShowTargets(false);
-          }}
-          onClose={() => setShowTargets(false)}
-          theme={theme}
-        />
-
-        <DhikrPickerSheet
-          visible={showDhikrPicker}
-          onClose={() => setShowDhikrPicker(false)}
-        />
+        {!simpleMode ? (
+          <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
+            <IconToggle
+              icon={s.vibration ? "phone-portrait" : "phone-portrait-outline"}
+              label={t("home.toggle_vibration")}
+              active={s.vibration}
+              onPress={() => {
+                const v = !s.vibration;
+                updateSettings({ vibration: v });
+                if (v) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                showToast(v ? t("home.vibration_on") : t("home.vibration_off"));
+              }}
+              theme={theme}
+              testID="vibration-toggle"
+            />
+            <IconToggle
+              icon={s.sound ? "volume-medium" : "volume-mute-outline"}
+              label={t("home.toggle_sound")}
+              active={s.sound}
+              onPress={() => {
+                const v = !s.sound;
+                updateSettings({ sound: v });
+                haptic("light");
+                if (v) playSound("tap");
+                showToast(v ? t("home.sound_on") : t("home.sound_off"));
+              }}
+              theme={theme}
+              testID="sound-toggle"
+            />
+            <IconToggle
+              icon={s.keepAwake ? "sunny" : "sunny-outline"}
+              label={t("home.toggle_screen")}
+              active={s.keepAwake}
+              onPress={() => {
+                const v = !s.keepAwake;
+                updateSettings({ keepAwake: v });
+                haptic("light");
+                showToast(v ? t("home.screen_on") : t("home.screen_off"));
+              }}
+              theme={theme}
+              testID="keepawake-toggle"
+            />
+            <IconToggle
+              icon="apps-outline"
+              label={t("home.tesbihat")}
+              active={false}
+              onPress={() => {
+                haptic("light");
+                router.push("/tesbihat");
+              }}
+              theme={theme}
+              testID="tesbihat-shortcut"
+            />
+          </View>
+        ) : null}
       </View>
+
+      <ConfirmSheet
+        visible={confirmReset}
+        title={t("home.reset_title")}
+        message={t("home.reset_message", { name: activeName })}
+        confirmLabel={t("home.reset")}
+        destructive
+        onConfirm={() => {
+          setConfirmReset(false);
+          doReset();
+        }}
+        onCancel={() => setConfirmReset(false)}
+        theme={theme}
+        testID="reset-confirm"
+      />
+
+      <TargetPickerSheet
+        visible={showTargets}
+        current={target}
+        onPick={(n) => {
+          setTargetForActive(n);
+          setShowTargets(false);
+        }}
+        onClose={() => setShowTargets(false)}
+        theme={theme}
+      />
+
+      <DhikrPickerSheet
+        visible={showDhikrPicker}
+        onClose={() => setShowDhikrPicker(false)}
+      />
     </View>
   );
 }
@@ -508,12 +691,13 @@ function ControlPill({
   return (
     <Pressable
       onPress={onPress}
-      style={[
+      style={({ pressed }) => [
         styles.pill,
         {
           borderColor: theme.border,
           backgroundColor: theme.bgCard + "cc",
           flexDirection: rowDirection,
+          opacity: pressed ? 0.7 : 1,
         },
       ]}
       testID={testID}
@@ -580,11 +764,8 @@ function IconToggle({
   );
 }
 
-// BUG-006 + BUG-009 duzeltmesi: plain View overlay yerine RN'in native
-// <Modal> bileşeni kullanılıyor. Bu; (1) Android donanım Geri tuşunu
-// otomatik olarak `onRequestClose` ile yakalar, (2) ayrı bir native
-// pencere katmanında render olduğu için SurfaceView tabanlı reklamların
-// ÜZERİNDE her zaman görünür.
+// Native <Modal>: Android geri tuşunu `onRequestClose` ile yakalar ve ayrı
+// bir pencere katmanında render olduğu için reklam view'larının üstünde kalır.
 function TargetPickerSheet({
   visible,
   current,
@@ -605,7 +786,7 @@ function TargetPickerSheet({
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       statusBarTranslucent
       onRequestClose={onClose}
     >
@@ -627,6 +808,7 @@ function TargetPickerSheet({
             },
           ]}
         >
+          <View style={[styles.grabber, { backgroundColor: theme.border }]} />
           <Text
             style={[
               styles.modalTitle,
@@ -685,27 +867,18 @@ function DhikrPickerSheet({
   visible: boolean;
   onClose: () => void;
 }) {
-  const {
-    theme,
-    allDhikrs,
-    state,
-    setActiveDhikr,
-    toggleFavoriteDhikr,
-  } = useStore();
+  const { theme, allDhikrs, state, setActiveDhikr, toggleFavoriteDhikr } =
+    useStore();
   const insets = useSafeAreaInsets();
   const { t, bcp47, n: fmtNumber } = useI18n();
   const dir = useDirection();
   const [query, setQuery] = useState("");
 
-  // Referans kararlılığı: `|| []` her render'da YENİ dizi üretirdi ve
-  // aşağıdaki useMemo boşuna yeniden çalışırdı.
   const favorites = useMemo(
     () => state.favoriteDhikrIds || [],
     [state.favoriteDhikrIds]
   );
 
-  // Arama + favorileri üste alma. Aramada hem çevrilmiş ad hem Arapça
-  // yazılış taranır; aksan/hareke normalleştirilir.
   const items = useMemo(() => {
     const q = normalizeForSearch(query, bcp47);
     const list = allDhikrs.filter((d) => {
@@ -714,18 +887,17 @@ function DhikrPickerSheet({
       const ar = normalizeForSearch(dhikrArabic(d) ?? "", bcp47);
       return name.includes(q) || ar.includes(q);
     });
-    return [...list].sort((a, b) => {
-      const fa = favorites.includes(a.id) ? 0 : 1;
-      const fb = favorites.includes(b.id) ? 0 : 1;
-      return fa - fb;
-    });
+    return [...list].sort(
+      (a, b) =>
+        (favorites.includes(a.id) ? 0 : 1) - (favorites.includes(b.id) ? 0 : 1)
+    );
   }, [allDhikrs, bcp47, favorites, query, t]);
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
+      animationType="slide"
       statusBarTranslucent
       onRequestClose={onClose}
     >
@@ -743,11 +915,12 @@ function DhikrPickerSheet({
             {
               backgroundColor: theme.bgCard,
               borderColor: theme.border,
-              maxHeight: "78%",
+              maxHeight: "80%",
               paddingBottom: 0,
             },
           ]}
         >
+          <View style={[styles.grabber, { backgroundColor: theme.border }]} />
           <Text
             style={[
               styles.modalTitle,
@@ -799,10 +972,9 @@ function DhikrPickerSheet({
               </Text>
             ) : null}
             {items.map((d) => {
-              const s = state.dhikrStates[d.id];
+              const st = state.dhikrStates[d.id];
               const active = state.activeDhikrId === d.id;
               const fav = favorites.includes(d.id);
-              const name = dhikrName(d, t);
               const ar = dhikrArabic(d);
               return (
                 <Pressable
@@ -815,7 +987,9 @@ function DhikrPickerSheet({
                     styles.dhikrRow,
                     {
                       borderColor: active ? theme.gold : theme.border,
-                      backgroundColor: active ? theme.emeraldDeep : "transparent",
+                      backgroundColor: active
+                        ? theme.emeraldDeep
+                        : "transparent",
                       flexDirection: dir.row,
                     },
                   ]}
@@ -849,7 +1023,7 @@ function DhikrPickerSheet({
                         textAlign: dir.textAlign,
                       }}
                     >
-                      {name}
+                      {dhikrName(d, t)}
                     </Text>
                     {ar ? (
                       <Text
@@ -866,8 +1040,8 @@ function DhikrPickerSheet({
                     ) : null}
                   </View>
                   <Text style={{ color: theme.gold, fontSize: 14 }}>
-                    {fmtNumber(s?.count || 0)} /{" "}
-                    {fmtNumber(s?.target || d.defaultTarget)}
+                    {fmtNumber(st?.count || 0)} /{" "}
+                    {fmtNumber(st?.target || d.defaultTarget)}
                   </Text>
                 </Pressable>
               );
@@ -881,23 +1055,34 @@ function DhikrPickerSheet({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  todayLine: {
-    fontSize: 11,
-    textAlign: "center",
-    opacity: 0.7,
-    marginBottom: 4,
-  },
+
+  brandRow: { alignItems: "center", gap: 8 },
+  brandMark: { width: 22, height: 22, borderRadius: 6 },
   brandTitle: {
     fontSize: 12,
-    letterSpacing: 4,
-    textAlign: "center",
-    opacity: 0.85,
-    marginBottom: 2,
+    letterSpacing: 3,
+    fontWeight: "600",
+    opacity: 0.9,
+    flexShrink: 1,
   },
-  header: {
+  streakPill: {
     alignItems: "center",
-    gap: spacing.sm,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
   },
+  streakText: { fontSize: 11, fontWeight: "700" },
+
+  goalStrip: { marginTop: spacing.md, gap: 6 },
+  goalLine: { alignItems: "center", gap: 8 },
+  goalToday: { fontSize: 13, fontWeight: "600" },
+  goalPct: { fontSize: 11 },
+  track: { height: 4, borderRadius: 2, overflow: "hidden" },
+  fill: { height: "100%", borderRadius: 2 },
+
+  activeBlock: { alignItems: "center", gap: 6, marginTop: spacing.lg },
   dhikrPill: {
     alignItems: "center",
     gap: 8,
@@ -905,47 +1090,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
     borderWidth: 1,
-    maxWidth: "100%",
+    maxWidth: "92%",
   },
-  dhikrName: {
-    fontSize: 20,
-    letterSpacing: 0.5,
-    flexShrink: 1,
-  },
-  arabic: {
-    fontSize: 16,
-    letterSpacing: 0.5,
-  },
-  progressRow: {
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  lapBadge: {
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    marginTop: 2,
-  },
-  lapText: {
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  progressPill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    marginTop: 2,
-  },
-  progressText: {
-    fontSize: 14,
-    fontWeight: "600",
-    letterSpacing: 0.5,
-  },
+  dhikrName: { fontSize: 20, letterSpacing: 0.5, flexShrink: 1 },
+  arabic: { fontSize: 15, letterSpacing: 0.5 },
+
   tapArea: { flex: 1 },
   centerCol: {
     flex: 1,
@@ -953,24 +1102,42 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: spacing.md,
   },
-  counterText: {
-    fontWeight: "300",
-    letterSpacing: -2,
-    textAlign: "center",
+  counterText: { fontWeight: "300", letterSpacing: -2, textAlign: "center" },
+  glowRing: { position: "absolute", borderWidth: 2 },
+
+  metaRow: { alignItems: "center", gap: spacing.sm },
+  metaPill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  glowRing: {
-    position: "absolute",
-    borderWidth: 2,
+  metaText: { fontSize: 14, fontWeight: "600", letterSpacing: 0.5 },
+  lapBadge: {
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  controls: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    gap: spacing.md,
+  lapText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.3 },
+
+  controls: { position: "absolute", left: 0, right: 0, gap: spacing.sm },
+  quickRow: { alignItems: "center", gap: 8, paddingBottom: 2 },
+  quickChip: {
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    maxWidth: 160,
   },
   controlsRow: {
     justifyContent: "center",
     gap: spacing.md,
+    paddingHorizontal: spacing.xl,
   },
   pill: {
     alignItems: "center",
@@ -980,16 +1147,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  pillLabel: {
-    fontSize: 13,
-    letterSpacing: 0.5,
-    fontWeight: "600",
-  },
-  iconToggleWrap: {
-    alignItems: "center",
-    gap: 3,
-    minWidth: 56,
-  },
+  pillLabel: { fontSize: 13, letterSpacing: 0.5, fontWeight: "600" },
+  iconToggleWrap: { alignItems: "center", gap: 3, minWidth: 56 },
   iconToggle: {
     width: 44,
     height: 44,
@@ -998,15 +1157,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  iconToggleLabel: {
-    fontSize: 10,
-    letterSpacing: 0.2,
-    textAlign: "center",
-  },
-  toastRow: {
-    alignItems: "center",
-    marginBottom: 2,
-  },
+  iconToggleLabel: { fontSize: 10, letterSpacing: 0.2, textAlign: "center" },
+
+  toastRow: { alignItems: "center", marginBottom: 2 },
   toast: {
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
@@ -1014,10 +1167,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     maxWidth: "92%",
   },
-  modalOverlay: {
-    justifyContent: "flex-end",
-    zIndex: 20,
-  },
+
+  modalOverlay: { justifyContent: "flex-end", zIndex: 20 },
   modalSheet: {
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
@@ -1025,14 +1176,16 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.md,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+  grabber: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginTop: -spacing.sm,
+    marginBottom: spacing.xs,
   },
-  modalHint: {
-    fontSize: 12,
-    marginTop: spacing.sm,
-  },
+  modalTitle: { fontSize: 18, fontWeight: "700" },
+  modalHint: { fontSize: 12, marginTop: spacing.sm },
   searchInput: {
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.md,
@@ -1040,11 +1193,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 15,
   },
-  targetGrid: {
-    flexWrap: "wrap",
-    gap: 12,
-    justifyContent: "flex-start",
-  },
+  targetGrid: { flexWrap: "wrap", gap: 12, justifyContent: "flex-start" },
   targetChip: {
     minWidth: 80,
     paddingHorizontal: spacing.lg,
