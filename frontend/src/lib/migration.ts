@@ -50,7 +50,15 @@ export interface DailyLogEntry {
 
 export interface Settings {
   theme: ThemePreference;
+  /**
+   * ESKİ alan — 1.0.x ve 1028 bunu okur. `soundTap` ile AYNI tutulur ki
+   * kullanıcı eski sürüme dönerse davranış birebir korunsun.
+   */
   sound: boolean;
+  /** Her dokunuşta tesbih tanesi sesi. Varsayılan KAPALI. */
+  soundTap: boolean;
+  /** Hedefe ulaşınca kısa tamamlanma sesi. Varsayılan AÇIK. */
+  soundComplete: boolean;
   vibration: boolean;
   keepAwake: boolean;
   bigText: boolean;
@@ -97,6 +105,8 @@ export const RECENT_LIMIT = 8;
 export const defaultSettings: Settings = {
   theme: "dark",
   sound: false,
+  soundTap: false,
+  soundComplete: true,
   vibration: true,
   keepAwake: false,
   bigText: false,
@@ -216,10 +226,32 @@ export function migrateState(raw: unknown): PersistedState | null {
       themeRaw && VALID_THEMES.includes(themeRaw) ? themeRaw : defaultSettings.theme,
   };
   // `confirmReset` eski kayıtlarda yok → varsayılan olarak AÇIK gelir
-  // (yanlış sıfırlamaya karşı koruma, talimat md. 7).
+  // (yanlış sıfırlamaya karşı koruma).
   if (typeof (rawSettings as Partial<Settings>).confirmReset !== "boolean") {
     settings.confirmReset = true;
   }
+
+  // ── Ses ayarının ikiye bölünmesi (v1.1.0) ────────────────────────────
+  // 1.0.x'te TEK bir `sound` anahtarı vardı ve varsayılanı KAPALI'ydı;
+  // bu yüzden hedefe ulaşıldığında da hiç ses çıkmıyordu (kullanıcı
+  // geri bildirimi). Artık iki ayrı ayar var:
+  //
+  //   soundTap      → her dokunuşta tane sesi   (eski davranış, kapalı)
+  //   soundComplete → hedefe ulaşınca tek ses   (yeni, AÇIK)
+  //
+  // Geriye dönük eşleme:
+  //   eski sound = true  → soundTap = true,  soundComplete = true
+  //   eski sound = false → soundTap = false, soundComplete = true
+  // `sound` alanı `soundTap` ile senkron tutulur; eski sürüme dönülürse
+  // kullanıcının tanıdığı davranış aynen geçerli olur.
+  const legacySound = (rawSettings as Partial<Settings>).sound === true;
+  if (typeof (rawSettings as Partial<Settings>).soundTap !== "boolean") {
+    settings.soundTap = legacySound;
+  }
+  if (typeof (rawSettings as Partial<Settings>).soundComplete !== "boolean") {
+    settings.soundComplete = true;
+  }
+  settings.sound = settings.soundTap;
 
   const existingHistory = asRecord<number>(src.dhikrHistoryTotals);
   const dhikrHistoryTotals =

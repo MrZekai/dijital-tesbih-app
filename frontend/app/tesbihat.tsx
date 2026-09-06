@@ -78,7 +78,10 @@ export default function Tesbihat() {
   const showInterstitial = useRespectfulInterstitial();
 
   // Ses: hook kosulsuz cagrilir, calip calmayacagina icerde karar verilir.
-  const playSound = useTesbihSounds(state.settings.sound);
+  const playSound = useTesbihSounds({
+    tap: state.settings.soundTap,
+    complete: state.settings.soundComplete,
+  });
 
   // DÜZELTME: "Ekranı Açık Tut" ayarı yalnızca Ana Sayfa'da işliyordu;
   // 99'luk tesbihat sırasında ekran sönüyordu. Artık burada da geçerli.

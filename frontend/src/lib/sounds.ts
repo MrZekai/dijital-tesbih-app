@@ -14,7 +14,19 @@ import { useCallback, useEffect } from "react";
 const TAP_SOURCE = require("@/assets/sounds/tap.wav");
 const TARGET_SOURCE = require("@/assets/sounds/target.wav");
 
-export function useTesbihSounds(enabled: boolean) {
+export interface SoundPrefs {
+  /** Her dokunuşta tane sesi. */
+  tap: boolean;
+  /** Hedefe ulaşınca tamamlanma sesi. */
+  complete: boolean;
+}
+
+/**
+ * v1.1.0: tek bir `enabled` yerine İKİ ayrı tercih.
+ * Kullanıcı geri bildirimi: hedef dolunca ses çıkmasını istiyor ama her
+ * dokunuşta tık sesi istemiyor. Artık ikisi bağımsız.
+ */
+export function useTesbihSounds(prefs: SoundPrefs) {
   const tapPlayer = useAudioPlayer(TAP_SOURCE);
   const targetPlayer = useAudioPlayer(TARGET_SOURCE);
 
@@ -30,7 +42,8 @@ export function useTesbihSounds(enabled: boolean) {
 
   return useCallback(
     (kind: "tap" | "target") => {
-      if (!enabled) return;
+      if (kind === "tap" && !prefs.tap) return;
+      if (kind === "target" && !prefs.complete) return;
       const player = kind === "target" ? targetPlayer : tapPlayer;
       try {
         player.seekTo(0);
@@ -40,6 +53,6 @@ export function useTesbihSounds(enabled: boolean) {
         console.warn("[sound] play failed", e);
       }
     },
-    [enabled, tapPlayer, targetPlayer]
+    [prefs.complete, prefs.tap, tapPlayer, targetPlayer]
   );
 }
