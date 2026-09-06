@@ -442,7 +442,13 @@ export default function Home() {
                 glowAnim,
               ]}
             />
-            <Animated.View style={counterAnim}>
+            {/* Sayaç halkanın TAM ORTASINDA durmalı. Mutlak konumlandirma
+                sart: aksi halde SVG'den sonra akip halkanin disina tasar ve
+                alttaki hedef/tur satirinin uzerine biner. */}
+            <Animated.View
+              style={[styles.counterWrap, counterAnim]}
+              pointerEvents="none"
+            >
               <Text
                 style={[
                   styles.counterText,
@@ -1190,6 +1196,15 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   counterText: { fontWeight: "300", letterSpacing: -2, textAlign: "center" },
+  counterWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   glowRing: { position: "absolute", borderWidth: 2 },
   halo: { position: "absolute" },
 
