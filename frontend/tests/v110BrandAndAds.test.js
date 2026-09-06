@@ -171,15 +171,26 @@ ok("halka ust siniri buyutuldu", /bigText \? 400 : 460/.test(homeSrc));
 ok("ilk kullanim karti var", homeSrc.includes("home-first-use-card"));
 ok("tamamlama kutlamasi var", homeSrc.includes("haloAnim"));
 
-// ── 12) Sayac halkanin ortasinda kalmali ──────────────────────────────
-// Regresyon: sayac sarmalayicisi mutlak konumlandirilmazsa SVG'den sonra
-// akar, halkanin disina tasar ve alttaki hedef/tur satirinin uzerine biner.
-ok("merkez yigini mutlak konumlu",
+// ── 12) Layout A — kullanicinin sectigi ana sayfa duzeni ──────────────
+// QA'da uc sikayet vardi: (a) sayac alttaki satira biniyordu, (b) halka
+// koca ekranda kucucuk kaliyordu, (c) Geri Al/Sifirla ayar ikonu boyutuna
+// indirilmisti. Layout A bu ucunu de cozer; testler geri gelmesini engeller.
+ok("merkez yigini mutlak konumlu (cakisma imkansiz)",
   /centerStack:\s*\{[^}]*position:\s*"absolute"/s.test(homeSrc));
-ok("sayi + hedef + tur halkanin icinde tek yigin",
-  homeSrc.includes("styles.centerStack"));
-ok("Geri Al / Sifirla ayri satirda degil",
-  !homeSrc.includes("ControlPill") && homeSrc.includes('testID="undo-button"'));
+ok("halkanin icinde YALNIZCA sayi var (hedef hapi disarida)",
+  homeSrc.includes("styles.centerStack") && !/centerStack[\s\S]{0,600}lapBadge/.test(homeSrc));
+ok("hedef/tur bilgisi halkanin ALTINDA duz metin",
+  homeSrc.includes("styles.metaRow") && homeSrc.includes("metaLaps"));
+ok("eski hap/rozet stilleri kaldirildi",
+  !homeSrc.includes("metaPill:") && !homeSrc.includes("lapBadge:"));
+ok("Geri Al / Sifirla TAM BOY dugme",
+  /actionBtn:\s*\{[^}]*height:\s*46/s.test(homeSrc)
+    && homeSrc.includes('testID="undo-button"')
+    && homeSrc.includes('testID="reset-button"'));
+ok("aksiyonlar ayar ikonu satirinda degil",
+  !homeSrc.includes('icon="arrow-undo-outline"'));
+ok("halka ust siniri buyuk", /bigText \? 400 : 460/.test(homeSrc));
+ok("sayac punto tabani genis (icerisi bos)", /ringSize \* 0\.34/.test(homeSrc));
 
 console.log("\n----------------------------------");
 if (failures > 0) { console.log(`${failures} TEST BAŞARISIZ`); process.exit(1); }

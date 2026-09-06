@@ -77,16 +77,16 @@ const BRAND_MARK = require("@/assets/images/icon.png");
 // BUG-007: Büyük Yazı Modu'nda 4-5 haneli sayaçlar halkayla çakışıyordu.
 // Basamak sayısına göre dinamik font — sayaç her zaman tek satırda kalır.
 /**
- * Sayac punto'su. v1.1.0-r2: rakam artik halkanin ICINDE ve hemen altinda
- * hedef/tur satiri var; bu yuzden taban oran 0.38 -> 0.30'a cekildi.
- * Boylece 5 haneli sayilarda bile merkez yigini halkayi tasirmaz.
+ * Sayac punto'su. Layout A: halkanin icinde SADECE sayi oldugu icin rakam
+ * genis nefes alir (taban oran 0.34). Basamak arttikca kuculur, boylece
+ * 5 haneli sayilar da halkanin ic capina sigar.
  */
 function counterFontFor(ringSize: number, digits: number): number {
-  const base = ringSize * 0.3;
+  const base = ringSize * 0.34;
   if (digits <= 2) return Math.round(base);
-  if (digits === 3) return Math.round(base * 0.84);
-  if (digits === 4) return Math.round(base * 0.68);
-  return Math.round(base * 0.56);
+  if (digits === 3) return Math.round(base * 0.82);
+  if (digits === 4) return Math.round(base * 0.66);
+  return Math.round(base * 0.54);
 }
 
 export default function Home() {
@@ -237,9 +237,12 @@ export default function Home() {
 
   // Halka boyutu: hem genişliğe hem KALAN YÜKSEKLİĞE göre — küçük
   // ekranlarda kontrollerle çakışmaz.
+  // controlsH ve bottomChrome zaten olculuyor; buradaki pay yalnizca
+  // halka ile alt blok arasindaki nefes bosluguydu. 62 fazla comertti ve
+  // halkayi gereksiz kucultuyordu (QA: "kocaman ekranda kucucuk tesbih").
   const availableH = Math.max(
     190,
-    screenH - insets.top - headerH - controlsH - bottomChrome - 62
+    screenH - insets.top - headerH - controlsH - bottomChrome - 24
   );
   // v1.1.0: halka belirgin biçimde büyütüldü (350 → 420) ve yatay pay
   // 56 → 28'e indirildi. Yükseklik kısıtı yine geçerli: küçük ekranlarda
@@ -449,11 +452,11 @@ export default function Home() {
                 glowAnim,
               ]}
             />
-            {/* MERKEZ YIGINI — sayi, hedef ve tur bilgisi halkanin ICINDE.
-                Mutlak konumlandirma sart: normal akista SVG'den sonra gelir,
-                halka kutusunun disina tasar ve alttaki satirlarin uzerine
-                biner (v1.1.0 QA'sinda bu hata yasandi). Yigin tek parca
-                oldugu icin rakam ile hedef hapi ARTIK CAKISAMAZ. */}
+            {/* MERKEZ — halkanin icinde YALNIZCA sayi durur.
+                Hedef ve tur bilgisi bilerek disari alindi (Layout A):
+                icerisi kalabaliklasinca sayac okunakligini kaybediyordu.
+                Mutlak konumlandirma sart: normal akista SVG'den sonra gelir
+                ve halka kutusunun disina tasar. */}
             <View style={styles.centerStack} pointerEvents="box-none">
             <Animated.View style={counterAnim} pointerEvents="none">
               <Text
@@ -474,38 +477,6 @@ export default function Home() {
               </Text>
             </Animated.View>
 
-            {/* Hedef · tur bilgisi — sayinin hemen altinda, halkanin icinde */}
-            <View style={[styles.metaRow, { flexDirection: dir.row }]}>
-            <Pressable
-              onPress={() => setShowTargets(true)}
-              style={[styles.metaPill, { borderColor: theme.border }]}
-              testID="target-selector"
-              accessibilityRole="button"
-              accessibilityLabel={t("home.choose_target")}
-            >
-              <Text style={[styles.metaText, { color: theme.text }]}>
-                {fmtNumber(count)} / {fmtNumber(target)}
-              </Text>
-            </Pressable>
-            {laps > 0 ? (
-              <View
-                style={[
-                  styles.lapBadge,
-                  {
-                    borderColor: theme.gold,
-                    backgroundColor: theme.emeraldDeep,
-                    flexDirection: dir.row,
-                  },
-                ]}
-                testID="lap-badge"
-              >
-                <Ionicons name="checkmark-circle" size={12} color={theme.gold} />
-                <Text style={[styles.lapText, { color: theme.gold }]}>
-                  {t("home.laps", { count: laps })}
-                </Text>
-              </View>
-            ) : null}
-            </View>
             </View>
           </View>
         </View>
@@ -656,34 +627,85 @@ export default function Home() {
           </View>
         </View>
 
-        {/* TEK kontrol satiri: Geri Al · Sifirla + ayar dugmeleri.
-            v1.1.0-r2: eskiden Geri Al/Sifirla AYRI bir satirdaydi; bu satir
-            kaldirilarak ~60dp kazanildi ve halka o kadar buyudu. */}
-        <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
-          <IconToggle
-            icon="arrow-undo-outline"
-            label={t("home.undo")}
-            active={false}
+        {/* BILGI SATIRI — hedef ve tur. Layout A: halkanin ICINDE degil,
+            hemen ALTINDA duz metin olarak. Dokununca hedef secici acilir. */}
+        <Pressable
+          onPress={() => setShowTargets(true)}
+          style={[styles.metaRow, { flexDirection: dir.row }]}
+          testID="target-selector"
+          accessibilityRole="button"
+          accessibilityLabel={t("home.choose_target")}
+        >
+          <Text style={[styles.metaText, { color: theme.textMuted }]}>
+            {fmtNumber(count)} / {fmtNumber(target)}
+          </Text>
+          {laps > 0 ? (
+            <>
+              <Text style={[styles.metaDot, { color: theme.textSubtle }]}>·</Text>
+              <Text
+                style={[styles.metaLaps, { color: theme.gold }]}
+                testID="lap-badge"
+              >
+                {t("home.laps", { count: laps })}
+              </Text>
+            </>
+          ) : null}
+        </Pressable>
+
+        {/* ANA AKSIYONLAR — Geri Al ve Sifirla en cok kullanilan iki komut,
+            bu yuzden TAM BOY dugme olarak durur; ayar ikonlariyla ayni
+            boyuta indirilmeleri QA'da hakli olarak elestirildi. */}
+        <View style={[styles.actionRow, { flexDirection: dir.row }]}>
+          <Pressable
             onPress={() => {
               undo();
               haptic("light");
             }}
-            theme={theme}
+            style={({ pressed }) => [
+              styles.actionBtn,
+              {
+                borderColor: theme.gold,
+                backgroundColor: theme.emeraldDeep,
+                flexDirection: dir.row,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
             testID="undo-button"
-          />
-          <IconToggle
-            icon="refresh-outline"
-            label={t("home.reset")}
-            active={false}
+            accessibilityRole="button"
+            accessibilityLabel={t("home.undo")}
+          >
+            <Ionicons name="arrow-undo-outline" size={17} color={theme.gold} />
+            <Text style={[styles.actionLabel, { color: theme.gold }]}>
+              {t("home.undo")}
+            </Text>
+          </Pressable>
+          <Pressable
             onPress={() => {
               if (askBeforeReset) setConfirmReset(true);
               else doReset();
             }}
-            theme={theme}
+            style={({ pressed }) => [
+              styles.actionBtn,
+              {
+                borderColor: theme.danger,
+                backgroundColor: theme.bgCard + "cc",
+                flexDirection: dir.row,
+                opacity: pressed ? 0.7 : 1,
+              },
+            ]}
             testID="reset-button"
-          />
-          {!simpleMode ? (
-            <>
+            accessibilityRole="button"
+            accessibilityLabel={t("home.reset")}
+          >
+            <Ionicons name="refresh-outline" size={17} color={theme.danger} />
+            <Text style={[styles.actionLabel, { color: theme.danger }]}>
+              {t("home.reset")}
+            </Text>
+          </Pressable>
+        </View>
+
+        {!simpleMode ? (
+          <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
             <IconToggle
               icon={s.vibration ? "phone-portrait" : "phone-portrait-outline"}
               label={t("home.toggle_vibration")}
@@ -737,9 +759,8 @@ export default function Home() {
               theme={theme}
               testID="tesbihat-shortcut"
             />
-            </>
-          ) : null}
-        </View>
+          </View>
+        ) : null}
       </View>
 
       <ConfirmSheet
@@ -1179,29 +1200,39 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingHorizontal: "12%",
+    paddingHorizontal: "8%",
   },
   glowRing: { position: "absolute", borderWidth: 2 },
   halo: { position: "absolute" },
 
-  metaRow: { alignItems: "center", gap: spacing.sm },
-  metaPill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  metaText: { fontSize: 14, fontWeight: "600", letterSpacing: 0.5 },
-  lapBadge: {
+  // Bilgi satiri — halkanin ALTINDA, duz metin (hap degil).
+  metaRow: {
     alignItems: "center",
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 2,
   },
-  lapText: { fontSize: 12, fontWeight: "700", letterSpacing: 0.3 },
+  metaText: { fontSize: 15, letterSpacing: 0.3 },
+  metaDot: { fontSize: 15 },
+  metaLaps: { fontSize: 15, fontWeight: "700" },
+
+  // Ana aksiyonlar — tam boy, tema renkleriyle ayrisan iki dugme.
+  actionRow: {
+    justifyContent: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  actionBtn: {
+    flex: 1,
+    maxWidth: 190,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    height: 46,
+    borderRadius: radius.pill,
+    borderWidth: 1.4,
+  },
+  actionLabel: { fontSize: 15, fontWeight: "700" },
 
   controls: { position: "absolute", left: 0, right: 0, gap: spacing.sm },
   quickRow: { alignItems: "center", gap: 8, paddingBottom: 2 },
@@ -1223,11 +1254,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     maxWidth: 160,
   },
-  // 6 dugme tek satirda: 6x48 + 5x6 = 318dp, en dar telefonda bile sigar.
   controlsRow: {
     justifyContent: "center",
-    gap: 6,
-    paddingHorizontal: spacing.md,
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
   },
   pill: {
     alignItems: "center",
@@ -1238,7 +1268,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   pillLabel: { fontSize: 13, letterSpacing: 0.5, fontWeight: "600" },
-  iconToggleWrap: { alignItems: "center", gap: 3, width: 48 },
+  iconToggleWrap: { alignItems: "center", gap: 3, minWidth: 56 },
   iconToggle: {
     width: 44,
     height: 44,
@@ -1249,7 +1279,15 @@ const styles = StyleSheet.create({
   },
   iconToggleLabel: { fontSize: 10, letterSpacing: 0.2, textAlign: "center" },
 
-  toastRow: { alignItems: "center", marginBottom: 2 },
+    // Bilgi baloncugu MUTLAK katmanda: akista yer kaplamaz, boylece
+  // halka o 30dp'yi kullanir. Gorunurlugu opacity ile yonetilir.
+  toastRow: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: -34,
+    alignItems: "center",
+  },
   toast: {
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
