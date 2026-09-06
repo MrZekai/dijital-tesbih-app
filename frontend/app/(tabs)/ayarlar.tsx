@@ -6,6 +6,7 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import * as Application from "expo-application";
+
 import { usePathname } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -42,6 +43,18 @@ import { useStore } from "@/src/lib/store";
 import type { ThemePreference, ThemeTokens } from "@/src/lib/theme";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 import { parsePositiveInteger } from "@/src/lib/validation";
+
+/**
+ * DERLEME PARMAK IZI.
+ *
+ * Neden var: QA sirasinda "degisiklikleri APK'da goremiyorum" sorunu
+ * yasandi ve sebebinin eski bir commit'ten derleme oldugu ancak uzun
+ * incelemeyle anlasilabildi. Artik Ayarlar > Uygulama satirinda surumun
+ * yanina commit kisaltmasi yazilir; hangi kodun elde oldugu tek bakista
+ * gorulur. Degeri CI `EXPO_PUBLIC_BUILD_SHA` ile enjekte eder; yerel
+ * gelistirmede bos kalir ve hicbir sey gostermez.
+ */
+const BUILD_SHA = (process.env.EXPO_PUBLIC_BUILD_SHA ?? "").slice(0, 7);
 
 const GOAL_PRESETS = [33, 100, 300, 500, 1000];
 
@@ -700,6 +713,7 @@ export default function Ayarlar() {
               {Application.nativeBuildVersion
                 ? ` (${Application.nativeBuildVersion})`
                 : ""}
+              {BUILD_SHA ? ` · ${BUILD_SHA}` : ""}
             </Text>
           </View>
 

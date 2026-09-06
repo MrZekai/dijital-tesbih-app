@@ -28,6 +28,10 @@ jobs:
     env:
       CI: "1"
       EXPO_PUBLIC_ADS_MODE: test
+      # Derleme parmak izi: Ayarlar > Uygulama satirinda surumun yaninda
+      # gorunur. "Degisiklikleri APK'da goremiyorum" durumunda hangi
+      # commit'ten derlendigi tek bakista anlasilir.
+      EXPO_PUBLIC_BUILD_SHA: ${{ github.sha }}
 
     steps:
       - name: Checkout
