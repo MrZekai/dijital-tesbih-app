@@ -168,8 +168,6 @@ const tk: TranslationTable = {
   "validation.positive_integer": "Položitel bitin san giriziň (meselem 250).",
   "validation.min": "Baha 0-dan uly bolmaly.",
   "validation.max": "Baha örän uly.",
-  "ads.label": "MAHABAT",
-  "ads.failed": "Mahabat ýüklenmedi",
   "error.title": "Bir zat ýalňyş gitdi",
   "error.body": "Programmada garaşylmadyk mesele ýüze çykdy. Ýatda saklanan sanawlaryňyz howpsuz.",
   "error.retry": "Gaýtadan synanyş",

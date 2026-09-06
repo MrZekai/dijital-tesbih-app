@@ -168,8 +168,6 @@ const ku: TranslationTable = {
   "validation.positive_integer": "Hejmareke tam a erênî binivîse (mînak 250).",
   "validation.min": "Nirx divê ji 0 mezintir be.",
   "validation.max": "Nirx pir mezin e.",
-  "ads.label": "REKLAM",
-  "ads.failed": "Reklam nehate barkirin",
   "error.title": "Tiştek çewt çû",
   "error.body": "Bernameyê pirsgirêkeke nediyar dît. Hejmartinên te yên tomarkirî ewle ne.",
   "error.retry": "Dîsa biceribîne",

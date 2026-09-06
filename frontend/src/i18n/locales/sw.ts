@@ -168,8 +168,6 @@ const sw: TranslationTable = {
   "validation.positive_integer": "Weka namba kamili chanya (mfano 250).",
   "validation.min": "Thamani lazima iwe kubwa kuliko 0.",
   "validation.max": "Thamani ni kubwa mno.",
-  "ads.label": "TANGAZO",
-  "ads.failed": "Tangazo halikupakia",
   "error.title": "Kuna hitilafu",
   "error.body": "Programu imekumbana na tatizo lisilotarajiwa. Hesabu zako zilizohifadhiwa ziko salama.",
   "error.retry": "Jaribu tena",

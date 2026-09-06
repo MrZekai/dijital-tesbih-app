@@ -148,15 +148,17 @@ export const APP_OPEN_MAX_CACHE_MS = 4 * 60 * 60 * 1000;
 /**
  * Banner alanı için AYRILAN sabit yükseklik (dp).
  *
+ * v1.1.0: "REKLAM" etiketi kaldırıldığı için 62 → 54 dp'ye indirildi.
+ * 50 dp standart banner + 4 dp güvenlik payı.
+ *
  * Bu alan HER ZAMAN ayrılır ve HER ZAMAN görünür kalır — reklam
  * yüklenmese bile (no-fill) daraltılmaz. Böylece:
  *   - Ekran düzeni reklam gelince/gelmeyince zıplamaz,
  *   - Reklam alanı layout'ta belirlenmiş, sabit ve görünür bir yerdedir,
  *   - İçerik reklamın altında kalmaz (ekranlar bu kadar alt boşluk bırakır).
  *
- * 50dp standart banner + 10dp "REKLAM" etiketi/dolgu payı.
  */
-export const BANNER_SLOT_HEIGHT = 62;
+export const BANNER_SLOT_HEIGHT = 54;
 
 // Tanılama/log amaçlı özet (yalnızca geliştirmede yararlı).
 export const adDebugInfo = {

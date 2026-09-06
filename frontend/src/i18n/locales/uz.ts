@@ -168,8 +168,6 @@ const uz: TranslationTable = {
   "validation.positive_integer": "Musbat butun son kiriting (mas. 250).",
   "validation.min": "Qiymat 0 dan katta bo‘lishi kerak.",
   "validation.max": "Qiymat juda katta.",
-  "ads.label": "REKLAMA",
-  "ads.failed": "Reklama yuklanmadi",
   "error.title": "Nimadir noto‘g‘ri ketdi",
   "error.body": "Ilovada kutilmagan muammo yuz berdi. Saqlangan sanashlaringiz xavfsiz.",
   "error.retry": "Qayta urinish",

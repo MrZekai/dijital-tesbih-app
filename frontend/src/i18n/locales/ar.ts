@@ -180,8 +180,6 @@ const ar: TranslationTable = {
   "validation.positive_integer": "أدخل عددًا صحيحًا موجبًا (مثال: ٢٥٠).",
   "validation.min": "يجب أن تكون القيمة أكبر من صفر.",
   "validation.max": "القيمة كبيرة جدًا.",
-  "ads.label": "إعلان",
-  "ads.failed": "تعذّر تحميل الإعلان",
   "error.title": "حدث خطأ ما",
   "error.body": "واجه التطبيق مشكلة غير متوقعة. أعدادك المحفوظة آمنة.",
   "error.retry": "حاول مرة أخرى",

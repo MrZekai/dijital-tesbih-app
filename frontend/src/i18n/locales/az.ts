@@ -168,8 +168,6 @@ const az: TranslationTable = {
   "validation.positive_integer": "Müsbət tam ədəd daxil edin (məs. 250).",
   "validation.min": "Dəyər 0-dan böyük olmalıdır.",
   "validation.max": "Dəyər çox böyükdür.",
-  "ads.label": "REKLAM",
-  "ads.failed": "Reklam yüklənmədi",
   "error.title": "Nəsə səhv getdi",
   "error.body": "Tətbiq gözlənilməz problemlə qarşılaşdı. Yadda saxlanmış saylarınız təhlükəsizdir.",
   "error.retry": "Yenidən cəhd et",
