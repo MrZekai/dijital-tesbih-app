@@ -1,0 +1,59 @@
+{
+  "//": [
+    "EAS Build profilleri.",
+    "",
+    "NEDEN VAR: uretim AAB'sini imzalayan yukleme anahtari EAS'in kendi",
+    "kredi deposunda duruyor. Bu dosya sayesinde anahtari indirmeden,",
+    "base64'e cevirmeden ve GitHub Secrets'a girmeden imzali AAB",
+    "uretilebilir:  eas build --platform android --profile production",
+    "",
+    "Erisim yoksa alternatif yol GitHub Actions'tir:",
+    "  .github/workflows/android-production-aab.yml  (secret ister)",
+    "Iki yol da AYNI anahtari kullanir; ciktinin sertifikasi ayni olmalidir.",
+    "",
+    "Reklam modu ortam degiskeniyle ayrilir; uretim disinda ASLA gercek",
+    "reklam birimleri kullanilmaz."
+  ],
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_ADS_MODE": "test"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_ADS_MODE": "test"
+      }
+    },
+    "production": {
+      "autoIncrement": false,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_ADS_MODE": "production"
+      }
+    }
+  },
+  "submit": {
+    "//": [
+      "Play'e OTOMATIK YUKLEME BILEREK YAPILANDIRILMADI.",
+      "AAB once ic test kanalina elle yuklenir, cihazda dogrulanir,",
+      "ancak ondan sonra uretime alinir. Karar insanda kalir."
+    ],
+    "production": {}
+  }
+}

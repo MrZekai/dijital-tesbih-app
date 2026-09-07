@@ -99,6 +99,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "owner": "emergent009",
+    "extra": {
+      "eas": {
+        "projectId": "0cd40066-e675-4011-979a-6cc8b635e6fc"
+      }
     }
   }
 }

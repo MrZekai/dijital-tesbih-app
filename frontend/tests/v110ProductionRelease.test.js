@@ -88,11 +88,27 @@ ok("scriptte parola yok",
 ok("kalite kapisinda self-test calisiyor",
   wf.includes("attach-release-signing.js --self-test"));
 
-// ── 6) Kimlik: 1028'in devami ────────────────────────────────────────
+// ── 6) EAS yolu: MEVCUT projeye bagli, yeni proje acmiyor ────────────
+const eas = JSON.parse(read(path.join(ROOT, "eas.json")));
+ok("production profili app-bundle uretiyor",
+  eas.build.production.android.buildType === "app-bundle");
+ok("production profilinde gercek reklamlar",
+  eas.build.production.env.EXPO_PUBLIC_ADS_MODE === "production");
+ok("test profillerinde gercek reklam YOK",
+  eas.build.preview.env.EXPO_PUBLIC_ADS_MODE === "test" &&
+  eas.build.development.env.EXPO_PUBLIC_ADS_MODE === "test");
+ok("versionCode'u EAS otomatik artirmiyor (app.json tek kaynak)",
+  eas.build.production.autoIncrement === false);
+ok("EAS otomatik Play yuklemesi yapilandirilmamis",
+  Object.keys(eas.submit.production || {}).length === 0);
+
+// ── 7) Kimlik: 1028'in devami ────────────────────────────────────────
 const app = JSON.parse(read(path.join(ROOT, "app.json")));
 ok("applicationId com.zikirhane.tesbih", app.expo.android.package === "com.zikirhane.tesbih");
 ok("versionCode > 1028", app.expo.android.versionCode > 1028);
 ok("versionName tanimli", Boolean(app.expo.version));
+ok("MEVCUT EAS projesine bagli (yeni proje degil)",
+  app.expo.extra.eas.projectId === "0cd40066-e675-4011-979a-6cc8b635e6fc");
 
 console.log("\n----------------------------------");
 if (failures > 0) { console.log(`${failures} TEST BAŞARISIZ`); process.exit(1); }
