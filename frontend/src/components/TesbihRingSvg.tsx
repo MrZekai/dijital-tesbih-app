@@ -17,19 +17,15 @@
 //
 // KATMANLAR (arkadan öne)
 //   1. Yumuşak radyal zemin.
-//   2. Hilal + beş köşeli yıldız — altın, düşük opaklık, çok yavaş döner.
+//   2. Hilal + beş köşeli yıldız — altın, düşük opaklık, SABİT.
+//      DÖNMEZ: hilal dönen bir motif olamaz. Geometrik bir rozet dönerken
+//      fark edilmez, ama hilalin her açıda anlamı değişir; bir an gelir
+//      aşağı bakar ve yanlış görünür. QA'da tam olarak bu yaşandı.
 //   3. Çift ince çember (mihrap kemeri hissi).
 //   4. TESBİH TANELERİ — ilerledikçe tek tek altına döner.
 
 import React, { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from "react-native-reanimated";
 import Svg, {
   Circle,
   Defs,
@@ -51,8 +47,6 @@ interface Props {
   progressColor: string;
   /** Motif rengi; verilmezse `progressColor` kullanılır. */
   motifColor?: string;
-  /** Motifi hareketsiz bırak (erişilebilirlik / pil). */
-  reduceMotion?: boolean;
 }
 
 /**
@@ -75,23 +69,7 @@ export function TesbihRingSvg({
   color,
   progressColor,
   motifColor,
-  reduceMotion = false,
 }: Props) {
-  const spin = useSharedValue(0);
-
-  React.useEffect(() => {
-    if (reduceMotion) return;
-    spin.value = withRepeat(
-      withTiming(360, { duration: 180000, easing: Easing.linear }),
-      -1,
-      false
-    );
-  }, [reduceMotion, spin]);
-
-  const motifStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${spin.value}deg` }],
-  }));
-
   const beads = Math.max(9, Math.min(33, beadCount));
   const cx = size / 2;
   const cy = size / 2;
@@ -151,8 +129,8 @@ export function TesbihRingSvg({
 
   return (
     <View style={{ width: size, height: size }} pointerEvents="none">
-      {/* Motif katmanı — çok yavaş döner. */}
-      <Animated.View style={[StyleSheet.absoluteFill, motifStyle]}>
+      {/* Motif katmanı — SABİT. Hilal asla döndürülmez. */}
+      <View style={StyleSheet.absoluteFill}>
         <Svg width={size} height={size}>
           <Defs>
             <RadialGradient id="glowBg" cx="50%" cy="50%" r="50%">
@@ -164,9 +142,10 @@ export function TesbihRingSvg({
 
           <Circle cx={cx} cy={cy} r={size * 0.38} fill="url(#glowBg)" />
 
-          {/* Hilal + yıldız. Hafif eğim geleneksel duruşu verir. */}
+          {/* Hilal + yıldız — logodaki duruş: açıklık sağa ve YUKARI bakar.
+              rotation NEGATİF = saat yönünün tersi = açıklık yukarı kalkar. */}
           <G translateX={cx + motifR * 0.14} translateY={cy} opacity={0.18}>
-            <G rotation={-18}>
+            <G rotation={-25}>
               <Path d={crescentPath} fill={gold} />
               <G translateX={starX} translateY={starY}>
                 <Path d={starD} fill={gold} />
@@ -174,7 +153,7 @@ export function TesbihRingSvg({
             </G>
           </G>
         </Svg>
-      </Animated.View>
+      </View>
 
       {/* Taneler ve çemberler — SABİT (ilerleme okunabilir kalsın). */}
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>

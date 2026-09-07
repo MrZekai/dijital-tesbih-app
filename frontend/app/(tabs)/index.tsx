@@ -36,6 +36,7 @@ import { router } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
+  type LayoutChangeEvent,
   Modal,
   Pressable,
   ScrollView,
@@ -108,7 +109,7 @@ export default function Home() {
   const { t, c: fmtCounter, n: fmtNumber } = useI18n();
   const dir = useDirection();
   const insets = useSafeAreaInsets();
-  const { width: screenW, height: screenH } = useWindowDimensions();
+  const { width: screenW } = useWindowDimensions();
   const bottomChrome = useBottomChromeHeight();
 
   const [confirmReset, setConfirmReset] = useState(false);
@@ -237,22 +238,31 @@ export default function Home() {
 
   // Halka boyutu: hem genişliğe hem KALAN YÜKSEKLİĞE göre — küçük
   // ekranlarda kontrollerle çakışmaz.
-  // controlsH ve bottomChrome zaten olculuyor; buradaki pay yalnizca
-  // halka ile alt blok arasindaki nefes bosluguydu. 62 fazla comertti ve
-  // halkayi gereksiz kucultuyordu (QA: "kocaman ekranda kucucuk tesbih").
-  const availableH = Math.max(
-    190,
-    screenH - insets.top - headerH - controlsH - bottomChrome - 24
-  );
-  // v1.1.0: halka belirgin biçimde büyütüldü (350 → 420) ve yatay pay
-  // 56 → 28'e indirildi. Yükseklik kısıtı yine geçerli: küçük ekranlarda
-  // kontrollerin üstüne binmez.
-  // v1.1.0-r2: sayac/hedef/tur halkanin ICINE alindi ve Geri Al/Sifirla
-  // satiri kaldirildi. Bosalan ~90dp halkaya verildi: ust sinir 420 -> 460.
-  const ringSize = Math.max(
-    180,
-    Math.min(screenW - 24, availableH, bigText ? 400 : 460)
-  );
+  // ── HALKA BOYUTU ────────────────────────────────────────────────────
+  // ONCEDEN formulle tahmin ediliyordu:
+  //     screenH - insets.top - headerH - controlsH - bottomChrome - pay
+  // Bu tahmin QA'da surekli GERCEGINDEN KUCUK cikti (halka ~195dp'de
+  // kaldi, oysa 340dp'lik bos alan vardi) cunku bottomChrome bir yerde
+  // iki kez dusuluyordu ve kenar bosluklari tahmin ediliyordu.
+  //
+  // ARTIK TAHMIN YOK: halkanin durdugu kutu onLayout ile OLCULUR ve
+  // halka o kutuyu doldurur. Formul hatasi diye bir sey kalmaz.
+  const [heroBox, setHeroBox] = useState({ w: 0, h: 0 });
+  const onHeroLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    const w = Math.round(width);
+    const h = Math.round(height);
+    setHeroBox((prev) => (prev.w === w && prev.h === h ? prev : { w, h }));
+  }, []);
+
+  // Olculene kadar makul bir baslangic; ilk kareden sonra gercek deger.
+  const measured = heroBox.w > 0 && heroBox.h > 0;
+  const ringSize = measured
+    ? Math.max(
+        180,
+        Math.min(heroBox.w - 12, heroBox.h - 8, bigText ? 520 : 620)
+      )
+    : Math.max(180, Math.min(screenW - 24, 300));
 
   // Hiç zikir çekilmemişse ana sayfa boş hissettirmesin.
   const isFirstUse = state.totalCount === 0 && quickItems.length === 0;
@@ -409,6 +419,10 @@ export default function Home() {
           accessibilityLabel={t("home.a11y_counter", { count, target })}
           accessibilityHint={t("home.a11y_tap_area")}
         >
+          {/* OLCUM KUTUSU — halkanin kullanabilecegi gercek bos alan.
+              Yuksekligi/genisligi buradan okunur; ringSize buna gore
+              hesaplanir. Tahmine dayali hicbir sayi kalmadi. */}
+          <View style={styles.heroBox} onLayout={onHeroLayout}>
           <View
             style={{
               width: ringSize,
@@ -424,7 +438,6 @@ export default function Home() {
               progressColor={theme.gold}
               motifColor={theme.gold}
               progress={progress}
-              reduceMotion={s.simpleMode}
             />
             <Animated.View
               style={[
@@ -478,6 +491,7 @@ export default function Home() {
             </Animated.View>
 
             </View>
+          </View>
           </View>
         </View>
       </MultiTouchTapArea>
@@ -1183,6 +1197,13 @@ const styles = StyleSheet.create({
   arabic: { fontSize: 15, letterSpacing: 0.5 },
 
   tapArea: { flex: 1 },
+  // Halkanin kullanabilecegi bos alan — onLayout ile olculur.
+  heroBox: {
+    flex: 1,
+    alignSelf: "stretch",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   centerCol: {
     flex: 1,
     alignItems: "center",

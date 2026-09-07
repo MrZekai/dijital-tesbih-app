@@ -162,6 +162,8 @@ ok("Ayarlar'da sistem dili satiri var", settingsSrc.includes('testID="lang-syste
 
 // ── 11) Dini motifli SVG halka ────────────────────────────────────────
 const ring = read("src/components/TesbihRingSvg.tsx");
+ok("motif DONMUYOR (hilal sabit durmali)",
+  !ring.includes("withRepeat") && !ring.includes("useSharedValue"));
 ok("motif hilal + yildiz (geometrik yildiz degil)",
   ring.includes("crescentPath") && ring.includes("starPath")
     && !ring.includes("squarePath") && !ring.includes("starPolygon"));
@@ -170,7 +172,9 @@ ok("motifte Arapca yazi / mubarek isim yok",
   !/[\u0600-\u06FF]/.test(ring.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "")));
 ok("taneler tek tek doluyor", ring.includes("i < filled"));
 ok("ana sayfa yeni halkayi kullaniyor", homeSrc.includes("TesbihRingSvg"));
-ok("halka ust siniri buyutuldu", /bigText \? 400 : 460/.test(homeSrc));
+ok("halka boyutu OLCULEN alandan geliyor (formul tahmini yok)",
+  homeSrc.includes("onHeroLayout") && homeSrc.includes("styles.heroBox")
+    && !homeSrc.includes("availableH"));
 ok("ilk kullanim karti var", homeSrc.includes("home-first-use-card"));
 ok("tamamlama kutlamasi var", homeSrc.includes("haloAnim"));
 
@@ -192,7 +196,7 @@ ok("Geri Al / Sifirla TAM BOY dugme",
     && homeSrc.includes('testID="reset-button"'));
 ok("aksiyonlar ayar ikonu satirinda degil",
   !homeSrc.includes('icon="arrow-undo-outline"'));
-ok("halka ust siniri buyuk", /bigText \? 400 : 460/.test(homeSrc));
+ok("halka ust siniri genis", /bigText \? 520 : 620/.test(homeSrc));
 ok("sayac punto tabani genis (icerisi bos)", /ringSize \* 0\.34/.test(homeSrc));
 
 console.log("\n----------------------------------");
