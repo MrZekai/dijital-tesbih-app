@@ -162,9 +162,12 @@ ok("Ayarlar'da sistem dili satiri var", settingsSrc.includes('testID="lang-syste
 
 // ── 11) Dini motifli SVG halka ────────────────────────────────────────
 const ring = read("src/components/TesbihRingSvg.tsx");
-ok("SVG halka Rub'el Hizb motifi ciziyor",
-  ring.includes("squarePath") && ring.includes("starPolygon")
-    && ring.includes("Rub'el Hizb"));
+ok("motif hilal + yildiz (geometrik yildiz degil)",
+  ring.includes("crescentPath") && ring.includes("starPath")
+    && !ring.includes("squarePath") && !ring.includes("starPolygon"));
+// Dini uygunluk siniri: motifte hicbir hat/ayet/isim bulunmamali.
+ok("motifte Arapca yazi / mubarek isim yok",
+  !/[\u0600-\u06FF]/.test(ring.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "")));
 ok("taneler tek tek doluyor", ring.includes("i < filled"));
 ok("ana sayfa yeni halkayi kullaniyor", homeSrc.includes("TesbihRingSvg"));
 ok("halka ust siniri buyutuldu", /bigText \? 400 : 460/.test(homeSrc));

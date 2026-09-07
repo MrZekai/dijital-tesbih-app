@@ -1,27 +1,25 @@
-// TesbihRingSvg — sayaç halkası + geleneksel İslam geometrisi motifi.
+// TesbihRingSvg — sayaç halkası + hilal-yıldız motifi.
 //
-// v1.1.0'da eski `TesbihRing` (basit View noktaları) yerine gelir.
-// v1.1.0-r2'de merkez motifi yeniden çizildi: eski hâli genel bir
-// "mandala" gibi okunuyordu; artık merkezde RUB'EL HİZB (۞) var.
+// MOTİF SEÇİMİ (v1.1.0-r3)
+// ────────────────────────
+// Önceki sürümlerde merkezde geometrik bir yıldız (Rub'el Hizb + girih)
+// vardı. QA'da haklı olarak "dinî değil, trigonometrik şekil gibi" diye
+// eleştirildi ve yerine HİLAL + YILDIZ kondu — uygulamanın Play'deki
+// kendi logosuyla aynı kimlik, dolayısıyla ikon ile ekran arasında
+// bütünlük kurar.
 //
-// MOTİF — Rub'el Hizb
-//   Kur'an-ı Kerim'de cüz/hizb bölümlerini işaretlemek için yüzyıllardır
-//   kullanılan sekiz köşeli yıldız. Biri 45° döndürülmüş İKİ KARE'nin
-//   üst üste binmesinden oluşur; ortasında küçük bir daire bulunur.
-//   Unicode'daki ۞ (U+06DE) karakterinin geometrik karşılığıdır.
-//   Etrafına sekiz köşeli girih yıldızı ({8/3} çokgeni) ve uçlara küçük
-//   noktalar eklenmiştir — Selçuklu/Osmanlı taş ve ahşap işçiliğindeki
-//   klasik düzen.
+// DİNÎ UYGUNLUK SINIRLARI (bilinçli kararlar)
+//   - Tasvir yok: hiçbir canlı varlık figürü çizilmez.
+//   - YAZI YOK: Allah/Muhammed hattı veya ayet KULLANILMAZ. Üzerine sayaç
+//     rakamı binen bir zemine mübarek isim veya ayet yerleştirmek uygun
+//     düşmez; bu bir tasarım tercihi değil, konulan bir sınırdır.
+//   - Motif düşük opaklıkta filigran olarak kalır; okunurluğu bozmaz.
 //
 // KATMANLAR (arkadan öne)
 //   1. Yumuşak radyal zemin.
-//   2. Rub'el Hizb + girih yıldızı — altın, düşük opaklıkta filigran,
-//      çok yavaş döner (180 sn/tur).
+//   2. Hilal + beş köşeli yıldız — altın, düşük opaklık, çok yavaş döner.
 //   3. Çift ince çember (mihrap kemeri hissi).
 //   4. TESBİH TANELERİ — ilerledikçe tek tek altına döner.
-//
-// Dinî içerik notu: burada hiçbir metin, ayet, hadis veya sembolik iddia
-// yoktur; yalnızca geleneksel geometrik süsleme kullanılır.
 
 import React, { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
@@ -57,22 +55,15 @@ interface Props {
   reduceMotion?: boolean;
 }
 
-/** Merkezi (0,0) olan bir karenin yolu. */
-function squarePath(half: number): string {
-  return `M ${-half} ${-half} L ${half} ${-half} L ${half} ${half} L ${-half} ${half} Z`;
-}
-
 /**
- * {8/3} yıldız çokgeni — sekiz nokta, her biri üç sonrakine bağlanır.
- * Girih desenlerinin temel yıldızıdır.
+ * Beş köşeli yıldız yolu (merkez 0,0). Tepe noktası yukarı bakar.
  */
-function starPolygon(r: number, step = 3): string {
+function starPath(r: number): string {
   const pts: string[] = [];
-  let i = 0;
-  for (let n = 0; n < 8; n++) {
-    const a = (Math.PI / 4) * i - Math.PI / 2;
-    pts.push(`${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)}`);
-    i = (i + step) % 8;
+  for (let i = 0; i < 10; i++) {
+    const rr = i % 2 === 0 ? r : r * 0.42;
+    const a = (-90 + i * 36) * (Math.PI / 180);
+    pts.push(`${(rr * Math.cos(a)).toFixed(2)} ${(rr * Math.sin(a)).toFixed(2)}`);
   }
   return `M ${pts.join(" L ")} Z`;
 }
@@ -135,27 +126,28 @@ export function TesbihRingSvg({
     return out;
   }, [beadR, beads, color, cx, cy, filled, progressColor, ringR]);
 
-  // Motif ölçüleri — sayaç rakamları ortada durduğu için filigran dar tutulur.
-  const motifR = size * 0.29;
-  const half = motifR * 0.66; // Rub'el Hizb karelerinin yarı kenarı
-  const tipR = motifR * 0.93; // yıldız uçlarındaki noktalar
+  // ── HİLAL + YILDIZ ──────────────────────────────────────────────────
+  // Hilal, iki daire yayından oluşan TEK bir yol olarak çizilir: dış daire
+  // (yarıçap R, merkez 0,0) eksi sağa kaydırılmış iç daire (yarıçap r).
+  // Maske/clip kullanılmaz — react-native-svg'de yol daha güvenilir.
+  const motifR = size * 0.235;
+  const crescentPath = useMemo(() => {
+    const R = motifR;
+    const r = R * 0.86;
+    const d = R * 0.3;
+    const ix = (R * R - r * r + d * d) / (2 * d);
+    const iy = Math.sqrt(Math.max(0, R * R - ix * ix));
+    // Yay bayrakları görsel olarak doğrulandı: 1/0 + 1/1 sağa açılan hilal.
+    return (
+      `M ${ix.toFixed(2)} ${(-iy).toFixed(2)} ` +
+      `A ${R.toFixed(2)} ${R.toFixed(2)} 0 1 0 ${ix.toFixed(2)} ${iy.toFixed(2)} ` +
+      `A ${r.toFixed(2)} ${r.toFixed(2)} 0 1 1 ${ix.toFixed(2)} ${(-iy).toFixed(2)} Z`
+    );
+  }, [motifR]);
 
-  const tipDots = useMemo(() => {
-    const out: React.ReactElement[] = [];
-    for (let i = 0; i < 8; i++) {
-      const a = (Math.PI / 4) * i - Math.PI / 2;
-      out.push(
-        <Circle
-          key={i}
-          cx={tipR * Math.cos(a)}
-          cy={tipR * Math.sin(a)}
-          r={Math.max(1, size * 0.007)}
-          fill={gold}
-        />
-      );
-    }
-    return out;
-  }, [gold, size, tipR]);
+  const starD = useMemo(() => starPath(motifR * 0.23), [motifR]);
+  const starX = motifR * 0.68;
+  const starY = -motifR * 0.55;
 
   return (
     <View style={{ width: size, height: size }} pointerEvents="none">
@@ -172,24 +164,14 @@ export function TesbihRingSvg({
 
           <Circle cx={cx} cy={cy} r={size * 0.38} fill="url(#glowBg)" />
 
-          <G translateX={cx} translateY={cy} opacity={0.22}>
-            {/* RUB'EL HİZB (۞) — biri 45° döndürülmüş iki kare */}
-            <Path d={squarePath(half)} stroke={gold} strokeWidth={1.4} fill="none" />
-            <G rotation={45}>
-              <Path d={squarePath(half)} stroke={gold} strokeWidth={1.4} fill="none" />
+          {/* Hilal + yıldız. Hafif eğim geleneksel duruşu verir. */}
+          <G translateX={cx + motifR * 0.14} translateY={cy} opacity={0.18}>
+            <G rotation={-18}>
+              <Path d={crescentPath} fill={gold} />
+              <G translateX={starX} translateY={starY}>
+                <Path d={starD} fill={gold} />
+              </G>
             </G>
-            {/* Merkez daire — Rub'el Hizb'in ayırt edici parçası */}
-            <Circle r={motifR * 0.17} stroke={gold} strokeWidth={1.2} fill="none" />
-
-            {/* Girih yıldızı {8/3} + uç noktaları */}
-            <Path
-              d={starPolygon(motifR * 0.93)}
-              stroke={gold}
-              strokeWidth={0.85}
-              fill="none"
-              opacity={0.85}
-            />
-            {tipDots}
           </G>
         </Svg>
       </Animated.View>
