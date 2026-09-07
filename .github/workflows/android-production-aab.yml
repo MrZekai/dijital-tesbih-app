@@ -1,0 +1,192 @@
+name: Android Production AAB
+
+# =====================================================================
+#  URETIM AAB — Google Play 1.0.21 / 1028'in DEVAMI
+# =====================================================================
+#
+#  BU IS AKISI PLAY'E YUKLEME YAPMAZ. Yalnizca imzali .aab uretir ve
+#  artifact olarak birakir. Yukleme kararini insan verir.
+#
+#  DOGRULAMALAR (frontend/scripts/verify-aab.js — biri tutmazsa is akisi
+#  DURUR ve dosya yayinlanmaz):
+#    1. AAB gercekten imzalanmis mi
+#    2. Imza sertifikasi Play'in bekledigi YUKLEME anahtariyla ayni mi
+#    3. 64-bit yerel kutuphaneler 16 KB sayfa boyutuna hizali mi
+#    4. applicationId = com.zikirhane.tesbih ve versionCode > 1028 mi
+#       (app.json'dan degil, PAKETLENEN manifestten okunur)
+#
+#  ANAHTAR REPODA DEGILDIR. Keystore ve parolalar GitHub Secrets'tan
+#  gelir, calisma dizini DISINDA gecici bir dosyaya acilir, is bitince
+#  silinir. Hicbir adim parolayi loga yazmaz.
+#
+#  GEREKLI SECRETS (Settings > Secrets and variables > Actions):
+#    ANDROID_KEYSTORE_BASE64    -> base64 -w0 upload.keystore ciktisi
+#    ANDROID_KEYSTORE_PASSWORD
+#    ANDROID_KEY_ALIAS
+#    ANDROID_KEY_PASSWORD
+# =====================================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_cert_sha256:
+        description: >-
+          Beklenen YUKLEME sertifikasi SHA-256. Yalnizca Play Console'dan
+          yukleme anahtarini BILEREK sifirladiysan degistir.
+        required: true
+        default: "94:B7:FE:7C:45:1A:9E:17:D3:12:C8:08:F3:F2:BD:BA:9A:3F:17:03:36:72:17:C9:26:5F:64:6F:48:2D:95:43"
+      min_version_code:
+        description: "Play'deki mevcut surum kodu. Uretilen AAB bundan BUYUK olmali."
+        required: true
+        default: "1028"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-production-aab
+  cancel-in-progress: false
+
+jobs:
+  build-aab:
+    name: Build signed production AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      CI: "1"
+      # URETIM reklamlari — QA is akisindan tek ve kritik fark budur.
+      EXPO_PUBLIC_ADS_MODE: production
+      EXPO_PUBLIC_BUILD_SHA: ${{ github.sha }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Secret kontrolu (parola yazilmaz)
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KSP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KP: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=""
+          [ -n "$KS"  ] || missing="$missing ANDROID_KEYSTORE_BASE64"
+          [ -n "$KSP" ] || missing="$missing ANDROID_KEYSTORE_PASSWORD"
+          [ -n "$KA"  ] || missing="$missing ANDROID_KEY_ALIAS"
+          [ -n "$KP"  ] || missing="$missing ANDROID_KEY_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::Eksik secret(ler):$missing"
+            echo "Bu is akisi MEVCUT yukleme anahtarini ister; yeni anahtar URETMEZ."
+            exit 1
+          fi
+          echo "Gerekli secret'lar mevcut."
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Activate Yarn 1.22.22
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
+          yarn --version
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Quality gates
+        run: |
+          yarn lint
+          yarn typecheck
+          yarn test
+          yarn expo-doctor
+          node scripts/attach-release-signing.js --self-test
+
+      - name: Generate Android native project
+        run: npx expo prebuild --platform android --clean --non-interactive
+
+      - name: Keystore'u ac ve imzayi bagla
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KSP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KP: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          KEYDIR="$RUNNER_TEMP/signing"
+          mkdir -p "$KEYDIR"
+          printf '%s' "$KS" | base64 -d > "$KEYDIR/upload.keystore"
+          test -s "$KEYDIR/upload.keystore" || { echo "::error::Keystore cozulemedi"; exit 1; }
+          {
+            echo "ZIKIR_UPLOAD_STORE_FILE=$KEYDIR/upload.keystore"
+            echo "ZIKIR_UPLOAD_KEY_ALIAS=$KA"
+            echo "ZIKIR_UPLOAD_STORE_PASSWORD=$KSP"
+            echo "ZIKIR_UPLOAD_KEY_PASSWORD=$KP"
+          } >> android/gradle.properties
+          node scripts/attach-release-signing.js
+
+      - name: Build AAB (bundleRelease)
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew bundleRelease --no-daemon --stacktrace
+
+      - name: AAB'yi DOGRULA (imza · sertifika · 16 KB · surum)
+        env:
+          EXPECTED_CERT: ${{ inputs.expected_cert_sha256 }}
+          MIN_VC: ${{ inputs.min_version_code }}
+        run: |
+          set -euo pipefail
+          AAB="$(find android/app/build/outputs/bundle/release -name '*.aab' | head -n 1)"
+          [ -n "$AAB" ] || { echo "::error::AAB uretilmedi"; exit 1; }
+          node scripts/verify-aab.js "$AAB" \
+            --cert "$EXPECTED_CERT" \
+            --min-version-code "$MIN_VC" \
+            --package com.zikirhane.tesbih
+
+      - name: AAB'yi hazirla
+        run: |
+          set -euo pipefail
+          AAB="$(find android/app/build/outputs/bundle/release -name '*.aab' | head -n 1)"
+          VN="$(node -p "require('./app.json').expo.version")"
+          VC="$(node -p "require('./app.json').expo.android.versionCode")"
+          mkdir -p artifacts
+          cp "$AAB" "artifacts/Zikirmatik-${VN}-${VC}.aab"
+          sha256sum "artifacts/Zikirmatik-${VN}-${VC}.aab" | tee artifacts/SHA256SUMS.txt
+          {
+            echo "versionName : $VN"
+            echo "versionCode : $VC"
+            echo "commit      : ${GITHUB_SHA}"
+            echo "ads mode    : production"
+            echo "not         : Play'e YUKLENMEDI. Once ic test kanali."
+          } | tee artifacts/BUILD-INFO.txt
+
+      - name: Keystore'u sil
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/signing" || true
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zikirmatik-production-aab
+          path: |
+            frontend/artifacts/*.aab
+            frontend/artifacts/SHA256SUMS.txt
+            frontend/artifacts/BUILD-INFO.txt
+          if-no-files-found: error
+          retention-days: 14
