@@ -31,10 +31,11 @@ on:
     inputs:
       expected_cert_sha256:
         description: >-
-          Beklenen YUKLEME sertifikasi SHA-256. Yalnizca Play Console'dan
-          yukleme anahtarini BILEREK sifirladiysan degistir.
+          Beklenen YUKLEME sertifikasi SHA-256. Varsayilan, Play Console'dan
+          sifirlanarak alinan YENI yukleme anahtaridir. Yalnizca anahtari
+          tekrar degistirirsen guncelle.
         required: true
-        default: "94:B7:FE:7C:45:1A:9E:17:D3:12:C8:08:F3:F2:BD:BA:9A:3F:17:03:36:72:17:C9:26:5F:64:6F:48:2D:95:43"
+        default: "14:FA:0B:17:E5:F6:E4:AE:E6:98:27:3B:C1:32:30:A4:2E:4C:85:7F:A0:C4:36:AE:34:6F:74:A5:1E:28:D9:97"
       min_version_code:
         description: "Play'deki mevcut surum kodu. Uretilen AAB bundan BUYUK olmali."
         required: true

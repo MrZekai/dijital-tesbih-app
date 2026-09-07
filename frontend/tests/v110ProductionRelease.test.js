@@ -62,8 +62,14 @@ ok("EXPO_PUBLIC_ADS_MODE=production", /EXPO_PUBLIC_ADS_MODE:\s*production/.test(
 
 // ── 4) Dogrulama adimi gercekten calisiyor ───────────────────────────
 ok("verify-aab.js cagriliyor", wf.includes("scripts/verify-aab.js"));
-ok("beklenen sertifika parmak izi tanimli",
-  wf.includes("94:B7:FE:7C:45:1A:9E:17:D3:12:C8:08:F3:F2:BD:BA:9A:3F:17:03:36:72:17:C9:26:5F:64:6F:48:2D:95:43"));
+// Yukleme anahtari Play Console uzerinden SIFIRLANDI (eski anahtar
+// Emergent'teydi ve erisilemiyordu). Play App Signing acik oldugu icin
+// uygulama imzalama anahtari Google'da kaldi; mevcut kullanicilar
+// etkilenmez. Bu test yeni anahtarin beklendigini kilitler.
+ok("beklenen sertifika YENI yukleme anahtari",
+  wf.includes("14:FA:0B:17:E5:F6:E4:AE:E6:98:27:3B:C1:32:30:A4:2E:4C:85:7F:A0:C4:36:AE:34:6F:74:A5:1E:28:D9:97"));
+ok("eski (erisilemeyen) anahtar artik beklenmiyor",
+  !wf.includes("94:B7:FE:7C:45:1A:9E:17:D3:12:C8:08:F3:F2:BD:BA:9A:3F:17:03:36:72:17:C9:26:5F:64:6F:48:2D:95:43"));
 ok("min_version_code varsayilani 1028", /default:\s*"1028"/.test(wf));
 
 const verifier = path.join(ROOT, "scripts/verify-aab.js");
