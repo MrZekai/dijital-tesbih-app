@@ -124,4 +124,3 @@ ok("MEVCUT EAS projesine bagli (yeni proje degil)",
 console.log("\n----------------------------------");
 if (failures > 0) { console.log(`${failures} TEST BAŞARISIZ`); process.exit(1); }
 console.log("TÜM TESTLER GEÇTİ");
-

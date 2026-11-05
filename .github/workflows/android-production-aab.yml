@@ -192,4 +192,3 @@ jobs:
             frontend/artifacts/BUILD-INFO.txt
           if-no-files-found: error
           retention-days: 14
-
