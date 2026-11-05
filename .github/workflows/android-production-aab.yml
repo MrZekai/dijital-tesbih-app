@@ -1,7 +1,7 @@
 name: Android Production AAB
 
 # =====================================================================
-#  URETIM AAB — Google Play 1.0.21 / 1028'in DEVAMI
+#  URETIM AAB — Google Play 1.1.0 / 1029'un DEVAMI
 # =====================================================================
 #
 #  BU IS AKISI PLAY'E YUKLEME YAPMAZ. Yalnizca imzali .aab uretir ve
@@ -12,7 +12,7 @@ name: Android Production AAB
 #    1. AAB gercekten imzalanmis mi
 #    2. Imza sertifikasi Play'in bekledigi YUKLEME anahtariyla ayni mi
 #    3. 64-bit yerel kutuphaneler 16 KB sayfa boyutuna hizali mi
-#    4. applicationId = com.zikirhane.tesbih ve versionCode > 1028 mi
+#    4. applicationId = com.zikirhane.tesbih ve versionCode > 1029 mu
 #       (app.json'dan degil, PAKETLENEN manifestten okunur)
 #
 #  ANAHTAR REPODA DEGILDIR. Keystore ve parolalar GitHub Secrets'tan
@@ -31,15 +31,14 @@ on:
     inputs:
       expected_cert_sha256:
         description: >-
-          Beklenen YUKLEME sertifikasi SHA-256. Varsayilan, Play Console'dan
-          sifirlanarak alinan YENI yukleme anahtaridir. Yalnizca anahtari
-          tekrar degistirirsen guncelle.
+          Play Console'da kayitli MEVCUT yukleme sertifikasinin SHA-256 degeri.
+          Yalnizca uretilen AAB imzasini dogrular; anahtar olusturmaz veya degistirmez.
         required: true
         default: "14:FA:0B:17:E5:F6:E4:AE:E6:98:27:3B:C1:32:30:A4:2E:4C:85:7F:A0:C4:36:AE:34:6F:74:A5:1E:28:D9:97"
       min_version_code:
         description: "Play'deki mevcut surum kodu. Uretilen AAB bundan BUYUK olmali."
         required: true
-        default: "1028"
+        default: "1029"
 
 permissions:
   contents: read
