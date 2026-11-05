@@ -151,6 +151,8 @@ const dv: TranslationTable = {
   "settings.data_notice": "ތިޔަ ޛިކުރު ރެކޯޑްތަކާއި، ކައުންޓަރު ތާރީޚާއި، ސެޓިންގްސް ރައްކާކުރެވެނީ ތިޔަ ޑިވައިސްގައި. Google AdMob އިޝްތިހާރު ދެއްކުމަށާއި، މިންކުރުމަށާއި، ސަލާމަތަށްޓަކައި ބައެއް ޑިވައިސް އަދި އެޕް ބޭނުންކުރުމުގެ ޑޭޓާ Google ގެ ސިޔާސަތުތަކާ އެއްގޮތަށް ބޭނުންކޮށްފާނެ.",
   "settings.section_app": "އެޕް",
   "settings.version": "ވަރޝަން",
+  "settings.rate_app": "އެޕް ރޭޓް ކުރައްވާ",
+  "settings.share_app": "އެޕް ހިއްސާ ކުރައްވާ",
   "settings.privacy_policy": "ޕްރައިވެސީ ޕޮލިސީ",
   "settings.ad_privacy_options": "އިޝްތިހާރު ޕްރައިވެސީ އޮޕްޝަންސް",
   "onboarding.t1": "ޛިކުރު ފަސޭހައިން ގުނާ",

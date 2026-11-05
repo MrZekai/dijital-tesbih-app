@@ -151,6 +151,8 @@ const ur: TranslationTable = {
   "settings.data_notice": "آپ کے ذکر کے ریکارڈ، شمار کی تاریخ اور ترتیبات آپ کے آلے پر محفوظ ہوتی ہیں۔ Google AdMob اشتہار دکھانے، پیمائش اور سیکیورٹی کے لیے آلے اور ایپ کے استعمال کا مخصوص ڈیٹا Google کی پالیسیوں کے مطابق استعمال کر سکتا ہے۔",
   "settings.section_app": "ایپ",
   "settings.version": "ورژن",
+  "settings.rate_app": "ایپ کو درجہ دیں",
+  "settings.share_app": "ایپ شیئر کریں",
   "settings.privacy_policy": "رازداری کی پالیسی",
   "settings.ad_privacy_options": "اشتہار رازداری کے اختیارات",
   "onboarding.t1": "اپنے اذکار آسانی سے گنیں",

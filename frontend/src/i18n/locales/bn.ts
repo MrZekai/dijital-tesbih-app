@@ -151,6 +151,8 @@ const bn: TranslationTable = {
   "settings.data_notice": "আপনার জিকিরের রেকর্ড, কাউন্টারের ইতিহাস ও সেটিংস আপনার ডিভাইসে সংরক্ষিত থাকে। Google AdMob বিজ্ঞাপন প্রদর্শন, পরিমাপ ও নিরাপত্তার জন্য নির্দিষ্ট ডিভাইস ও অ্যাপ ব্যবহারের তথ্য Google-এর নীতি অনুযায়ী প্রক্রিয়া করতে পারে।",
   "settings.section_app": "অ্যাপ",
   "settings.version": "সংস্করণ",
+  "settings.rate_app": "অ্যাপটি মূল্যায়ন করুন",
+  "settings.share_app": "অ্যাপটি শেয়ার করুন",
   "settings.privacy_policy": "গোপনীয়তা নীতি",
   "settings.ad_privacy_options": "বিজ্ঞাপন গোপনীয়তা বিকল্প",
   "onboarding.t1": "সহজে জিকির গুনুন",

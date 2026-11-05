@@ -151,6 +151,8 @@ const az: TranslationTable = {
   "settings.data_notice": "Zikr qeydləriniz, sayğac tarixçəniz və ayarlarınız cihazınızda saxlanılır. Google AdMob reklam göstərilməsi, ölçmə və təhlükəsizlik üçün müəyyən cihaz və tətbiq istifadə məlumatlarını Google siyasətlərinə uyğun emal edə bilər.",
   "settings.section_app": "TƏTBİQ",
   "settings.version": "Versiya",
+  "settings.rate_app": "Tətbiqi qiymətləndir",
+  "settings.share_app": "Tətbiqi paylaş",
   "settings.privacy_policy": "Məxfilik siyasəti",
   "settings.ad_privacy_options": "Reklam məxfilik seçimləri",
   "onboarding.t1": "Zikrlərinizi asanlıqla sayın",

@@ -154,6 +154,8 @@ const bs: TranslationTable = {
   "settings.data_notice": "Vaši zapisi zikra, historija brojača i postavke pohranjeni su na vašem uređaju. Google AdMob može obrađivati određene podatke o uređaju i korištenju aplikacije radi prikaza oglasa, mjerenja i sigurnosti, u skladu s pravilima Googlea.",
   "settings.section_app": "APLIKACIJA",
   "settings.version": "Verzija",
+  "settings.rate_app": "Ocijeni aplikaciju",
+  "settings.share_app": "Podijeli aplikaciju",
   "settings.privacy_policy": "Politika privatnosti",
   "settings.ad_privacy_options": "Opcije privatnosti oglasa",
   "onboarding.t1": "Brojte zikr bez muke",

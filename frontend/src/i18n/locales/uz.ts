@@ -151,6 +151,8 @@ const uz: TranslationTable = {
   "settings.data_notice": "Zikr yozuvlaringiz, hisoblagich tarixi va sozlamalaringiz qurilmangizda saqlanadi. Google AdMob reklama ko‘rsatish, o‘lchash va xavfsizlik uchun ayrim qurilma va ilova foydalanish ma’lumotlarini Google siyosatlariga muvofiq qayta ishlashi mumkin.",
   "settings.section_app": "ILOVA",
   "settings.version": "Versiya",
+  "settings.rate_app": "Ilovani baholang",
+  "settings.share_app": "Ilovani ulashing",
   "settings.privacy_policy": "Maxfiylik siyosati",
   "settings.ad_privacy_options": "Reklama maxfiylik sozlamalari",
   "onboarding.t1": "Zikrlaringizni oson sanang",

@@ -151,6 +151,8 @@ const fa: TranslationTable = {
   "settings.data_notice": "سوابق ذکر، تاریخچهٔ شمارنده و تنظیمات شما روی دستگاه شما ذخیره می‌شود. Google AdMob ممکن است برخی داده‌های دستگاه و استفاده از برنامه را برای نمایش تبلیغ، اندازه‌گیری و امنیت، مطابق سیاست‌های Google پردازش کند.",
   "settings.section_app": "برنامه",
   "settings.version": "نسخه",
+  "settings.rate_app": "به برنامه امتیاز دهید",
+  "settings.share_app": "برنامه را به اشتراک بگذارید",
   "settings.privacy_policy": "سیاست حریم خصوصی",
   "settings.ad_privacy_options": "گزینه‌های حریم خصوصی تبلیغات",
   "onboarding.t1": "ذکرهایت را آسان بشمار",

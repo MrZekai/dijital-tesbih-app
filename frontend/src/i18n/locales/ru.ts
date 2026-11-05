@@ -157,6 +157,8 @@ const ru: TranslationTable = {
   "settings.data_notice": "Ваши записи зикра, история счётчика и настройки хранятся на вашем устройстве. Google AdMob может обрабатывать отдельные данные устройства и использования приложения для показа рекламы, измерений и безопасности в соответствии с политиками Google.",
   "settings.section_app": "ПРИЛОЖЕНИЕ",
   "settings.version": "Версия",
+  "settings.rate_app": "Оценить приложение",
+  "settings.share_app": "Поделиться приложением",
   "settings.privacy_policy": "Политика конфиденциальности",
   "settings.ad_privacy_options": "Настройки конфиденциальности рекламы",
   "onboarding.t1": "Считайте зикр легко",

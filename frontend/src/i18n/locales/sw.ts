@@ -151,6 +151,8 @@ const sw: TranslationTable = {
   "settings.data_notice": "Kumbukumbu za dhikri, historia ya kihesabu na mipangilio yako huhifadhiwa kwenye kifaa chako. Google AdMob inaweza kuchakata baadhi ya data ya kifaa na matumizi ya programu kwa ajili ya kuonyesha matangazo, kupima na usalama, kulingana na sera za Google.",
   "settings.section_app": "PROGRAMU",
   "settings.version": "Toleo",
+  "settings.rate_app": "Kadiria programu",
+  "settings.share_app": "Shiriki programu",
   "settings.privacy_policy": "Sera ya faragha",
   "settings.ad_privacy_options": "Chaguo za faragha za matangazo",
   "onboarding.t1": "Hesabu dhikri zako kwa urahisi",

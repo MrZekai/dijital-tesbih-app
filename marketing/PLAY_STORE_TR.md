@@ -2,6 +2,8 @@
 
 Hazırlanma: 5 Kasım 2026. Kod doğrulaması: `frontend` yayın adayı 1.1.1 (versionCode 1030), paket `com.zikirhane.tesbih`. Yayımdaki 1.1.0 derlemesinin bu depodaki önceki commit ile aynı olduğu Play Console'dan ayrıca doğrulanmalı. Bu dosya yayımlanmış mağaza girişini kendiliğinden değiştirmez.
 
+6 Kasım güncellemesi: 1030 adayında Android release derlemesi için R8 kod küçültme açıldı; Ayarlar > Uygulama bölümüne kullanıcı başlatmalı Play değerlendirme ve paylaşma bağlantıları eklendi. Bunlar mağazadaki puan veya indirme sayısının artacağını garanti etmez. Yeni AAB yüklenip Play analizi yenilenmeden DEX uyarısının kalktığı iddia edilmemeli.
+
 ## Önce düzeltilecek beyan
 
 Türkçe uzun açıklamadaki “Hiçbir veri sunucuya gönderilmez” ve “uygulama tamamen çevrimdışı çalışır” cümlelerini kaldırın. Sayaç ve zikir kayıtları cihazda tutulsa da uygulama AdMob reklamları kullanıyor. Yayımlanan Veri güvenliği beyanında cihaz tanımlayıcıları, uygulama etkileşimleri, teşhis verileri ve yaklaşık konum için toplama/paylaşma gösteriliyor. İşlevin internetsiz çalışması ile reklam trafiğini ayrı anlatın. [Google Play mağaza girişi ilkeleri](https://support.google.com/googleplay/android-developer/answer/13393723?hl=tr) işlev ve veri iddialarının doğru olmasını ister.
@@ -82,3 +84,11 @@ Mevcut 1 ve 2 aynı ana sayacı gösteriyor; mevcut 5'in Esma görüntüsü 3. s
 - Uygulama web sitesi Türkçe mağaza adını ve Play bağlantısını açıkça gösteriyor mu?
 
 Bu maddeler için Play Console erişimi veya gerçek cihaz gerekir; depo ve herkese açık mağaza sayfası tek başına doğrulama sağlamaz.
+
+## 1030 için “Yenilikler” metni
+
+```text
+Zikirmatik'i daha akıcı ve güvenilir hale getirdik. Hızlı sayım ve hedef geri bildirimini iyileştirdik; yedek paylaşımındaki hatalı başarı mesajını düzelttik. Android derlemesinde kod optimizasyonunu açtık. Ayarlar'dan uygulamayı değerlendirebilir veya paylaşabilirsin.
+```
+
+Bu metin yalnızca 1030 AAB'si gerçekten yüklendikten sonra kullanılmalı. Yeni ekran görüntülerinde yalnızca pakette bulunan özellikler gösterilmeli.

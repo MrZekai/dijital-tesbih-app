@@ -151,6 +151,8 @@ const ku: TranslationTable = {
   "settings.data_notice": "Tomarên zikra te, dîroka jimêrê û mîhengên te li ser amûra te tên tomarkirin. Google AdMob dikare hin daneyên amûrê û bikaranîna bernameyê ji bo nîşandana reklamê, pîvandin û ewlehiyê li gorî polîtîkayên Google pêvajo bike.",
   "settings.section_app": "BERNAME",
   "settings.version": "Guherto",
+  "settings.rate_app": "Nirxandina sepanê",
+  "settings.share_app": "Parvekirina sepanê",
   "settings.privacy_policy": "Polîtîkaya nihêniyê",
   "settings.ad_privacy_options": "Vebijarkên nihêniya reklamê",
   "onboarding.t1": "Zikrên xwe bi hêsanî bijmêre",

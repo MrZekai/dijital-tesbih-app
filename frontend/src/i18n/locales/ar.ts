@@ -163,6 +163,8 @@ const ar: TranslationTable = {
   "settings.data_notice": "تُحفَظ سجلات الذكر وتاريخ العدّاد وإعداداتك على جهازك. وقد تعالج Google AdMob بعض بيانات الجهاز واستخدام التطبيق لعرض الإعلانات وقياسها وأمانها، وفقًا لسياسات Google.",
   "settings.section_app": "التطبيق",
   "settings.version": "الإصدار",
+  "settings.rate_app": "قيّم التطبيق",
+  "settings.share_app": "شارك التطبيق",
   "settings.privacy_policy": "سياسة الخصوصية",
   "settings.ad_privacy_options": "خيارات خصوصية الإعلانات",
   "onboarding.t1": "عُدّ أذكارك بسهولة",

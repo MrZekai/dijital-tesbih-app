@@ -151,6 +151,8 @@ const tg: TranslationTable = {
   "settings.data_notice": "Сабтҳои зикр, таърихи ҳисобкунак ва танзимоти шумо дар дастгоҳи шумо нигоҳ дошта мешаванд. Google AdMob метавонад баъзе маълумоти дастгоҳ ва истифодаи барномаро барои намоиши реклама, чен ва амният мутобиқи сиёсатҳои Google коркард кунад.",
   "settings.section_app": "БАРНОМА",
   "settings.version": "Нусха",
+  "settings.rate_app": "Баҳо додан ба барнома",
+  "settings.share_app": "Мубодилаи барнома",
   "settings.privacy_policy": "Сиёсати махфият",
   "settings.ad_privacy_options": "Танзимоти махфияти реклама",
   "onboarding.t1": "Зикрҳоятонро осон ҳисоб кунед",
