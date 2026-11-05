@@ -1,6 +1,6 @@
 # Zikirmatik: Türkiye Google Play mağaza girişi
 
-Hazırlanma: 5 Kasım 2026. Kod doğrulaması: `frontend` sürüm 1.1.0, paket `com.zikirhane.tesbih`. Yayımlanan APK/AAB'nin bu depodaki commit ile aynı olduğu Play Console'dan ayrıca doğrulanmalı. Bu dosya yayımlanmış mağaza girişini kendiliğinden değiştirmez.
+Hazırlanma: 5 Kasım 2026. Kod doğrulaması: `frontend` yayın adayı 1.1.1 (versionCode 1030), paket `com.zikirhane.tesbih`. Yayımdaki 1.1.0 derlemesinin bu depodaki önceki commit ile aynı olduğu Play Console'dan ayrıca doğrulanmalı. Bu dosya yayımlanmış mağaza girişini kendiliğinden değiştirmez.
 
 ## Önce düzeltilecek beyan
 
