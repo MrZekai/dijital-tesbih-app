@@ -1,8 +1,7 @@
 // Yerel yedekleme — kullanıcının verisini kendi seçtiği yere kaydetmesi.
 //
 // TASARIM KARARLARI
-//  - Yedek CİHAZDA üretilir; hiçbir sunucuya gönderilmez. Uygulama zaten
-//    tamamen çevrimdışıdır ve öyle kalır.
+//  - Yedek CİHAZDA üretilir; uygulama yedeği kendi sunucusuna göndermez.
 //  - Dosya, uygulamanın ÖNBELLEK dizinine yazılır ve hemen sistem paylaşım
 //    sayfasına verilir. Kullanıcı nereye kaydedeceğine kendisi karar verir
 //    (Drive, Dosyalar, e-posta…). Böylece depolama izni GEREKMEZ.
@@ -39,6 +38,9 @@ export async function exportBackup(
   dialogTitle: string
 ): Promise<ExportResult> {
   try {
+    const canShare = await Sharing.isAvailableAsync().catch(() => false);
+    if (!canShare) return { ok: false, error: "sharing unavailable" };
+
     const payload = buildBackup(state, appVersion);
     const json = JSON.stringify(payload, null, 2);
 
@@ -47,14 +49,11 @@ export async function exportBackup(
     file.create();
     file.write(json);
 
-    const canShare = await Sharing.isAvailableAsync().catch(() => false);
-    if (canShare) {
-      await Sharing.shareAsync(file.uri, {
-        mimeType: "application/json",
-        dialogTitle,
-        UTI: "public.json",
-      });
-    }
+    await Sharing.shareAsync(file.uri, {
+      mimeType: "application/json",
+      dialogTitle,
+      UTI: "public.json",
+    });
     return { ok: true, uri: file.uri };
   } catch (e) {
     console.warn("[backup] export failed", e);
