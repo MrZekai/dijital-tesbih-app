@@ -114,9 +114,14 @@ const app = JSON.parse(read(path.join(ROOT, "app.json")));
 ok("applicationId com.zikirhane.tesbih", app.expo.android.package === "com.zikirhane.tesbih");
 ok("versionCode > 1028", app.expo.android.versionCode > 1028);
 ok("versionName tanimli", Boolean(app.expo.version));
+const buildProperties = app.expo.plugins.find((plugin) =>
+  Array.isArray(plugin) && plugin[0] === "expo-build-properties");
+ok("release derlemesinde R8 kod kucultme etkin",
+  buildProperties?.[1]?.android?.enableMinifyInReleaseBuilds === true);
 ok("MEVCUT EAS projesine bagli (yeni proje degil)",
   app.expo.extra.eas.projectId === "0cd40066-e675-4011-979a-6cc8b635e6fc");
 
 console.log("\n----------------------------------");
 if (failures > 0) { console.log(`${failures} TEST BAŞARISIZ`); process.exit(1); }
 console.log("TÜM TESTLER GEÇTİ");
+
