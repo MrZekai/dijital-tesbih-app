@@ -13,8 +13,10 @@ import {
   Keyboard,
   Linking,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Switch,
   View,
@@ -59,6 +61,7 @@ const BUILD_SHA = (process.env.EXPO_PUBLIC_BUILD_SHA ?? "").slice(0, 7);
 const GOAL_PRESETS = [33, 100, 300, 500, 1000];
 
 const PRIVACY_URL = "https://sites.google.com/view/hedefzikirmatik/ana-sayfa";
+const PLAY_URL = "https://play.google.com/store/apps/details?id=com.zikirhane.tesbih";
 
 export default function Ayarlar() {
   const { theme, state, updateSettings } = useStore();
@@ -165,6 +168,16 @@ export default function Ayarlar() {
     const res = await exportBackup(state, version, t("settings.export"));
     setExporting(false);
     setExportMsg(res.ok ? t("settings.export_done") : t("settings.export_failed"));
+  };
+
+  const onRateApp = async () => {
+    await Linking.openURL("market://details?id=com.zikirhane.tesbih")
+      .catch(() => Linking.openURL(PLAY_URL))
+      .catch(() => {});
+  };
+
+  const onShareApp = async () => {
+    await Share.share({ message: PLAY_URL }).catch(() => {});
   };
 
   const themeOptions: [ThemePreference, string][] = [
@@ -704,6 +717,40 @@ export default function Ayarlar() {
 
         {/* ── Uygulama ────────────────────────────────────────────── */}
         <Section title={t("settings.section_app")} theme={theme} dir={dir}>
+          {Platform.OS === "android" ? (
+            <>
+              <Pressable
+                onPress={onRateApp}
+                style={[styles.privacyRow, { flexDirection: dir.row }]}
+                testID="rate-app-row"
+                accessibilityRole="link"
+                accessibilityLabel={t("settings.rate_app")}
+              >
+                <View style={[styles.settingIcon, { backgroundColor: theme.emeraldDeep }]}>
+                  <Ionicons name="star-outline" size={18} color={theme.gold} />
+                </View>
+                <Text style={{ color: theme.text, fontSize: 15, flex: 1, textAlign: dir.textAlign }}>
+                  {t("settings.rate_app")}
+                </Text>
+                <Ionicons name="open-outline" size={18} color={theme.textSubtle} />
+              </Pressable>
+              <Pressable
+                onPress={onShareApp}
+                style={[styles.privacyRow, { flexDirection: dir.row }]}
+                testID="share-app-row"
+                accessibilityRole="button"
+                accessibilityLabel={t("settings.share_app")}
+              >
+                <View style={[styles.settingIcon, { backgroundColor: theme.emeraldDeep }]}>
+                  <Ionicons name="share-social-outline" size={18} color={theme.gold} />
+                </View>
+                <Text style={{ color: theme.text, fontSize: 15, flex: 1, textAlign: dir.textAlign }}>
+                  {t("settings.share_app")}
+                </Text>
+                <Ionicons name={dir.forwardIcon} size={18} color={theme.textSubtle} />
+              </Pressable>
+            </>
+          ) : null}
           <View style={[styles.rowInfo, { flexDirection: dir.row }]}>
             <Text style={{ color: theme.textMuted }}>{t("settings.version")}</Text>
             {/* BUG-012: sabit kodlanmış sürüm yerine yüklü native paketten

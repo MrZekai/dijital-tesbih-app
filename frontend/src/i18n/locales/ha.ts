@@ -151,6 +151,8 @@ const ha: TranslationTable = {
   "settings.data_notice": "Bayanan zikirinka, tarihin ma'auni da saitunanka ana ajiye su a na'urarka. Google AdMob na iya sarrafa wasu bayanan na'ura da amfani da manhaja domin nuna talla, aunawa da tsaro, bisa ga manufofin Google.",
   "settings.section_app": "MANHAJA",
   "settings.version": "Sigar",
+  "settings.rate_app": "Kimanta manhajar",
+  "settings.share_app": "Raba manhajar",
   "settings.privacy_policy": "Manufar sirri",
   "settings.ad_privacy_options": "Zaɓuɓɓukan sirrin talla",
   "onboarding.t1": "Ƙidaya zikirinka cikin sauƙi",

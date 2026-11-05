@@ -151,6 +151,8 @@ const pa_Arab: TranslationTable = {
   "settings.data_notice": "تُہاڈے ذکر دے ریکارڈ، گِنتی دا اتہاس تے ترتیباں تُہاڈے ڈیوائس تے محفوظ ہوندیاں نیں۔ Google AdMob اشتہار وکھان، ماپن تے سیکیورٹی لئی ڈیوائس تے ایپ ورتن دا کجھ ڈیٹا Google دیاں پالیسیاں مطابق ورت سکدا اے۔",
   "settings.section_app": "ایپ",
   "settings.version": "ورژن",
+  "settings.rate_app": "ایپ دی درجہ بندی کرو",
+  "settings.share_app": "ایپ سانجھی کرو",
   "settings.privacy_policy": "رازداری دی پالیسی",
   "settings.ad_privacy_options": "اشتہار رازداری دیاں چوناں",
   "onboarding.t1": "اپنے ذکر سوکھے گِنو",

@@ -151,6 +151,8 @@ const kk: TranslationTable = {
   "settings.data_notice": "Зікір жазбаларыңыз, санауыш тарихы және параметрлеріңіз құрылғыңызда сақталады. Google AdMob жарнама көрсету, өлшеу және қауіпсіздік үшін белгілі бір құрылғы мен қолданбаны пайдалану деректерін Google саясаттарына сәйкес өңдеуі мүмкін.",
   "settings.section_app": "ҚОЛДАНБА",
   "settings.version": "Нұсқа",
+  "settings.rate_app": "Қолданбаны бағалау",
+  "settings.share_app": "Қолданбамен бөлісу",
   "settings.privacy_policy": "Құпиялылық саясаты",
   "settings.ad_privacy_options": "Жарнама құпиялылық параметрлері",
   "onboarding.t1": "Зікірлеріңізді оңай санаңыз",

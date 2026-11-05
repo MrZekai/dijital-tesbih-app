@@ -154,6 +154,8 @@ const fr: TranslationTable = {
   "settings.data_notice": "Vos enregistrements de dhikr, l’historique du compteur et vos réglages sont stockés sur votre appareil. Google AdMob peut traiter certaines données d’appareil et d’utilisation de l’application à des fins de diffusion, de mesure et de sécurité des annonces, conformément aux règles de Google.",
   "settings.section_app": "APPLICATION",
   "settings.version": "Version",
+  "settings.rate_app": "Évaluer l’application",
+  "settings.share_app": "Partager l’application",
   "settings.privacy_policy": "Politique de confidentialité",
   "settings.ad_privacy_options": "Options de confidentialité des annonces",
   "onboarding.t1": "Comptez vos dhikrs facilement",

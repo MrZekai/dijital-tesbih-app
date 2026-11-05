@@ -151,6 +151,8 @@ const ps: TranslationTable = {
   "settings.data_notice": "ستاسو د ذکر ریکارډونه، د شمېرونکي تاریخ او تنظیمات ستاسو په وسیله کې خوندي کېږي. Google AdMob کولی شي د اعلان وړاندې کولو، اندازه کولو او امنیت لپاره ځینې د وسیلې او اپلیکېشن کارونې معلومات د Google تګلارو سره سم پروسس کړي.",
   "settings.section_app": "اپلیکېشن",
   "settings.version": "نسخه",
+  "settings.rate_app": "اپلېکېشن ته نمرې ورکړئ",
+  "settings.share_app": "اپلېکېشن شریک کړئ",
   "settings.privacy_policy": "د محرمیت تګلاره",
   "settings.ad_privacy_options": "د اعلان د محرمیت اختیارونه",
   "onboarding.t1": "خپل ذکرونه په اسانۍ وشمېرئ",

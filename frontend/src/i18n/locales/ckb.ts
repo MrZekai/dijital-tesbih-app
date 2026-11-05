@@ -151,6 +151,8 @@ const ckb: TranslationTable = {
   "settings.data_notice": "تۆمارەکانی زیکرت، مێژووی ژمێرەر و ڕێکخستنەکانت لەسەر ئامێرەکەت پاشەکەوت دەکرێن. Google AdMob لەوانەیە هەندێک داتای ئامێر و بەکارهێنانی ئەپ بۆ پیشاندانی ڕیکلام، پێوان و ئاسایش بەپێی سیاسەتەکانی Google پرۆسێس بکات.",
   "settings.section_app": "ئەپ",
   "settings.version": "وەشان",
+  "settings.rate_app": "ئەپەکە هەڵبسەنگێنە",
+  "settings.share_app": "ئەپەکە هاوبەش بکە",
   "settings.privacy_policy": "سیاسەتی تایبەتمەندی",
   "settings.ad_privacy_options": "هەڵبژاردەکانی تایبەتمەندی ڕیکلام",
   "onboarding.t1": "بە ئاسانی زیکرەکانت بژمێرە",

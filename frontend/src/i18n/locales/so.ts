@@ -151,6 +151,8 @@ const so: TranslationTable = {
   "settings.data_notice": "Diiwaanka dhikrkaaga, taariikhda tiriyaha iyo dejintaada waxaa lagu kaydiyaa qalabkaaga. Google AdMob waxay ku shaqayn kartaa xog gaar ah oo ku saabsan qalabka iyo isticmaalka abka si loo bandhigo xayeysiiska, loo cabbiro loona sugo amniga, sida ay qorayaan siyaasadaha Google.",
   "settings.section_app": "ABKA",
   "settings.version": "Nooca",
+  "settings.rate_app": "Qiimee abka",
+  "settings.share_app": "La wadaag abka",
   "settings.privacy_policy": "Siyaasadda asturnaanta",
   "settings.ad_privacy_options": "Doorashooyinka asturnaanta xayeysiiska",
   "onboarding.t1": "Si fudud u tiri dhikrkaaga",

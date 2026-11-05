@@ -186,6 +186,8 @@ const en = {
     "Your dhikr records, counter history and settings are stored on your device. Google AdMob may process certain device and app usage data for ad delivery, measurement and security, in line with Google's policies.",
   "settings.section_app": "APP",
   "settings.version": "Version",
+  "settings.rate_app": "Rate the app",
+  "settings.share_app": "Share the app",
   "settings.privacy_policy": "Privacy policy",
   "settings.ad_privacy_options": "Ad privacy options",
 

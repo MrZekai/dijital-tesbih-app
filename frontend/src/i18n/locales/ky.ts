@@ -151,6 +151,8 @@ const ky: TranslationTable = {
   "settings.data_notice": "Зикир жазууларыңыз, эсептегич тарыхы жана жөндөөлөрүңүз түзмөгүңүздө сакталат. Google AdMob жарнама көрсөтүү, өлчөө жана коопсуздук үчүн айрым түзмөк жана колдонмо колдонуу маалыматтарын Google саясаттарына ылайык иштете алат.",
   "settings.section_app": "КОЛДОНМО",
   "settings.version": "Версия",
+  "settings.rate_app": "Колдонмону баалоо",
+  "settings.share_app": "Колдонмону бөлүшүү",
   "settings.privacy_policy": "Купуялык саясаты",
   "settings.ad_privacy_options": "Жарнама купуялык жөндөөлөрү",
   "onboarding.t1": "Зикирлериңизди оңой санаңыз",

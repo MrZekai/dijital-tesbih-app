@@ -148,6 +148,8 @@ const ms: TranslationTable = {
   "settings.data_notice": "Rekod zikir, sejarah pembilang dan tetapan anda disimpan pada peranti anda. Google AdMob boleh memproses data peranti dan penggunaan aplikasi tertentu untuk penyampaian iklan, pengukuran dan keselamatan, mengikut dasar Google.",
   "settings.section_app": "APLIKASI",
   "settings.version": "Versi",
+  "settings.rate_app": "Nilai aplikasi",
+  "settings.share_app": "Kongsi aplikasi",
   "settings.privacy_policy": "Dasar privasi",
   "settings.ad_privacy_options": "Pilihan privasi iklan",
   "onboarding.t1": "Kira zikir dengan mudah",

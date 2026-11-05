@@ -151,6 +151,8 @@ const tr: TranslationTable = {
   "settings.data_notice": "Zikir kayıtlarınız, sayaç geçmişiniz ve uygulama ayarlarınız cihazınızda saklanır. Google AdMob; reklam sunumu, ölçüm ve güvenlik amacıyla belirli cihaz ve uygulama kullanım verilerini Google politikalarına göre işleyebilir.",
   "settings.section_app": "UYGULAMA",
   "settings.version": "Sürüm",
+  "settings.rate_app": "Uygulamayı değerlendir",
+  "settings.share_app": "Uygulamayı paylaş",
   "settings.privacy_policy": "Gizlilik Politikası",
   "settings.ad_privacy_options": "Reklam Gizlilik Seçenekleri",
   "onboarding.t1": "Zikirlerini Kolayca Say",

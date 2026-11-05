@@ -151,6 +151,8 @@ const sq: TranslationTable = {
   "settings.data_notice": "Të dhënat e dhikrit, historiku i numëruesit dhe cilësimet tuaja ruhen në pajisjen tuaj. Google AdMob mund të përpunojë disa të dhëna të pajisjes dhe të përdorimit të aplikacionit për shfaqjen, matjen dhe sigurinë e reklamave, në përputhje me politikat e Google.",
   "settings.section_app": "APLIKACIONI",
   "settings.version": "Versioni",
+  "settings.rate_app": "Vlerëso aplikacionin",
+  "settings.share_app": "Ndaje aplikacionin",
   "settings.privacy_policy": "Politika e privatësisë",
   "settings.ad_privacy_options": "Opsionet e privatësisë së reklamave",
   "onboarding.t1": "Numëroni dhikret me lehtësi",

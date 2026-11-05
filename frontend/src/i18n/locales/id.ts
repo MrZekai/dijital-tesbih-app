@@ -148,6 +148,8 @@ const id: TranslationTable = {
   "settings.data_notice": "Catatan zikir, riwayat penghitung, dan pengaturan Anda disimpan di perangkat Anda. Google AdMob dapat memproses data perangkat dan penggunaan aplikasi tertentu untuk penayangan iklan, pengukuran, dan keamanan, sesuai kebijakan Google.",
   "settings.section_app": "APLIKASI",
   "settings.version": "Versi",
+  "settings.rate_app": "Beri nilai aplikasi",
+  "settings.share_app": "Bagikan aplikasi",
   "settings.privacy_policy": "Kebijakan privasi",
   "settings.ad_privacy_options": "Opsi privasi iklan",
   "onboarding.t1": "Hitung zikir dengan mudah",

@@ -151,6 +151,8 @@ const tk: TranslationTable = {
   "settings.data_notice": "Zikir ýazgylaryňyz, hasaplaýjynyň taryhy we sazlamalaryňyz enjamyňyzda saklanýar. Google AdMob mahabat görkezmek, ölçemek we howpsuzlyk üçin käbir enjam we programma ulanyş maglumatlaryny Google-yň syýasatlaryna laýyklykda işläp biler.",
   "settings.section_app": "PROGRAMMA",
   "settings.version": "Wersiýa",
+  "settings.rate_app": "Programmany bahalandyr",
+  "settings.share_app": "Programmany paýlaş",
   "settings.privacy_policy": "Gizlinlik syýasaty",
   "settings.ad_privacy_options": "Mahabat gizlinlik sazlamalary",
   "onboarding.t1": "Zikirleriňizi aňsat sanaň",
