@@ -158,6 +158,8 @@ const CONTAINER_KEY = "container";
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PersistedState>(defaultState);
+  // Event handlers need the latest count before React commits a render.
+  const stateRef = useRef(state);
   const [loaded, setLoaded] = useState(false);
   const systemScheme = useColorScheme();
   const undoStack = useRef<UndoEntry[]>([]);
@@ -177,7 +179,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (raw && typeof raw === "string") {
           const parsed: unknown = JSON.parse(raw);
           const migrated = migrateState(parsed);
-          if (migrated) setState(migrated);
+          if (migrated) {
+            stateRef.current = migrated;
+            setState(migrated);
+          }
         }
       } catch (e) {
         console.warn("[store] load failed", e);
@@ -235,7 +240,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const setStateSafe = useCallback(
     (updater: (prev: PersistedState) => PersistedState) => {
-      setState(updater);
+      const next = updater(stateRef.current);
+      stateRef.current = next;
+      pendingStateRef.current = next;
+      setState(next);
     },
     []
   );

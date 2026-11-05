@@ -68,7 +68,7 @@ export default function Onboarding() {
 
       <View style={[styles.topRow, { paddingTop: insets.top + spacing.md }]}>
         <Pressable onPress={skip} hitSlop={12} testID="onboarding-skip">
-          <Text style={[styles.skip, { color: theme.textMuted }]}>Geç</Text>
+          <Text style={[styles.skip, { color: theme.textMuted }]}>{t("onboarding.skip")}</Text>
         </Pressable>
       </View>
 
