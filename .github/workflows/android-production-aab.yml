@@ -134,11 +134,13 @@ jobs:
           printf '%s' "$KS" | base64 -d > "$KEYDIR/upload.keystore"
           test -s "$KEYDIR/upload.keystore" || { echo "::error::Keystore cozulemedi"; exit 1; }
           {
+            printf '\n'
             echo "ZIKIR_UPLOAD_STORE_FILE=$KEYDIR/upload.keystore"
             echo "ZIKIR_UPLOAD_KEY_ALIAS=$KA"
             echo "ZIKIR_UPLOAD_STORE_PASSWORD=$KSP"
             echo "ZIKIR_UPLOAD_KEY_PASSWORD=$KP"
           } >> android/gradle.properties
+          grep -q '^ZIKIR_UPLOAD_STORE_FILE=' android/gradle.properties || { echo "::error::Imzalama ayari gradle.properties dosyasina eklenemedi"; exit 1; }
           node scripts/attach-release-signing.js
 
       - name: Build AAB (bundleRelease)
