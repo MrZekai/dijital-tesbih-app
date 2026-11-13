@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const bs: TranslationTable = {
+  "storage.load_error": "Sačuvano brojanje nije učitano. Postojeći zapis nije prepisan. Pokušajte ponovo.",
+  "storage.save_error": "Promjene nisu sačuvane na ovom uređaju.",
   "common.ok": "U redu",
   "common.cancel": "Otkaži",
   "common.confirm": "Potvrdi",

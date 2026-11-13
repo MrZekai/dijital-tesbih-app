@@ -21,16 +21,15 @@ import React, {
 } from "react";
 import { AppState, useColorScheme } from "react-native";
 
-import { storage } from "@/src/utils/storage";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createStateWriter, readState } from "./persistence";
 
 import { BUILTIN_DHIKRS, type AnyDhikr, type CustomDhikr } from "./dhikrs";
 import {
   RECENT_LIMIT,
-  STORAGE_KEY,
   computeStreak,
   dateKey,
   defaultState,
-  migrateState,
   type DailyLogEntry,
   type DhikrState,
   type PersistedState,
@@ -153,6 +152,11 @@ interface StoreValue {
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
+const PreferencesContext = createContext<{ settings: Settings; theme: ThemeTokens } | null>(null);
+const StatusContext = createContext<{
+  loaded: boolean; loadError: boolean; saveError: boolean;
+  retryLoad: () => void; retrySave: () => void;
+} | null>(null);
 
 const CONTAINER_KEY = "container";
 
@@ -164,88 +168,82 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
   const undoStack = useRef<UndoEntry[]>([]);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // BUG-001 duzeltmesi: uzun/hizli surekli dokunus oturumlarinda debounce
-  // yazma suresizce ertelenebiliyordu (her dokunus zamanlayiciyi sifirliyor)
-  // — beklenmedik sonlanma/crash durumunda TUM oturum kaybolabiliyordu.
-  // `maxWaitTimer` bunu en fazla ~1.5sn'de bir ZORLA diske yazarak sinirlar.
   const maxWaitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingStateRef = useRef<PersistedState | null>(null);
+  const loadedRef = useRef(false);
+  const [loadError, setLoadError] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const mountedRef = useRef(false);
+  const writer = useMemo(() => createStateWriter(AsyncStorage, (failed) => {
+    if (mountedRef.current) setSaveError(failed);
+  }), []);
+  const streakCache = useRef<{ day: string; value: StreakInfo } | null>(null);
 
-  // Load persisted state on boot
   useEffect(() => {
-    (async () => {
-      try {
-        const raw = await storage.getItem(STORAGE_KEY, null);
-        if (raw && typeof raw === "string") {
-          const parsed: unknown = JSON.parse(raw);
-          const migrated = migrateState(parsed);
-          if (migrated) {
-            stateRef.current = migrated;
-            setState(migrated);
-          }
-        }
-      } catch (e) {
-        console.warn("[store] load failed", e);
-      } finally {
-        setLoaded(true);
-      }
-    })();
-  }, []);
+    let alive = true;
+    setLoadError(false);
+    readState(AsyncStorage).then((next) => {
+      if (!alive) return;
+      stateRef.current = next;
+      loadedRef.current = true;
+      setState(next);
+      setLoaded(true);
+    }).catch(() => {
+      if (alive) setLoadError(true);
+    });
+    return () => { alive = false; };
+  }, [loadAttempt]);
 
-  // Guvenli/sik persistans: debounce (200ms) + zorunlu maksimum bekleme
-  // (1.5s) + arka plana gecerken aninda flush.
+  const flushNow = useCallback(() => {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    if (maxWaitTimer.current) clearTimeout(maxWaitTimer.current);
+    persistTimer.current = null;
+    maxWaitTimer.current = null;
+    void writer.flush();
+  }, [writer]);
+
   useEffect(() => {
-    if (!loaded) return;
-    pendingStateRef.current = state;
-
-    const flushNow = () => {
-      const toSave = pendingStateRef.current;
-      if (toSave) {
-        storage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-      }
-      if (persistTimer.current) {
-        clearTimeout(persistTimer.current);
-        persistTimer.current = null;
-      }
-      if (maxWaitTimer.current) {
-        clearTimeout(maxWaitTimer.current);
-        maxWaitTimer.current = null;
-      }
-    };
-
+    if (!loaded || !pendingStateRef.current) return;
     if (persistTimer.current) clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(flushNow, 200);
+    if (!maxWaitTimer.current) maxWaitTimer.current = setTimeout(flushNow, 1500);
+    return () => { if (persistTimer.current) clearTimeout(persistTimer.current); };
+  }, [state, loaded, flushNow]);
 
-    if (!maxWaitTimer.current) {
-      maxWaitTimer.current = setTimeout(flushNow, 1500);
-    }
-
-    return () => {
-      if (persistTimer.current) clearTimeout(persistTimer.current);
-    };
-  }, [state, loaded]);
-
-  // Uygulama arka plana/inaktif duruma gecerken bekleyen degisiklikleri
-  // ANINDA diske yaz.
   useEffect(() => {
+    mountedRef.current = true;
     const sub = AppState.addEventListener("change", (next) => {
-      if (next === "background" || next === "inactive") {
-        if (pendingStateRef.current) {
-          storage.setItem(STORAGE_KEY, JSON.stringify(pendingStateRef.current));
-        }
-      }
+      if (next === "background" || next === "inactive") flushNow();
     });
-    return () => sub.remove();
-  }, []);
+    return () => {
+      mountedRef.current = false;
+      sub.remove();
+      flushNow();
+      // The final in-flight write may finish after unmount; no new UI updates.
+    };
+  }, [flushNow]);
 
   const setStateSafe = useCallback(
     (updater: (prev: PersistedState) => PersistedState) => {
-      const next = updater(stateRef.current);
+      if (!loadedRef.current) return;
+      const prev = stateRef.current;
+      const next = updater(prev);
+      if (next === prev) return;
+      const today = dateKey();
+      if (next.dailyLog !== prev.dailyLog) {
+        // Only a day entering/leaving the positive-count set changes streaks.
+        const before = prev.dailyLog[today]?.total || 0;
+        const after = next.dailyLog[today]?.total || 0;
+        const changedOlderDay = next.dailyLog[today] === prev.dailyLog[today] || !next.dailyLog[today];
+        if (changedOlderDay || (before > 0) !== (after > 0)) streakCache.current = null;
+      }
       stateRef.current = next;
       pendingStateRef.current = next;
+      writer.enqueue(next);
       setState(next);
     },
-    []
+    [writer]
   );
 
   const allDhikrs: AnyDhikr[] = useMemo(
@@ -562,7 +560,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       .slice(0, limit);
   };
 
-  const streak: StoreValue["streak"] = () => computeStreak(state.dailyLog);
+  const streak: StoreValue["streak"] = () => {
+    const day = dateKey();
+    if (!streakCache.current || streakCache.current.day !== day) {
+      streakCache.current = { day, value: computeStreak(stateRef.current.dailyLog) };
+    }
+    return streakCache.current.value;
+  };
 
   const themeName = resolveThemeName(state.settings.theme, systemScheme);
   const theme = getTheme(themeName);
@@ -600,7 +604,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     streak,
   };
 
-  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
+  const preferences = useMemo(() => ({ settings: state.settings, theme }), [state.settings, theme]);
+  const retryLoad = useCallback(() => setLoadAttempt((n) => n + 1), []);
+  const retrySave = useCallback(() => { void writer.retry(); }, [writer]);
+  const status = useMemo(() => ({ loaded, loadError, saveError, retryLoad, retrySave }),
+    [loaded, loadError, saveError, retryLoad, retrySave]);
+  return <StoreContext.Provider value={value}>
+    <PreferencesContext.Provider value={preferences}>
+      <StatusContext.Provider value={status}>{children}</StatusContext.Provider>
+    </PreferencesContext.Provider>
+  </StoreContext.Provider>;
 }
 
 export function useStore(): StoreValue {
@@ -612,3 +625,14 @@ export function useStore(): StoreValue {
 // Convenience
 export const themeExport = { darkTheme, lightTheme };
 export { CONTAINER_KEY };
+
+export function usePreferences() {
+  const value = useContext(PreferencesContext);
+  if (!value) throw new Error("usePreferences requires StoreProvider");
+  return value;
+}
+export function useStoreStatus() {
+  const value = useContext(StatusContext);
+  if (!value) throw new Error("useStoreStatus requires StoreProvider");
+  return value;
+}

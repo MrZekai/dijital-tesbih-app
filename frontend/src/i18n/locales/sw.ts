@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const sw: TranslationTable = {
+  "storage.load_error": "Hesabu zilizohifadhiwa hazikupakiwa. Rekodi ya awali haijabadilishwa. Jaribu tena.",
+  "storage.save_error": "Mabadiliko hayakuweza kuhifadhiwa kwenye kifaa hiki.",
   "common.ok": "Sawa",
   "common.cancel": "Ghairi",
   "common.confirm": "Thibitisha",

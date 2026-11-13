@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const sq: TranslationTable = {
+  "storage.load_error": "Numërimet e ruajtura nuk u ngarkuan. Të dhënat ekzistuese nuk u mbishkruan. Provoni sërish.",
+  "storage.save_error": "Ndryshimet nuk u ruajtën në këtë pajisje.",
   "common.ok": "Në rregull",
   "common.cancel": "Anulo",
   "common.confirm": "Konfirmo",

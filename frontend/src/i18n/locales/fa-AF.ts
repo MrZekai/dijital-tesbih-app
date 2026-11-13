@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const fa_AF: TranslationTable = {
+  "storage.load_error": "شمارش‌های ذخیره‌شده بارگیری نشد. معلومات قبلی بازنویسی نشده است. دوباره کوشش کنید.",
+  "storage.save_error": "تغییرات در این دستگاه ذخیره نشد.",
   "common.ok": "خوب",
   "common.cancel": "لغو",
   "common.confirm": "تأیید",

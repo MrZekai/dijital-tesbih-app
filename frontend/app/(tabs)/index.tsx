@@ -31,8 +31,7 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
-import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
@@ -58,7 +57,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ConfirmSheet } from "@/src/components/ConfirmSheet";
 import { MultiTouchTapArea } from "@/src/components/MultiTouchTapArea";
-import { TesbihRingSvg } from "@/src/components/TesbihRingSvg";
 import { useI18n } from "@/src/i18n";
 import { normalizeForSearch } from "@/src/i18n/format";
 import {
@@ -93,6 +91,7 @@ function counterFontFor(ringSize: number, digits: number): number {
 export default function Home() {
   const {
     theme,
+    loaded,
     state,
     allDhikrs,
     activeDhikr,
@@ -143,7 +142,7 @@ export default function Home() {
     complete: s.soundComplete,
   });
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     const TAG = "zikirhane-home";
     if (s.keepAwake) {
       activateKeepAwakeAsync(TAG).catch(() => {});
@@ -151,17 +150,16 @@ export default function Home() {
         deactivateKeepAwake(TAG);
       };
     }
-  }, [s.keepAwake]);
+  }, [s.keepAwake]));
 
   const scale = useSharedValue(1);
-  const glow = useSharedValue(0);
 
   const haptic = (kind: "light" | "success") => {
     if (!s.vibration) return;
     if (kind === "success") {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } else {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
   };
 
@@ -169,6 +167,7 @@ export default function Home() {
   const activeArabic = dhikrArabic(activeDhikr);
 
   const doTap = () => {
+    if (!loaded || anyOverlayOpen) return;
     const { justReachedTarget } = increment();
     haptic(justReachedTarget ? "success" : "light");
     playSound(justReachedTarget ? "target" : "tap");
@@ -177,10 +176,6 @@ export default function Home() {
       withTiming(1, { duration: 160 })
     );
     if (justReachedTarget) {
-      glow.value = withSequence(
-        withTiming(1, { duration: 240 }),
-        withTiming(0, { duration: 900 })
-      );
       showToast(
         t("home.target_reached", {
           count: activeDhikrState.target,
@@ -198,24 +193,10 @@ export default function Home() {
   const counterAnim = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
-  // Hedef tamamlandığında ~900 ms süren ÖLÇÜLÜ kutlama:
-  // altın halka nefes alır, arkasında yumuşak bir hale büyüyüp söner.
-  // Abartılı konfeti/tam ekran efekt YOK — ibadet ekranı sakin kalmalı.
-  const glowAnim = useAnimatedStyle(() => ({
-    opacity: glow.value * 0.9,
-    transform: [{ scale: 0.94 + glow.value * 0.1 }],
-  }));
-  const haloAnim = useAnimatedStyle(() => ({
-    opacity: glow.value * 0.32,
-    transform: [{ scale: 0.8 + glow.value * 0.45 }],
-  }));
-
   // ── Türetilmiş değerler ──────────────────────────────────────────────
   const target = Math.max(1, activeDhikrState.target);
   const count = activeDhikrState.count;
   const laps = Math.floor(count / target);
-  const inLap = count % target;
-  const progress = count > 0 && inLap === 0 ? 1 : inLap / target;
 
   const today = todayTotal();
   const goal = Math.max(1, s.dailyGoal);
@@ -260,7 +241,7 @@ export default function Home() {
   const ringSize = measured
     ? Math.max(
         180,
-        Math.min(heroBox.w - 12, heroBox.h - 8, bigText ? 520 : 620)
+        Math.min(heroBox.w - 12, heroBox.h - 8, bigText ? 360 : 320)
       )
     : Math.max(180, Math.min(screenW - 24, 300));
 
@@ -271,13 +252,6 @@ export default function Home() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <LinearGradient
-        colors={[theme.emeraldDeep, theme.bg, theme.navy]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0.55, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-
       {/* ── ÜST BLOK: marka · seri · günlük ilerleme · aktif zikir ── */}
       <View
         style={{ paddingTop: insets.top + spacing.sm }}
@@ -304,7 +278,7 @@ export default function Home() {
             {t("home.brand")}
           </Text>
           <View style={{ flex: 1 }} />
-          {streakDays > 0 ? (
+          {!simpleMode && streakDays > 0 ? (
             <Animated.View
               entering={FadeIn.duration(400)}
               style={[
@@ -407,7 +381,7 @@ export default function Home() {
         style={styles.tapArea}
         onTap={doTap}
         testID="counter-tap-area"
-        disabled={anyOverlayOpen}
+        disabled={!loaded || anyOverlayOpen}
       >
         <View
           style={[
@@ -416,6 +390,12 @@ export default function Home() {
           ]}
           accessible
           accessibilityRole="adjustable"
+          accessibilityActions={[{ name: "activate" }, { name: "increment" }, { name: "decrement" }]}
+          onAccessibilityAction={({ nativeEvent }) => {
+            if (!loaded || anyOverlayOpen) return;
+            if (nativeEvent.actionName === "decrement") undo();
+            else if (["activate", "increment"].includes(nativeEvent.actionName)) doTap();
+          }}
           accessibilityLabel={t("home.a11y_counter", { count, target })}
           accessibilityHint={t("home.a11y_tap_area")}
         >
@@ -431,40 +411,11 @@ export default function Home() {
               justifyContent: "center",
             }}
           >
-            <TesbihRingSvg
-              size={ringSize}
-              beadCount={Math.min(33, target)}
-              color={theme.borderStrong}
-              progressColor={theme.gold}
-              motifColor={theme.gold}
-              progress={progress}
-            />
-            <Animated.View
-              style={[
-                styles.halo,
-                {
-                  width: ringSize,
-                  height: ringSize,
-                  borderRadius: ringSize / 2,
-                  backgroundColor: theme.gold,
-                  pointerEvents: "none",
-                },
-                haloAnim,
-              ]}
-            />
-            <Animated.View
-              style={[
-                styles.glowRing,
-                {
-                  width: ringSize * 0.9,
-                  height: ringSize * 0.9,
-                  borderRadius: ringSize * 0.45,
-                  borderColor: theme.gold,
-                  pointerEvents: "none",
-                },
-                glowAnim,
-              ]}
-            />
+            <View pointerEvents="none" style={{
+              position: "absolute", width: ringSize, height: ringSize,
+              borderRadius: simpleMode ? radius.xl : ringSize / 2,
+              backgroundColor: theme.bgCard, borderColor: theme.border, borderWidth: 1,
+            }} />
             {/* MERKEZ — halkanin icinde YALNIZCA sayi durur.
                 Hedef ve tur bilgisi bilerek disari alindi (Layout A):
                 icerisi kalabaliklasinca sayac okunakligini kaybediyordu.
@@ -477,7 +428,9 @@ export default function Home() {
                   styles.counterText,
                   {
                     color: theme.text,
-                    fontFamily: fonts.display,
+                    fontFamily: "System",
+                    fontVariant: ["tabular-nums"],
+                    fontWeight: "300",
                     fontSize: counterFontFor(ringSize, String(count).length),
                   },
                 ]}
@@ -512,7 +465,7 @@ export default function Home() {
       >
         {/* İlk kullanım: hiç sayım yoksa tek bir yönlendirme kartı.
             Kullanıcı ilk açılışta boş bir ekranla karşılaşmasın. */}
-        {isFirstUse ? (
+        {isFirstUse && !simpleMode ? (
           <Animated.View entering={FadeIn.duration(500)} style={styles.startWrap}>
             <Pressable
               onPress={() => {
@@ -727,7 +680,7 @@ export default function Home() {
               onPress={() => {
                 const v = !s.vibration;
                 updateSettings({ vibration: v });
-                if (v) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                if (v) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
                 showToast(v ? t("home.vibration_on") : t("home.vibration_off"));
               }}
               theme={theme}

@@ -18,8 +18,8 @@
 // Eski sürüm bu alanı tanımaz, ama nesneyi olduğu gibi kopyaladığı
 // (`{...parsed}`) için siler de. Sonuç: ileri VE geri uyumluluk.
 //
-// KURAL: Bu dosyadaki hiçbir migration kullanıcı verisini AZALTMAZ.
-// Eksik alanlar doldurulur, var olanlara dokunulmaz.
+// Geçerli kullanıcı kayıtları ve bilinmeyen alanlar korunur. Eksik alanlar
+// doldurulur; geçersiz/negatif sayılar güvenli varsayılanlara dönüştürülür.
 // ═══════════════════════════════════════════════════════════════════════
 
 import { BUILTIN_DHIKRS } from "./dhikrs";
@@ -155,6 +155,19 @@ function asRecord<V>(v: unknown): Record<string, V> {
     : {};
 }
 
+/** Preserve recoverable numeric strings, reject negative/non-finite/unsafe values. */
+function safeCount(value: unknown, fallback = 0): number {
+  const n = typeof value === "string" && value.trim() !== "" ? Number(value) : value;
+  return typeof n === "number" && Number.isSafeInteger(n) && n >= 0 ? n : fallback;
+}
+function safeId(id: string): boolean {
+  return id !== "__proto__" && id !== "constructor" && id !== "prototype";
+}
+function countRecord(value: unknown): Record<string, number> {
+  return Object.fromEntries(Object.entries(asRecord<unknown>(value))
+    .filter(([id]) => safeId(id)).map(([id, n]) => [id, safeCount(n)]));
+}
+
 /**
  * v1.0.16 mantığı (BUG-004) — kümülatif geçmiş alanı yoksa mevcut EN
  * GÜVENİLİR veriden yeniden inşa edilir. İki kaynağın MAKSİMUMU alınır,
@@ -205,17 +218,26 @@ export function migrateState(raw: unknown): PersistedState | null {
     ...asRecord<DhikrState>(src.dhikrStates),
   };
 
-  // Yeni eklenen hazır zikirler için eksik durum kayıtlarını tamamla.
-  for (const d of BUILTIN_DHIKRS) {
-    const cur = dhikrStates[d.id];
-    if (!cur || typeof cur.count !== "number") {
-      dhikrStates[d.id] = { count: 0, target: d.defaultTarget, lastUsedAt: null };
-    } else if (typeof cur.target !== "number" || cur.target < 1) {
-      dhikrStates[d.id] = { ...cur, target: d.defaultTarget };
-    }
+  const customDhikrs = asArray<CustomDhikr>(src.customDhikrs)
+    .filter((c) => c && typeof c.id === "string" && safeId(c.id) && typeof c.name === "string")
+    .map((c) => ({ ...c, defaultTarget: Math.max(1, safeCount(c.defaultTarget, 33)),
+      arabic: typeof c.arabic === "string" ? c.arabic : undefined }));
+  for (const [id, value] of Object.entries(dhikrStates)) {
+    if (!safeId(id)) { delete dhikrStates[id]; continue; }
+    const cur = asRecord<unknown>(value);
+    const fallback = BUILTIN_DHIKRS.find((d) => d.id === id)?.defaultTarget ?? 33;
+    dhikrStates[id] = { count: safeCount(cur.count), target: Math.max(1, safeCount(cur.target, fallback)),
+      lastUsedAt: cur.lastUsedAt == null ? null : safeCount(cur.lastUsedAt) };
   }
-
-  const dailyLog = asRecord<DailyLogEntry>(src.dailyLog);
+  for (const c of customDhikrs) {
+    dhikrStates[c.id] ??= { count: 0, target: c.defaultTarget, lastUsedAt: null };
+  }
+  const dailyLog: Record<string, DailyLogEntry> = {};
+  for (const [day, value] of Object.entries(asRecord<unknown>(src.dailyLog))) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isFinite(Date.parse(day))) continue;
+    const entry = asRecord<unknown>(value);
+    dailyLog[day] = { date: day, total: safeCount(entry.total), perDhikr: countRecord(entry.perDhikr) };
+  }
   const rawSettings = asRecord<unknown>(src.settings);
   const themeRaw = rawSettings.theme as ThemePreference | undefined;
 
@@ -225,6 +247,14 @@ export function migrateState(raw: unknown): PersistedState | null {
     theme:
       themeRaw && VALID_THEMES.includes(themeRaw) ? themeRaw : defaultSettings.theme,
   };
+  for (const key of Object.keys(defaultSettings) as (keyof Settings)[]) {
+    if (typeof defaultSettings[key] === "boolean" && typeof rawSettings[key] !== "boolean") {
+      (settings as unknown as Record<string, unknown>)[key] = defaultSettings[key];
+    }
+  }
+  settings.dailyGoal = Math.max(1, safeCount(rawSettings.dailyGoal, defaultSettings.dailyGoal));
+  settings.reminderHour = Math.min(23, safeCount(rawSettings.reminderHour, defaultSettings.reminderHour));
+  settings.reminderMinute = Math.min(59, safeCount(rawSettings.reminderMinute, defaultSettings.reminderMinute));
   // `confirmReset` eski kayıtlarda yok → varsayılan olarak AÇIK gelir
   // (yanlış sıfırlamaya karşı koruma).
   if (typeof (rawSettings as Partial<Settings>).confirmReset !== "boolean") {
@@ -253,7 +283,7 @@ export function migrateState(raw: unknown): PersistedState | null {
   }
   settings.sound = settings.soundTap;
 
-  const existingHistory = asRecord<number>(src.dhikrHistoryTotals);
+  const existingHistory = countRecord(src.dhikrHistoryTotals);
   const dhikrHistoryTotals =
     Object.keys(existingHistory).length > 0
       ? existingHistory
@@ -261,7 +291,7 @@ export function migrateState(raw: unknown): PersistedState | null {
 
   const knownIds = new Set<string>([
     ...Object.keys(dhikrStates),
-    ...asArray<CustomDhikr>(src.customDhikrs).map((c) => c?.id).filter(Boolean),
+    ...customDhikrs.map((c) => c.id),
   ]);
 
   const favoriteDhikrIds = Array.from(
@@ -288,28 +318,30 @@ export function migrateState(raw: unknown): PersistedState | null {
       ? src.activeDhikrId
       : base.activeDhikrId;
 
+  const progress = asRecord<unknown>(src.tesbihatProgress);
+  const validProgress = Number.isInteger(progress.stepIdx) && Number(progress.stepIdx) >= 0 && Number(progress.stepIdx) < 3 &&
+    Number.isInteger(progress.count) && Number(progress.count) >= 0 && Number(progress.count) < 33 &&
+    typeof progress.updatedAt === "number" && Number.isFinite(progress.updatedAt) && progress.updatedAt > 0;
   const migrated: PersistedState = {
     // Bilinmeyen ek alanları koru (ileri uyumluluk).
     ...(src as object),
     version: LEGACY_VERSION,
     schemaRevision: SCHEMA_REVISION,
     activeDhikrId: activeCandidate,
-    customDhikrs: asArray<CustomDhikr>(src.customDhikrs).filter(
-      (c) => c && typeof c.id === "string" && typeof c.name === "string"
-    ),
+    customDhikrs,
     dhikrStates,
-    totalCount: typeof src.totalCount === "number" ? src.totalCount : 0,
+    totalCount: safeCount(src.totalCount),
     dailyLog,
     dhikrHistoryTotals,
-    esmaCounters: asRecord<number>(src.esmaCounters) as Record<number, number>,
-    esmaFavorites: asArray<number>(src.esmaFavorites),
+    esmaCounters: countRecord(src.esmaCounters) as Record<number, number>,
+    esmaFavorites: [...new Set(asArray<number>(src.esmaFavorites).filter((n) => Number.isInteger(n) && n >= 1 && n <= 99))],
     settings,
     tesbihatProgress:
-      src.tesbihatProgress && typeof src.tesbihatProgress === "object"
+      validProgress
         ? (src.tesbihatProgress as TesbihatProgress)
         : null,
     lastActionAt:
-      typeof src.lastActionAt === "number" ? src.lastActionAt : null,
+      src.lastActionAt == null ? null : safeCount(src.lastActionAt),
     favoriteDhikrIds,
     recentDhikrIds,
   };

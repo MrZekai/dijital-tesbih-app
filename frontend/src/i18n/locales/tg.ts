@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const tg: TranslationTable = {
+  "storage.load_error": "Ҳисобҳои захирашуда бор нашуданд. Сабти пешина тағйир наёфт. Боз кӯшиш кунед.",
+  "storage.save_error": "Тағйирот дар ин дастгоҳ захира нашуд.",
   "common.ok": "Хуб",
   "common.cancel": "Бекор кардан",
   "common.confirm": "Тасдиқ",

@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ur: TranslationTable = {
+  "storage.load_error": "محفوظ گنتی لوڈ نہیں ہو سکی۔ پرانا ریکارڈ تبدیل نہیں ہوا۔ دوبارہ کوشش کریں۔",
+  "storage.save_error": "تبدیلیاں اس آلے پر محفوظ نہیں ہو سکیں۔",
   "common.ok": "ٹھیک ہے",
   "common.cancel": "منسوخ",
   "common.confirm": "تصدیق",

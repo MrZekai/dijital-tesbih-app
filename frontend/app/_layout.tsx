@@ -20,21 +20,13 @@ import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { I18nProvider, useI18n } from "@/src/i18n";
 import { FontScaleProvider } from "@/src/lib/fontScale";
 import { useDirection } from "@/src/lib/rtl";
-import { StoreProvider, useStore } from "@/src/lib/store";
+import { StoreProvider, usePreferences, useStoreStatus } from "@/src/lib/store";
 import { radius, spacing } from "@/src/lib/theme";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useIconFonts();
-
-  useEffect(() => {
-    if (!loaded && !error) return;
-    const failSafe = setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {});
-    }, 5000);
-    return () => clearTimeout(failSafe);
-  }, [loaded, error]);
 
   if (!loaded && !error) return null;
 
@@ -59,30 +51,42 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { theme } = useStore();
+  const { theme } = usePreferences();
   const { t, ready } = useI18n();
+  const { loaded, loadError, saveError, retryLoad, retrySave } = useStoreStatus();
   const { coldStartSettled, resumeGateVisible } = useAppOpenAd({
     gateColdStart: true,
+    contentReady: ready && (loaded || loadError),
   });
 
   // Splash yalnız HEM reklam kapısı HEM de dil tercihi hazır olduğunda
   // kapanır. Aksi hâlde ilk kare yanlış dilde görünüp anında değişirdi.
   useEffect(() => {
-    if (coldStartSettled && ready) {
+    if (coldStartSettled && ready && (loaded || loadError)) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [coldStartSettled, ready]);
+  }, [coldStartSettled, ready, loaded, loadError]);
 
   return (
     <View style={[styles.root, { backgroundColor: theme.bg }]}>
       <ThemedStatusBar />
-      <Stack
+      {loaded ? <Stack
         screenOptions={{
           headerShown: false,
           animation: "fade",
           contentStyle: { backgroundColor: theme.bg },
         }}
-      />
+      /> : <View style={styles.resumeGate}>
+        <ActivityIndicator color={theme.gold} />
+        <Text style={{ color: theme.text, padding: 24 }}>{t(loadError ? "storage.load_error" : "common.loading")}</Text>
+        {loadError ? <Pressable accessibilityRole="button" onPress={retryLoad} style={styles.noticeBtn}>
+          <Text style={{ color: theme.gold }}>{t("error.retry")}</Text>
+        </Pressable> : null}
+      </View>}
+      {saveError ? <Pressable accessibilityRole="button" onPress={retrySave}
+        style={[styles.saveNotice, { backgroundColor: theme.bgCard }]}>
+        <Text style={{ color: theme.text }}>{t("storage.save_error")} · {t("error.retry")}</Text>
+      </Pressable> : null}
 
       {/* App-switch App Open yalnız bu loading gate üzerinde gösterilir. */}
       {resumeGateVisible ? (
@@ -110,7 +114,7 @@ function RootNavigator() {
  * açıkça söyleriz.
  */
 function RtlRestartNotice() {
-  const { theme } = useStore();
+  const { theme } = usePreferences();
   const { t, restartRequired, dismissRestartNotice } = useI18n();
   const dir = useDirection();
 
@@ -166,12 +170,13 @@ function RtlRestartNotice() {
 }
 
 function ThemedStatusBar() {
-  const { theme } = useStore();
+  const { theme } = usePreferences();
   return <StatusBar style={theme.name === "dark" ? "light" : "dark"} />;
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  saveNotice: { position: "absolute", top: 60, left: 16, right: 16, padding: 16, zIndex: 10000, borderRadius: 16 },
   resumeGate: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 9999,

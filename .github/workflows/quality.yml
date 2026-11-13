@@ -1,0 +1,49 @@
+name: App and website checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+          cache-dependency-path: frontend/yarn.lock
+      - run: corepack enable
+      - run: yarn install --frozen-lockfile --ignore-scripts
+        working-directory: frontend
+      - run: yarn typecheck && yarn lint && yarn test
+        working-directory: frontend
+      - run: node site/build.mjs && node site/test.mjs
+      - name: Validate production site including a repository path
+        run: node site/build.mjs --production && node site/test.mjs
+        env:
+          SITE_URL: https://mrzekai.github.io/dijital-tesbih-app/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: website-review
+          path: site/dist
+  powershell:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parse hosting script without logging in or publishing
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path scripts/Publish-FreeHosting.ps1), [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count) { $errors | Format-List; exit 1 }
+      - name: Test Hosting orchestration without a Google account
+        shell: pwsh
+        run: ./scripts/Test-FreeHosting.ps1

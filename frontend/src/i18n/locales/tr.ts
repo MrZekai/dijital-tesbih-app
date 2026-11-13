@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const tr: TranslationTable = {
+  "storage.load_error": "Kayıtlı sayımlar yüklenemedi. Mevcut kaydınızın üzerine yazılmadı. Tekrar deneyin.",
+  "storage.save_error": "Değişiklikler bu cihaza kaydedilemedi.",
   "common.ok": "Tamam",
   "common.cancel": "Vazgeç",
   "common.confirm": "Onayla",

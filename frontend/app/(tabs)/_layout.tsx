@@ -6,7 +6,7 @@ import { BottomBanner } from "@/src/ads/BottomBanner";
 import { useRespectfulInterstitial } from "@/src/ads/useRespectfulInterstitial";
 import { BlurView } from "expo-blur";
 import { Tabs, usePathname } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   Platform,
   StyleSheet,
@@ -17,8 +17,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useT } from "@/src/i18n";
 import { useFontScale } from "@/src/lib/fontScale";
-import { useTabBarHeight } from "@/src/lib/layout";
-import { useStore } from "@/src/lib/store";
+import { BannerHeightContext, useTabBarHeight } from "@/src/lib/layout";
+import { usePreferences } from "@/src/lib/store";
 
 // Banner'ın gösterileceği sekme rotaları. Bu liste dışındaki bir ekran
 // (Tesbihat / Esmaül Hüsna / Özel Zikir) öne alındığında sekme banner'ı
@@ -27,7 +27,8 @@ import { useStore } from "@/src/lib/store";
 const TAB_ROUTES = ["/", "/zikirlerim", "/istatistikler", "/ayarlar"];
 
 export default function TabsLayout() {
-  const { theme } = useStore();
+  const { theme } = usePreferences();
+  const [bannerHeight, setBannerHeight] = useState(BANNER_SLOT_HEIGHT);
   const t = useT();
   const insets = useSafeAreaInsets();
   const isDark = theme.name === "dark";
@@ -48,11 +49,13 @@ export default function TabsLayout() {
   const bannerVisible = TAB_ROUTES.includes(pathname);
 
   return (
+    <BannerHeightContext.Provider value={bannerHeight}>
     <View style={styles.root}>
       <Tabs
       screenListeners={{ tabPress: () => showInterstitial() }}
       screenOptions={{
         headerShown: false,
+        freezeOnBlur: true,
         tabBarShowLabel: true,
         tabBarActiveTintColor: theme.gold,
         tabBarInactiveTintColor: theme.textSubtle,
@@ -161,10 +164,11 @@ export default function TabsLayout() {
           style={[styles.bannerAnchor, { bottom: tabBarHeight }]}
           testID="tabs-banner-anchor"
         >
-          <BottomBanner tag="tabs" explicitWidth={Math.floor(screenW)} />
+          <BottomBanner tag="tabs" explicitWidth={Math.floor(screenW)} reservedHeight={bannerHeight} onHeightChange={setBannerHeight} />
         </View>
       ) : null}
     </View>
+    </BannerHeightContext.Provider>
   );
 }
 
@@ -174,6 +178,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    height: BANNER_SLOT_HEIGHT,
+    minHeight: BANNER_SLOT_HEIGHT,
   },
 });

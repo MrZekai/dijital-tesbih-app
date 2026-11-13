@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const pa_Arab: TranslationTable = {
+  "storage.load_error": "محفوظ گنتی لوڈ نہیں ہو سکی۔ پرانا ریکارڈ نہیں بدلیا گیا۔ دوبارہ کوشش کرو۔",
+  "storage.save_error": "تبدیلیاں ایس آلے تے محفوظ نہیں ہو سکیاں۔",
   "common.ok": "ٹھیک اے",
   "common.cancel": "منسوخ",
   "common.confirm": "تصدیق",

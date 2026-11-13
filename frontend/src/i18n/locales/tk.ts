@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const tk: TranslationTable = {
+  "storage.load_error": "Ýatda saklanan sanaw ýüklenmedi. Öňki ýazgy üýtgedilmedi. Gaýtadan synanyşyň.",
+  "storage.save_error": "Üýtgeşmeler bu enjamda ýatda saklanmady.",
   "common.ok": "Bolýar",
   "common.cancel": "Ýatyr",
   "common.confirm": "Tassykla",

@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const az: TranslationTable = {
+  "storage.load_error": "Saxlanmış sayımlar yüklənmədi. Mövcud qeyd dəyişdirilmədi. Yenidən cəhd edin.",
+  "storage.save_error": "Dəyişikliklər bu cihazda saxlanılmadı.",
   "common.ok": "Tamam",
   "common.cancel": "Ləğv et",
   "common.confirm": "Təsdiqlə",

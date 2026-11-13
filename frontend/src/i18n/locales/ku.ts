@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ku: TranslationTable = {
+  "storage.load_error": "Jimartinên tomarbûyî nehatin barkirin. Tomara berê nehat guhertin. Dîsa biceribîne.",
+  "storage.save_error": "Guhertin li ser vê amûrê nehatin tomarkirin.",
   "common.ok": "Baş e",
   "common.cancel": "Betal bike",
   "common.confirm": "Piştrast bike",

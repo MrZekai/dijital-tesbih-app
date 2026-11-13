@@ -13,6 +13,8 @@
 
 const en = {
   // ── Ortak ────────────────────────────────────────────────────────────
+  "storage.load_error": "Saved counts could not be loaded. Your existing record has not been overwritten. Try again.",
+  "storage.save_error": "Changes could not be saved on this device.",
   "common.ok": "OK",
   "common.cancel": "Cancel",
   "common.confirm": "Confirm",

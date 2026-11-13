@@ -12,6 +12,9 @@ const originalLoad = Module._load;
 const originalTs = require.extensions[".ts"];
 const originalTsx = require.extensions[".tsx"];
 const scheduled = [];
+const effects = [];
+let finishRead;
+const read = new Promise(resolve => { finishRead = resolve; });
 let currentValue;
 const react = {
   createContext: () => ({ Provider: "provider" }),
@@ -22,7 +25,7 @@ const react = {
   useState: (initial) => [typeof initial === "function" ? initial() : initial, (next) => scheduled.push(next)],
   useRef: (initial) => ({ current: initial }),
   useCallback: (fn) => fn,
-  useEffect: () => {},
+  useEffect: fn => effects.push(fn),
   useMemo: (fn) => fn(),
   useContext: () => currentValue,
 };
@@ -35,18 +38,25 @@ function loadTypeScript(mod, filename) {
   mod._compile(js, filename);
 }
 
+async function main() {
 try {
   require.extensions[".ts"] = loadTypeScript;
   require.extensions[".tsx"] = loadTypeScript;
   Module._load = function (request, parent, isMain) {
     if (request === "react") return react;
     if (request === "react-native") return { AppState: { addEventListener: () => ({ remove() {} }) }, useColorScheme: () => "dark" };
-    if (request === "@/src/utils/storage") return { storage: { getItem: async () => null, setItem: () => {} } };
+    if (request === "@react-native-async-storage/async-storage") return { getItem: () => read, setItem: async () => {} };
     return originalLoad.call(this, request, parent, isMain);
   };
 
   const { StoreProvider } = require(path.join(__dirname, "../src/lib/store.tsx"));
   StoreProvider({ children: null });
+  currentValue.increment();
+  assert.strictEqual(scheduled.length, 0, "do not accept mutations before hydration");
+  effects[0]();
+  finishRead(null);
+  await new Promise(resolve => setImmediate(resolve));
+  scheduled.length = 0;
   for (let tap = 1; tap <= 34; tap++) {
     const result = currentValue.increment();
     assert.strictEqual(result.justReachedTarget, tap === 33, `tap ${tap} target feedback`);
@@ -66,3 +76,6 @@ try {
   require.extensions[".ts"] = originalTs;
   require.extensions[".tsx"] = originalTsx;
 }
+
+}
+main().catch(error => { console.error(error); process.exitCode = 1; });

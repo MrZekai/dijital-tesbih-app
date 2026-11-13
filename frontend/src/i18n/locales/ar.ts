@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ar: TranslationTable = {
+  "storage.load_error": "تعذر تحميل العدّ المحفوظ. لم تُستبدل بياناتك الحالية. حاول مرة أخرى.",
+  "storage.save_error": "تعذر حفظ التغييرات على هذا الجهاز.",
   "common.ok": "حسنًا",
   "common.cancel": "إلغاء",
   "common.confirm": "تأكيد",

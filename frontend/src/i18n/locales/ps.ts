@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ps: TranslationTable = {
+  "storage.load_error": "خوندي شوې شمېرنه را پورته نه شوه. پخوانی ریکارډ نه دی بدل شوی. بیا هڅه وکړئ.",
+  "storage.save_error": "بدلونونه په دې وسیله کې خوندي نه شول.",
   "common.ok": "سمه ده",
   "common.cancel": "لغوه",
   "common.confirm": "تایید",

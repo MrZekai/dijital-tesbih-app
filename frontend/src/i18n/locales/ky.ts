@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ky: TranslationTable = {
+  "storage.load_error": "Сакталган эсеп жүктөлгөн жок. Мурунку маалымат өзгөртүлгөн жок. Кайра аракет кылыңыз.",
+  "storage.save_error": "Өзгөрүүлөр бул түзмөккө сакталган жок.",
   "common.ok": "Жарайт",
   "common.cancel": "Жокко чыгаруу",
   "common.confirm": "Ырастоо",

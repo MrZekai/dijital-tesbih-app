@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const kk: TranslationTable = {
+  "storage.load_error": "Сақталған санақ жүктелмеді. Бұрынғы жазба өзгертілген жоқ. Қайталап көріңіз.",
+  "storage.save_error": "Өзгерістер бұл құрылғыға сақталмады.",
   "common.ok": "Жарайды",
   "common.cancel": "Болдырмау",
   "common.confirm": "Растау",

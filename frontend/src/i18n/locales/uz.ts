@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const uz: TranslationTable = {
+  "storage.load_error": "Saqlangan sanoq yuklanmadi. Oldingi yozuv o‘zgartirilmadi. Qayta urinib ko‘ring.",
+  "storage.save_error": "O‘zgarishlar bu qurilmada saqlanmadi.",
   "common.ok": "OK",
   "common.cancel": "Bekor qilish",
   "common.confirm": "Tasdiqlash",

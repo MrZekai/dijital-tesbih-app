@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const fr: TranslationTable = {
+  "storage.load_error": "Impossible de charger les compteurs. Les données existantes n’ont pas été écrasées. Réessayez.",
+  "storage.save_error": "Impossible d’enregistrer les modifications sur cet appareil.",
   "common.ok": "OK",
   "common.cancel": "Annuler",
   "common.confirm": "Confirmer",

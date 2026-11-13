@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const so: TranslationTable = {
+  "storage.load_error": "Tirintii la kaydiyey lama soo dejin karin. Xogtii hore lama beddelin. Mar kale isku day.",
+  "storage.save_error": "Isbeddellada laguma kaydin karin qalabkan.",
   "common.ok": "Waa hagaag",
   "common.cancel": "Jooji",
   "common.confirm": "Xaqiiji",

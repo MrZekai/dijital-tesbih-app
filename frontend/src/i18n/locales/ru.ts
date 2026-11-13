@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ru: TranslationTable = {
+  "storage.load_error": "Не удалось загрузить счётчики. Существующая запись не перезаписана. Повторите попытку.",
+  "storage.save_error": "Не удалось сохранить изменения на этом устройстве.",
   "common.ok": "ОК",
   "common.cancel": "Отмена",
   "common.confirm": "Подтвердить",

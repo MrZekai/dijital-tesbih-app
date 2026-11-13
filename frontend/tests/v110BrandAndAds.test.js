@@ -171,12 +171,12 @@ ok("motif hilal + yildiz (geometrik yildiz degil)",
 ok("motifte Arapca yazi / mubarek isim yok",
   !/[\u0600-\u06FF]/.test(ring.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "")));
 ok("taneler tek tek doluyor", ring.includes("i < filled"));
-ok("ana sayfa yeni halkayi kullaniyor", homeSrc.includes("TesbihRingSvg"));
+ok("Odak sayaci hafif yerel yuzey kullaniyor", !homeSrc.includes("TesbihRingSvg") && homeSrc.includes("backgroundColor: theme.bgCard"));
 ok("halka boyutu OLCULEN alandan geliyor (formul tahmini yok)",
   homeSrc.includes("onHeroLayout") && homeSrc.includes("styles.heroBox")
     && !homeSrc.includes("availableH"));
 ok("ilk kullanim karti var", homeSrc.includes("home-first-use-card"));
-ok("tamamlama kutlamasi var", homeSrc.includes("haloAnim"));
+ok("hedef geri bildirimi korunuyor", homeSrc.includes("home.target_reached"));
 
 // ── 12) Layout A — kullanicinin sectigi ana sayfa duzeni ──────────────
 // QA'da uc sikayet vardi: (a) sayac alttaki satira biniyordu, (b) halka
@@ -196,7 +196,7 @@ ok("Geri Al / Sifirla TAM BOY dugme",
     && homeSrc.includes('testID="reset-button"'));
 ok("aksiyonlar ayar ikonu satirinda degil",
   !homeSrc.includes('icon="arrow-undo-outline"'));
-ok("halka ust siniri genis", /bigText \? 520 : 620/.test(homeSrc));
+ok("Odak sayaci okunur boyutta", /bigText \? 360 : 320/.test(homeSrc));
 ok("sayac punto tabani genis (icerisi bos)", /ringSize \* 0\.34/.test(homeSrc));
 
 console.log("\n----------------------------------");

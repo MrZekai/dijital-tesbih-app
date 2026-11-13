@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ha: TranslationTable = {
+  "storage.load_error": "Ba a iya loda kirga da aka adana ba. Ba a canza tsohon rikodin ba. A sake gwadawa.",
+  "storage.save_error": "Ba a iya adana canje-canje a wannan na’urar ba.",
   "common.ok": "To",
   "common.cancel": "Soke",
   "common.confirm": "Tabbatar",

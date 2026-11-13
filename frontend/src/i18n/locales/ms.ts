@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ms: TranslationTable = {
+  "storage.load_error": "Kiraan tersimpan tidak dapat dimuatkan. Rekod sedia ada tidak ditulis ganti. Cuba lagi.",
+  "storage.save_error": "Perubahan tidak dapat disimpan pada peranti ini.",
   "common.ok": "OK",
   "common.cancel": "Batal",
   "common.confirm": "Sahkan",

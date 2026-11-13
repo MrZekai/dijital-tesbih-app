@@ -66,8 +66,10 @@ export default function Tesbihat() {
     !!saved &&
     saved.stepIdx >= 0 &&
     saved.stepIdx < STEPS.length &&
-    saved.count > 0 &&
+    saved.count >= 0 &&
+    (saved.stepIdx > 0 || saved.count > 0) &&
     saved.count < STEPS[saved.stepIdx].target &&
+    Date.now() >= saved.updatedAt &&
     Date.now() - saved.updatedAt < RESUME_MAX_AGE_MS;
 
   const [stepIdx, setStepIdx] = useState(() => (resumable ? saved!.stepIdx : 0));
