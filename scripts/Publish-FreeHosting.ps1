@@ -46,15 +46,14 @@ try {
     if ($CreateProject) {
         Invoke-Checked 'npx.cmd' ($cli + @('projects:create', $ProjectId, '--display-name', 'Zikirmatik'))
     }
-    $projectsOutput = & npx.cmd @cli projects:list --json
-    if ($LASTEXITCODE -ne 0) { throw 'Firebase access failed. Run again with -Login.' }
-    $projects = $projectsOutput | Out-String | ConvertFrom-Json
-    if (-not ($projects.result | Where-Object { $_.projectId -eq $ProjectId })) {
-        throw 'This Google account cannot access the specified project. Check ProjectId.'
-    }
+    # Check the selected project's Hosting permissions directly. Absence from
+    # projects:list does not prove access is denied, especially after creation.
     $sitesOutput = & npx.cmd @cli hosting:sites:list --project $ProjectId --json
-    if ($LASTEXITCODE -ne 0) { throw 'Could not inspect Hosting sites.' }
+    if ($LASTEXITCODE -ne 0) { throw 'Could not access Hosting for this project. Check the Firebase error above and use -Login if needed.' }
     $sites = $sitesOutput | Out-String | ConvertFrom-Json
+    if ($sites.status -ne 'success' -or $null -eq $sites.result.sites) {
+        throw 'Firebase returned an unexpected Hosting response. No site will be created or deployed.'
+    }
     if (-not ($sites.result.sites | Where-Object { $_.name -eq "projects/$ProjectId/sites/$ProjectId" -or $_.name -like "*/sites/$ProjectId" })) {
         Invoke-Checked 'npx.cmd' ($cli + @('hosting:sites:create', $ProjectId, '--project', $ProjectId))
     }
