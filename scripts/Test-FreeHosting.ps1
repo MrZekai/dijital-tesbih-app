@@ -65,3 +65,6 @@ try {
     $env:SITE_URL = $savedUrl
     $env:GOOGLE_SITE_VERIFICATION = $savedCode
 }
+# The final scenario deliberately leaves a failed native exit code. Assertions
+# above have verified that failure; do not propagate it as a CI test failure.
+$global:LASTEXITCODE = 0
