@@ -32,7 +32,13 @@ try {
         return
     }
     if (-not $ProjectId) { throw 'Supply -ProjectId with your Firebase project ID, or use -PreviewOnly.' }
-    $nodeMajor = [int]((& node -p 'process.versions.node.split(".")[0]') | Select-Object -Last 1)
+    # Parse plain output in PowerShell: Windows PowerShell 5.1 strips nested
+    # quotes from JavaScript passed through node -p.
+    $nodeVersion = [string](& node --version)
+    if ($LASTEXITCODE -ne 0 -or $nodeVersion -notmatch '^v(\d+)\.') {
+        throw 'Could not read the installed Node.js version. Run node --version to check it.'
+    }
+    $nodeMajor = [int]$Matches[1]
     if ($nodeMajor -lt 22) { throw 'Use Node.js 22 LTS or later for the Firebase CLI.' }
     # CLI is installed by npx in its cache. No global package or billing account is created.
     $cli = @('--yes', '--package', 'firebase-tools@15.36.0', 'firebase')

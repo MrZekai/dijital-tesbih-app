@@ -32,18 +32,22 @@ jobs:
           path: site/dist
   powershell:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        shell: [pwsh, powershell]
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Parse hosting script without logging in or publishing
-        shell: pwsh
         run: |
           $tokens = $null
           $errors = $null
           [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path scripts/Publish-FreeHosting.ps1), [ref]$tokens, [ref]$errors) | Out-Null
           if ($errors.Count) { $errors | Format-List; exit 1 }
       - name: Test Hosting orchestration without a Google account
-        shell: pwsh
         run: ./scripts/Test-FreeHosting.ps1
