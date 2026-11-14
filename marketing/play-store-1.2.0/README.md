@@ -1,44 +1,39 @@
 # Zikirmatik 1.2.0 — Google Play metin paketi
 
-Her UTF-8 TXT dosyasında sırasıyla **başlık**, **kısa açıklama**, **uzun açıklama** bulunur. Alanlar arasında boş satır vardır; bu açıklama dosyasını Play Console'a yapıştırmayın.
+Bu pakette **27 uygulama dili** için birer UTF-8 TXT ve Almanca mağaza kaydı için ek bir TXT bulunur. Her dosyada sırasıyla başlık, kısa açıklama ve uzun açıklama vardır; alanlar boş satırla ayrılır. `character-counts.csv` her alanın Unicode karakter sayısını ve sınırını gösterir.
 
-## Kaynak ve sınır
+## Kaynaklar ve yayın durumu
 
-- TR, EN ve AR başlık/kısa açıklamalar: kullanıcının 14 Kasım ASO kararları. Uzun açıklamalar özellik envanterine göre düzeltildi.
-- ID, MS, UR ve RU başlıkları: kullanıcının kesin kararları. Diğer alanlar 14 Kasım kamu sayfası yanıtından alındı; yanlış dokunma alanı, zorunlu titreşim ve tüm uygulamanın çevrimdışı olduğu izlenimi düzeltildi.
-- DE kaydı korundu. Mevcut kamu başlığı aynı kaldı; kısa açıklama karakter sınırına indirildi ve uzun açıklamada Almanca arayüzün bulunmadığı açıkça belirtildi.
-- Bunlar **yayın taslaklarıdır**. Play Console'daki mevcut alanları, yerelleştirme kodlarını ve Veri güvenliği formunu dışa aktararak son kez karşılaştırın.
-- `character-counts.csv` başlık/kısa/uzun alanların Unicode karakter sayılarını verir. Sekiz dilin tümü 30/80/4000 sınırları içindedir.
+- TR, EN ve AR başlık/kısa açıklamalar kullanıcının 14 Kasım ASO kararlarından alınmıştır. Uzun açıklamalar doğrulanmış uygulama davranışına göre yeniden yazıldı.
+- ID, MS, UR ve RU başlıkları kullanıcının kesin kararlarıdır. Kısa/uzun alanların dayanağı 14 Kasım kamu sayfası yanıtıdır; yanlış dokunma alanı, zorunlu titreşim ve tüm uygulamanın çevrimdışı olduğu izlenimi düzeltildi.
+- DE mağaza kaydı korunur. Başlık aynı bırakıldı; kısa açıklama 80 karaktere indirildi ve uzun açıklamada Almanca arayüzün bulunmadığı açıkça belirtildi.
+- Diğer 20 uygulama dili için başlık/kısa/uzun açıklama **taslakları** hazırlandı. Metinler uygulamanın kendi yerelleştirilmiş UI dizelerinden derlendi. Bu yöntem özellik doğruluğu için uygundur; mağaza dili, akıcılık ve arama terimleri açısından **ana dili konuşan insan denetimi gerektirir**.
+- Kamu Play sayfası bazı istenen dillerde başka dil döndürmüştür. Bu yanıtlar hiçbir zaman o dilin metni diye kullanılmadı. Paket Play Console'a yüklenmedi ve mevcut mağaza kayıtlarını değiştirmedi.
+- Gerçek Play Console mağaza alanları dışa aktarılıp bu taslaklarla karşılaştırılmalıdır. Özellikle kod/ülke eşleşmesi, bulunmayan kayıtların oluşturulması ve mevcut kaydın üzerine yazılacak alanlar doğrulanmalıdır.
 
-## Dil denetimi
+## Kamu yanıtı dil denetimi
 
-| Dil kodu | Kamu yanıtı | Teslim / sonraki işlem |
+| Kodlar | 14 Kasım kamu yanıtı | Bu paketteki kaynak / sonraki işlem |
 |---|---|---|
-| tr | Türkçe | `tr.txt` |
-| en | İngilizce | `en.txt` |
-| ar | Arapça | `ar.txt` |
-| id | Endonezce | `id.txt` |
-| ms | Malayca | `ms.txt` |
-| ur | Urduca | `ur.txt` |
-| ru | Rusça | `ru.txt` |
-| de | Almanca metin | `de.txt`; Almanca arayüz yok |
-| fa, bn, fr, az, kk, ky, sq, sw | İstenen dilde metin görünüyor | Mevcut kaydı koru; Play Console dışa aktarımı gerekli |
-| uz, ps, bs, so, ha, dv | İngilizce döndü | Play Console dışa aktarımı gerekli |
-| tg, tk | Rusça döndü | Play Console dışa aktarımı gerekli |
-| ku | Türkçe döndü | Play Console dışa aktarımı gerekli |
-| ckb | Arapça döndü | Play Console dışa aktarımı gerekli |
-| fa-AF | Farsça yanıt, Dari kaydı belirsiz | Play Console dışa aktarımı gerekli |
-| pa-Arab | Şahmukhi yerine Gurmukhi metin döndü | Play Console dışa aktarımı gerekli |
+| tr, en, ar, id, ms, ur, ru | İstenen dilde | Kesin kararlar ve doğruluk düzeltmeleri; Console karşılaştırması |
+| fa, bn, fr, az, kk, ky, sq, sw | İstenen dilde görünüyor | Korunmuş başlık/kısa + UI dizelerinden yeni uzun taslak; insan denetimi |
+| uz, ps, bs, so, ha, dv | İngilizceye düştü | O dile ait UI dizelerinden taslak; Console dışa aktarımı gerekli |
+| tg, tk | Rusçaya düştü | O dile ait UI dizelerinden taslak; Console dışa aktarımı gerekli |
+| ku | Türkçeye düştü | Kurmanci UI dizelerinden taslak; Console dışa aktarımı gerekli |
+| ckb | Arapçaya düştü | Soranice UI dizelerinden taslak; Console dışa aktarımı gerekli |
+| fa-AF | Farsça yanıt, Dari kaydı belirsiz | Dari UI dizelerinden taslak; Console dışa aktarımı gerekli |
+| pa-Arab | Şahmukhi yerine Gurmukhi döndü | Şahmukhi UI dizelerinden taslak; Console dışa aktarımı gerekli |
+| de | Almanca metin | Mağaza kaydı korunur; Almanca arayüz yok |
 
-Kamu sayfasının döndürdüğü metin, Play Console'da düzenlenebilir bir yerel kayıt bulunduğunu tek başına kanıtlamaz. Bu nedenle belirsiz diller için TXT hazırlanmadı.
+Kamu sayfasının döndürdüğü metin, Play Console'da düzenlenebilir bir yerel kayıt bulunduğunu tek başına kanıtlamaz.
 
 ## Yayın kontrol listesi
 
-- [ ] Son QA APK'da özellikleri ve yeni metinlerle uyumu doğrula; özellikle paylaşım kartı ve değerlendirme akışı tamamlanınca açıklamayı tekrar kontrol et.
 - [ ] Yeni Android ekran görüntülerini gerçek 1.2.0 sürümünden al; ana sayaç, 33×3 tesbihat, Esmaül Hüsna, hedef ve istatistik ekranlarını göster. Görsel üstü yazıları diline göre yerelleştir.
-- [ ] Geliştirici sitesi olarak `https://zikirmatik-mrzekai.web.app` adresini ve uygulama bağlantılarını Play Console'da doğrula.
+- [ ] Geliştirici sitesi olarak `https://zikirmatik-mrzekai.web.app` adresini Play Console'da doğrula.
 - [ ] Veri güvenliği formunu 1.2.0 kodu ve reklam SDK'sının işlediği verilerle karşılaştır; gizlilik politikası bağlantısını denetle.
-- [ ] Yukarıdaki belirsiz diller için Play Console mağaza kaydı dışa aktarımını al; yanlış dildeki kamu yanıtını yerel metin diye yapıştırma.
-- [ ] En yüksek kullanılmış sürüm kodunu ve 1031'in uygunluğunu Play Console'da doğrula.
-- [ ] Üretim AAB'sini yalnız proje sahibinin hazırlayıp yayınlamasını bekle.
+- [ ] 27 dilin taslağını ana dili konuşan gözden geçirenlere kontrol ettir; özellikle sağdan sola yazılan dilleri ve dini terimleri denetle.
+- [ ] Play Console mağaza kayıtlarını dışa aktar; dil kodlarını ve mevcut alanları paketle karşılaştır.
+- [ ] Son QA APK'da metinlerin anlattığı özellikleri ve 1031 sürüm kodunu doğrula.
+- [ ] Üretim AAB'sini yalnız proje sahibi hazırlayıp yayınlasın.
 
