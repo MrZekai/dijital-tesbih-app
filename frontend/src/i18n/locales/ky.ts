@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ky: TranslationTable = {
+  "storage.load_error": "Сакталган эсеп жүктөлгөн жок. Мурунку маалымат өзгөртүлгөн жок. Кайра аракет кылыңыз.",
+  "storage.save_error": "Өзгөрүүлөр бул түзмөккө сакталган жок.",
   "common.ok": "Жарайт",
   "common.cancel": "Жокко чыгаруу",
   "common.confirm": "Ырастоо",
@@ -22,10 +24,12 @@ const ky: TranslationTable = {
   "common.restart_title": "Кайра иштетүү керек",
   "common.restart_body": "Оңдон солго жайгашуу бардык жерде колдонулушу үчүн колдонмону жаап, кайра ачыңыз.",
   "common.restart_later": "Кийин",
-  "tabs.home": "Эсептегич",
+  "tabs.home": "Санагыч",
   "tabs.my_dhikrs": "Менин зикирлерим",
-  "tabs.stats": "Статистика",
+  "tabs.stats": "Тарых",
   "tabs.settings": "Жөндөөлөр",
+  "home.focus": "Көңүл буруу",
+  "home.tap_hint": "Санаш үчүн басыңыз",
   "home.brand": "ЗИКИР ЭСЕПТЕГИЧИ",
   "home.today": "Бүгүн: {{count}}",
   "home.laps_one": "{{count}} айлам",

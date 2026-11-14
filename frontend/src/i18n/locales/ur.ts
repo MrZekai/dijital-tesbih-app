@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ur: TranslationTable = {
+  "storage.load_error": "محفوظ گنتی لوڈ نہیں ہو سکی۔ پرانا ریکارڈ تبدیل نہیں ہوا۔ دوبارہ کوشش کریں۔",
+  "storage.save_error": "تبدیلیاں اس آلے پر محفوظ نہیں ہو سکیں۔",
   "common.ok": "ٹھیک ہے",
   "common.cancel": "منسوخ",
   "common.confirm": "تصدیق",
@@ -24,8 +26,10 @@ const ur: TranslationTable = {
   "common.restart_later": "بعد میں",
   "tabs.home": "شمار کنندہ",
   "tabs.my_dhikrs": "میرے اذکار",
-  "tabs.stats": "اعداد و شمار",
+  "tabs.stats": "ریکارڈ",
   "tabs.settings": "ترتیبات",
+  "home.focus": "توجہ",
+  "home.tap_hint": "گننے کے لیے چھوئیں",
   "home.brand": "ذکر شمار کنندہ",
   "home.today": "آج: {{count}}",
   "home.laps_one": "{{count}} چکر",

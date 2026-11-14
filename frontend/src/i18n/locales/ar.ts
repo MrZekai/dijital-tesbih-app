@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ar: TranslationTable = {
+  "storage.load_error": "تعذر تحميل العدّ المحفوظ. لم تُستبدل بياناتك الحالية. حاول مرة أخرى.",
+  "storage.save_error": "تعذر حفظ التغييرات على هذا الجهاز.",
   "common.ok": "حسنًا",
   "common.cancel": "إلغاء",
   "common.confirm": "تأكيد",
@@ -24,8 +26,10 @@ const ar: TranslationTable = {
   "common.restart_later": "لاحقًا",
   "tabs.home": "العدّاد",
   "tabs.my_dhikrs": "أذكاري",
-  "tabs.stats": "الإحصائيات",
+  "tabs.stats": "السجل",
   "tabs.settings": "الإعدادات",
+  "home.focus": "تركيز",
+  "home.tap_hint": "المس للعدّ",
   "home.brand": "عدّاد الذكر",
   "home.today": "اليوم: {{count}}",
   "home.laps_one": "جولة واحدة",

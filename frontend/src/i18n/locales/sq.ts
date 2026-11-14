@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const sq: TranslationTable = {
+  "storage.load_error": "Numërimet e ruajtura nuk u ngarkuan. Të dhënat ekzistuese nuk u mbishkruan. Provoni sërish.",
+  "storage.save_error": "Ndryshimet nuk u ruajtën në këtë pajisje.",
   "common.ok": "Në rregull",
   "common.cancel": "Anulo",
   "common.confirm": "Konfirmo",
@@ -24,8 +26,10 @@ const sq: TranslationTable = {
   "common.restart_later": "Më vonë",
   "tabs.home": "Numëruesi",
   "tabs.my_dhikrs": "Dhikret e mia",
-  "tabs.stats": "Statistika",
+  "tabs.stats": "Historiku",
   "tabs.settings": "Cilësimet",
+  "home.focus": "Përqendrim",
+  "home.tap_hint": "Prek për të numëruar",
   "home.brand": "NUMËRUES DHIKRI",
   "home.today": "Sot: {{count}}",
   "home.laps_one": "{{count}} raund",

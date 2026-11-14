@@ -13,6 +13,8 @@
 
 const en = {
   // ── Ortak ────────────────────────────────────────────────────────────
+  "storage.load_error": "Saved counts could not be loaded. Your existing record has not been overwritten. Try again.",
+  "storage.save_error": "Changes could not be saved on this device.",
   "common.ok": "OK",
   "common.cancel": "Cancel",
   "common.confirm": "Confirm",
@@ -36,10 +38,12 @@ const en = {
   // ── Sekmeler ─────────────────────────────────────────────────────────
   "tabs.home": "Counter",
   "tabs.my_dhikrs": "My Dhikrs",
-  "tabs.stats": "Statistics",
+  "tabs.stats": "History",
   "tabs.settings": "Settings",
 
   // ── Ana sayaç ekranı ─────────────────────────────────────────────────
+  "home.focus": "Focus",
+  "home.tap_hint": "Tap to count",
   "home.brand": "DHIKR COUNTER",
   "home.today": "Today: {{count}}",
   "home.laps_one": "{{count}} round",

@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const tg: TranslationTable = {
+  "storage.load_error": "Ҳисобҳои захирашуда бор нашуданд. Сабти пешина тағйир наёфт. Боз кӯшиш кунед.",
+  "storage.save_error": "Тағйирот дар ин дастгоҳ захира нашуд.",
   "common.ok": "Хуб",
   "common.cancel": "Бекор кардан",
   "common.confirm": "Тасдиқ",
@@ -24,8 +26,10 @@ const tg: TranslationTable = {
   "common.restart_later": "Баъдтар",
   "tabs.home": "Ҳисобкунак",
   "tabs.my_dhikrs": "Зикрҳои ман",
-  "tabs.stats": "Омор",
+  "tabs.stats": "Таърих",
   "tabs.settings": "Танзимот",
+  "home.focus": "Тамаркуз",
+  "home.tap_hint": "Барои шумориш ламс кунед",
   "home.brand": "ҲИСОБКУНАКИ ЗИКР",
   "home.today": "Имрӯз: {{count}}",
   "home.laps_one": "{{count}} даврa",

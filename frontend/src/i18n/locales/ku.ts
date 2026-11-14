@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ku: TranslationTable = {
+  "storage.load_error": "Jimartinên tomarbûyî nehatin barkirin. Tomara berê nehat guhertin. Dîsa biceribîne.",
+  "storage.save_error": "Guhertin li ser vê amûrê nehatin tomarkirin.",
   "common.ok": "Baş e",
   "common.cancel": "Betal bike",
   "common.confirm": "Piştrast bike",
@@ -22,10 +24,12 @@ const ku: TranslationTable = {
   "common.restart_title": "Ji nû ve destpêkirin pêwîst e",
   "common.restart_body": "Bernameyê bigire û ji nû ve veke da ku rêzkirina rastê-ber-çepê li her derê were sepandin.",
   "common.restart_later": "Paşê",
-  "tabs.home": "Jimêr",
+  "tabs.home": "Jimêrker",
   "tabs.my_dhikrs": "Zikrên min",
-  "tabs.stats": "Statîstîk",
+  "tabs.stats": "Dîrok",
   "tabs.settings": "Mîheng",
+  "home.focus": "Baldarî",
+  "home.tap_hint": "Ji bo jimartinê bitikîne",
   "home.brand": "JIMÊRA ZIKRÊ",
   "home.today": "Îro: {{count}}",
   "home.laps_one": "{{count}} gera",

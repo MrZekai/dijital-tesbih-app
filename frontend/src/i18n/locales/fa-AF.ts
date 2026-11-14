@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const fa_AF: TranslationTable = {
+  "storage.load_error": "شمارش‌های ذخیره‌شده بارگیری نشد. معلومات قبلی بازنویسی نشده است. دوباره کوشش کنید.",
+  "storage.save_error": "تغییرات در این دستگاه ذخیره نشد.",
   "common.ok": "خوب",
   "common.cancel": "لغو",
   "common.confirm": "تأیید",
@@ -24,8 +26,10 @@ const fa_AF: TranslationTable = {
   "common.restart_later": "بعداً",
   "tabs.home": "شمارنده",
   "tabs.my_dhikrs": "ذکرهای من",
-  "tabs.stats": "احصائیه",
+  "tabs.stats": "پیشینه",
   "tabs.settings": "تنظیمات",
+  "home.focus": "تمرکز",
+  "home.tap_hint": "برای شمارش لمس کنید",
   "home.brand": "شمارندهٔ ذکر",
   "home.today": "امروز: {{count}}",
   "home.laps_one": "{{count}} دور",

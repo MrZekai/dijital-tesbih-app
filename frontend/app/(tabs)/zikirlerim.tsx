@@ -6,7 +6,6 @@
 // gösterilir — böylece hiçbir dilde taşma yaşanmaz.
 
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -245,16 +244,10 @@ export default function Zikirlerim() {
         {/* Namaz Sonrası Tesbihat */}
         <Pressable
           onPress={() => router.push("/tesbihat")}
-          style={styles.tesbihatCard}
+          style={[styles.tesbihatCard, { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.border }]}
           testID="tesbihat-card"
           accessibilityRole="button"
         >
-          <LinearGradient
-            colors={[theme.emeraldDeep, theme.emerald, theme.navy]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
           <View style={[styles.tesbihatInner, { flexDirection: dir.row }]}>
             <View style={{ flex: 1, gap: 6 }}>
               <Text

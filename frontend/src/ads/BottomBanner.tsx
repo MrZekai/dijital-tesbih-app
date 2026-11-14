@@ -1,27 +1,5 @@
-// BottomBanner — SABİT YÜKSEKLİKLİ, GÖRÜNMEZ ÇERÇEVELİ banner alanı.
-//
-// v1.1.0 yerleşim politikası
-// ──────────────────────────
-// Kullanıcı geri bildirimi: banner'ın üstündeki "REKLAM / Advertisement"
-// etiketi ve "Reklam yüklenemedi" mesajı ekranı kirletiyordu. İkisi de
-// KALDIRILDI.
-//
-//   - Alan HER DURUMDA aynı yükseklikte ayrılır (`BANNER_SLOT_HEIGHT`).
-//     Reklam gelse de gelmese de düzen ZIPLAMAZ.
-//   - Reklam yokken alan TAMAMEN GÖRÜNMEZDİR: etiket yok, çerçeve yok,
-//     dolgu rengi yok, hata metni yok. Kullanıcı boş bir kutu görmez.
-//   - Yükleme hataları yalnızca geliştirme loglarına yazılır.
-//   - Banner yalnızca EKRANDA GÖRÜNÜR olduğunda mount edilir; görünmeyen
-//     ekranlarda mount edilmez (AdMob "görünmeyen gösterim" ihlali).
-//   - Alan sekme çubuğunun hemen üstünde sabittir ve tıklanabilir
-//     kontrollerle arasında güvenli boşluk bırakılır (yanlış tıklama
-//     önlemi) — bkz. `src/lib/layout.ts`.
-//
-// NOT: Google'ın yayıncı politikası reklamın içerikten AYIRT EDİLEBİLİR
-// olmasını ister; bunu ayrı bir "REKLAM" yazısı değil, banner'ın kendi
-// AdChoices işareti ve sekme çubuğundan ayrılmış konumu sağlar.
-
-import React, { useRef } from "react";
+// Adaptive banner: measured height is shared with the screen inset. No clipping.
+import React, { useRef, useState, useCallback } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 
 import { BANNER_SLOT_HEIGHT, bannerUnitId } from "./adConfig";
@@ -30,6 +8,8 @@ import { getAdsSdk } from "./sdk";
 
 interface Props {
   bottomInset?: number;
+  reservedHeight?: number;
+  onHeightChange?: (height: number) => void;
   testID?: string;
   /** Adaptive banner için açık genişlik (native ölçümün güvensiz olduğu yerlerde). */
   explicitWidth?: number;
@@ -56,6 +36,8 @@ class AdBoundary extends React.Component<
 
 export function BottomBanner({
   bottomInset = 0,
+  reservedHeight = BANNER_SLOT_HEIGHT,
+  onHeightChange,
   testID,
   explicitWidth,
   tag,
@@ -66,7 +48,7 @@ export function BottomBanner({
   // Boş — ama AYNI YÜKSEKLİKTE — yer tutucu. Hiçbir görsel iz bırakmaz.
   const placeholder = (
     <View
-      style={[styles.slot, { marginBottom: bottomInset }]}
+      style={[styles.slot, { marginBottom: bottomInset, minHeight: reservedHeight }]}
       testID={testID ?? "bottom-banner-placeholder"}
       pointerEvents="none"
       accessibilityElementsHidden
@@ -84,6 +66,8 @@ export function BottomBanner({
     <AdBoundary tag={tag} fallback={placeholder}>
       <BannerSlot
         sdk={sdk}
+        reservedHeight={reservedHeight}
+        onHeightChange={onHeightChange}
         bottomInset={bottomInset}
         testID={testID}
         explicitWidth={explicitWidth}
@@ -101,18 +85,28 @@ interface SlotProps extends Props {
 function BannerSlot({
   sdk,
   bottomInset = 0,
+  reservedHeight = BANNER_SLOT_HEIGHT,
+  onHeightChange,
   testID,
   explicitWidth,
   tag,
 }: SlotProps) {
   const bannerRef = useRef<unknown>(null);
+  const [height, setHeight] = useState(reservedHeight);
+  const acceptSize = useCallback((size: { width: number; height: number }) => {
+    if (!Number.isFinite(size.height) || size.height <= 0) return;
+    const measured = Math.max(BANNER_SLOT_HEIGHT, Math.ceil(size.height));
+    setHeight(measured);
+    onHeightChange?.(measured);
+  }, [onHeightChange]);
 
   const BannerAd = sdk.BannerAd as React.ComponentType<{
     ref?: React.MutableRefObject<unknown>;
     unitId: string;
     size: string;
     width?: number;
-    onAdLoaded?: () => void;
+    onAdLoaded?: (dimensions: { width: number; height: number }) => void;
+    onSizeChange?: (dimensions: { width: number; height: number }) => void;
     onAdFailedToLoad?: (err: unknown) => void;
     onAdOpened?: () => void;
     onAdClosed?: () => void;
@@ -136,7 +130,7 @@ function BannerSlot({
 
   return (
     <View
-      style={[styles.slot, { marginBottom: bottomInset }]}
+      style={[styles.slot, { marginBottom: bottomInset, minHeight: height }]}
       testID={testID ?? "bottom-banner-ad"}
     >
       {/* Reklam yüklenemese bile bileşen MOUNTED kalır — SDK'nın kendi
@@ -147,7 +141,9 @@ function BannerSlot({
         unitId={bannerUnitId}
         size={size}
         width={explicitWidth}
-        onAdLoaded={() => {
+        onSizeChange={acceptSize}
+        onAdLoaded={(dimensions) => {
+          acceptSize(dimensions);
           if (__DEV__) console.log(`[ads:banner:${tag}] loaded`);
         }}
         onAdFailedToLoad={(err) => {
@@ -168,13 +164,13 @@ function BannerSlot({
 
 const styles = StyleSheet.create({
   slot: {
-    // SABİT yükseklik — reklam gelse de gelmese de alan aynı kalır,
+    // Minimum placeholder size; native adaptive height can expand the slot.
     // ama kenarlık/dolgu/etiket YOKTUR.
-    height: BANNER_SLOT_HEIGHT,
+    minHeight: BANNER_SLOT_HEIGHT,
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "transparent",
-    overflow: "hidden",
+
   },
 });

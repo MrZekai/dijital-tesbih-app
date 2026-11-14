@@ -4,11 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { BANNER_SLOT_HEIGHT } from "@/src/ads/adConfig";
 import { BottomBanner } from "@/src/ads/BottomBanner";
 import { useRespectfulInterstitial } from "@/src/ads/useRespectfulInterstitial";
-import { BlurView } from "expo-blur";
 import { Tabs, usePathname } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
-  Platform,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -17,8 +15,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useT } from "@/src/i18n";
 import { useFontScale } from "@/src/lib/fontScale";
-import { useTabBarHeight } from "@/src/lib/layout";
-import { useStore } from "@/src/lib/store";
+import { BannerHeightContext, useTabBarHeight } from "@/src/lib/layout";
+import { usePreferences } from "@/src/lib/store";
 
 // Banner'ın gösterileceği sekme rotaları. Bu liste dışındaki bir ekran
 // (Tesbihat / Esmaül Hüsna / Özel Zikir) öne alındığında sekme banner'ı
@@ -27,10 +25,10 @@ import { useStore } from "@/src/lib/store";
 const TAB_ROUTES = ["/", "/zikirlerim", "/istatistikler", "/ayarlar"];
 
 export default function TabsLayout() {
-  const { theme } = useStore();
+  const { theme } = usePreferences();
+  const [bannerHeight, setBannerHeight] = useState(BANNER_SLOT_HEIGHT);
   const t = useT();
   const insets = useSafeAreaInsets();
-  const isDark = theme.name === "dark";
   const { width: screenW } = useWindowDimensions();
   const pathname = usePathname();
   // Büyük Yazı Modu sekme etiketlerine ve ikonlarına da uygulanır.
@@ -48,11 +46,13 @@ export default function TabsLayout() {
   const bannerVisible = TAB_ROUTES.includes(pathname);
 
   return (
+    <BannerHeightContext.Provider value={bannerHeight}>
     <View style={styles.root}>
       <Tabs
       screenListeners={{ tabPress: () => showInterstitial() }}
       screenOptions={{
         headerShown: false,
+        freezeOnBlur: true,
         tabBarShowLabel: true,
         tabBarActiveTintColor: theme.gold,
         tabBarInactiveTintColor: theme.textSubtle,
@@ -65,35 +65,12 @@ export default function TabsLayout() {
           position: "absolute",
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: theme.border,
-          backgroundColor:
-            Platform.OS === "android"
-              ? isDark
-                ? "rgba(6,9,14,0.94)"
-                : "rgba(244,241,230,0.94)"
-              : "transparent",
+          backgroundColor: theme.bg,
           height: tabBarHeight,
           paddingTop: 8,
           paddingBottom: insets.bottom,
           elevation: 0,
         },
-        tabBarBackground: () =>
-          Platform.OS === "ios" ? (
-            <BlurView
-              intensity={40}
-              tint={isDark ? "dark" : "light"}
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: isDark ? "rgba(6,9,14,0.6)" : "rgba(244,241,230,0.6)" },
-              ]}
-            />
-          ) : (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: isDark ? "rgba(6,9,14,0.94)" : "rgba(244,241,230,0.94)" },
-              ]}
-            />
-          ),
       }}
     >
       <Tabs.Screen
@@ -161,10 +138,11 @@ export default function TabsLayout() {
           style={[styles.bannerAnchor, { bottom: tabBarHeight }]}
           testID="tabs-banner-anchor"
         >
-          <BottomBanner tag="tabs" explicitWidth={Math.floor(screenW)} />
+          <BottomBanner tag="tabs" explicitWidth={Math.floor(screenW)} reservedHeight={bannerHeight} onHeightChange={setBannerHeight} />
         </View>
       ) : null}
     </View>
+    </BannerHeightContext.Provider>
   );
 }
 
@@ -174,6 +152,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    height: BANNER_SLOT_HEIGHT,
+    minHeight: BANNER_SLOT_HEIGHT,
   },
 });

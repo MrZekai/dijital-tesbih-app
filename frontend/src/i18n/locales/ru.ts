@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ru: TranslationTable = {
+  "storage.load_error": "Не удалось загрузить счётчики. Существующая запись не перезаписана. Повторите попытку.",
+  "storage.save_error": "Не удалось сохранить изменения на этом устройстве.",
   "common.ok": "ОК",
   "common.cancel": "Отмена",
   "common.confirm": "Подтвердить",
@@ -24,8 +26,10 @@ const ru: TranslationTable = {
   "common.restart_later": "Позже",
   "tabs.home": "Счётчик",
   "tabs.my_dhikrs": "Мои зикры",
-  "tabs.stats": "Статистика",
+  "tabs.stats": "История",
   "tabs.settings": "Настройки",
+  "home.focus": "Внимание",
+  "home.tap_hint": "Нажмите для счёта",
   "home.brand": "СЧЁТЧИК ЗИКРА",
   "home.today": "Сегодня: {{count}}",
   "home.laps_one": "{{count}} круг",

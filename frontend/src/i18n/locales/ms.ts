@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ms: TranslationTable = {
+  "storage.load_error": "Kiraan tersimpan tidak dapat dimuatkan. Rekod sedia ada tidak ditulis ganti. Cuba lagi.",
+  "storage.save_error": "Perubahan tidak dapat disimpan pada peranti ini.",
   "common.ok": "OK",
   "common.cancel": "Batal",
   "common.confirm": "Sahkan",
@@ -22,10 +24,12 @@ const ms: TranslationTable = {
   "common.restart_title": "Perlu dimulakan semula",
   "common.restart_body": "Tutup dan buka semula aplikasi supaya susun atur kanan ke kiri digunakan di semua skrin.",
   "common.restart_later": "Kemudian",
-  "tabs.home": "Pembilang",
+  "tabs.home": "Pengira",
   "tabs.my_dhikrs": "Zikir Saya",
-  "tabs.stats": "Statistik",
+  "tabs.stats": "Sejarah",
   "tabs.settings": "Tetapan",
+  "home.focus": "Fokus",
+  "home.tap_hint": "Ketik untuk mengira",
   "home.brand": "PEMBILANG ZIKIR",
   "home.today": "Hari ini: {{count}}",
   "home.laps_other": "{{count}} pusingan",

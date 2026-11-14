@@ -77,8 +77,8 @@ ok(
   rootLayout.includes("coldStartSettled") && rootLayout.includes("SplashScreen.hideAsync")
 );
 ok(
-  "root splash için 5 sn fail-safe var",
-  rootLayout.includes("5000") && rootLayout.includes("failSafe")
+  "splash kapanması gerçek içerik hazırlığına bağlı",
+  rootLayout.includes("contentReady: ready && (loaded || loadError)") && !rootLayout.includes("failSafe")
 );
 
 const appOpen = read("src/ads/useAppOpenAd.ts");

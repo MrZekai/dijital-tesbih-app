@@ -30,6 +30,7 @@ import {
 } from "./adConfig";
 import { useAds } from "./AdsProvider";
 import { getAdsSdk } from "./sdk";
+import { hasUserInteracted } from "./userActivity";
 
 const LAST_SHOWN_KEY = "@zikirhane/app-open-last-shown-v1";
 const APP_OPEN_ACTIVITY_GUARD_MS = 1500;
@@ -51,10 +52,11 @@ type ShowPurpose = "cold-start" | "resume";
 
 interface UseAppOpenAdOptions {
   gateColdStart?: boolean;
+  contentReady?: boolean;
 }
 
 export function useAppOpenAd(
-  { gateColdStart = false }: UseAppOpenAdOptions = {}
+  { gateColdStart = false, contentReady = false }: UseAppOpenAdOptions = {}
 ) {
   const {
     canRequestAds,
@@ -69,6 +71,9 @@ export function useAppOpenAd(
   const [lastShownReady, setLastShownReady] = useState(false);
 
   const coldStartSettledRef = useRef(!gateColdStart || !adsEnabled);
+  const contentReadyRef = useRef(contentReady);
+  contentReadyRef.current = contentReady;
+  const coldStartDeadlineRef = useRef(Date.now() + APP_OPEN_COLD_START_MAX_WAIT_MS);
   const resumeGateVisibleRef = useRef(false);
   const adRef = useRef<AdInstance | null>(null);
   const cleanupsRef = useRef<(() => void)[]>([]);
@@ -178,6 +183,7 @@ export function useAppOpenAd(
       const ad = adRef.current;
       if (
         !ad ||
+        (purpose === "cold-start" && (contentReadyRef.current || coldStartSettledRef.current || Date.now() >= coldStartDeadlineRef.current || hasUserInteracted())) ||
         !isAdUsable() ||
         isShowingRef.current ||
         AppState.currentState !== "active" ||
@@ -376,7 +382,7 @@ export function useAppOpenAd(
       load("preload");
       return;
     }
-    load("cold-start");
+    load(coldStartSettledRef.current || contentReadyRef.current ? "preload" : "cold-start");
   }, [
     canRequestAds,
     consentReady,
@@ -386,6 +392,11 @@ export function useAppOpenAd(
     settleColdStart,
   ]);
 
+  // Ready content never waits for an ad. An already-open ad may finish normally.
+  useEffect(() => {
+    if (contentReady && !isShowingRef.current) settleColdStart("içerik hazır");
+  }, [contentReady, settleColdStart]);
+
   // Cold start asla ağ yüzünden kilitlenmez. Süre dolduysa splash açılır;
   // geç gelen reklam yalnız cache olarak kalabilir, kullanıcıya sonradan düşmez.
   useEffect(() => {
@@ -394,7 +405,7 @@ export function useAppOpenAd(
       if (showPurposeRef.current === "cold-start" && isShowingRef.current) return;
       settleColdStart("bekleme süresi doldu");
       if (canRequestAds && !isAdUsable()) loadRef.current("preload");
-    }, APP_OPEN_COLD_START_MAX_WAIT_MS);
+    }, Math.max(0, coldStartDeadlineRef.current - Date.now()));
     return () => {
       if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
       settleTimerRef.current = null;

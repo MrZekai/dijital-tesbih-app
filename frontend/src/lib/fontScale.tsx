@@ -22,7 +22,7 @@
 
 import React, { createContext, useContext, useMemo } from "react";
 
-import { useStore } from "./store";
+import { usePreferences } from "./store";
 
 /** Büyük Yazı Modu açıkken uygulanan çarpan. */
 export const BIG_TEXT_SCALE = 1.22;
@@ -38,8 +38,8 @@ export function useFontScale(): number {
  * StoreProvider'ın İÇİNDE render edilmelidir.
  */
 export function FontScaleProvider({ children }: { children: React.ReactNode }) {
-  const { state } = useStore();
-  const scale = state.settings.bigText ? BIG_TEXT_SCALE : 1;
+  const { settings } = usePreferences();
+  const scale = settings.bigText ? BIG_TEXT_SCALE : 1;
 
   // `children` referansı değişmediği sürece alt ağaç yeniden render olmaz;
   // context değeri de sadece ölçek değiştiğinde yenilenir.

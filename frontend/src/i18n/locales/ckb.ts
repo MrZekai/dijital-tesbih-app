@@ -4,6 +4,9 @@
 import type { TranslationTable } from "./en";
 
 const ckb: TranslationTable = {
+  // English fallback pending native review for these recovery messages.
+  "storage.load_error": "Saved counts could not be loaded. Your existing record has not been overwritten. Try again.",
+  "storage.save_error": "Changes could not be saved on this device.",
   "common.ok": "باشە",
   "common.cancel": "پاشگەزبوونەوە",
   "common.confirm": "دڵنیاکردنەوە",
@@ -24,8 +27,10 @@ const ckb: TranslationTable = {
   "common.restart_later": "دواتر",
   "tabs.home": "ژمێرەر",
   "tabs.my_dhikrs": "زیکرەکانم",
-  "tabs.stats": "ئامارەکان",
+  "tabs.stats": "مێژوو",
   "tabs.settings": "ڕێکخستنەکان",
+  "home.focus": "سەرنج",
+  "home.tap_hint": "بۆ ژماردن لێ بدە",
   "home.brand": "ژمێرەری زیکر",
   "home.today": "ئەمڕۆ: {{count}}",
   "home.laps_one": "{{count}} خول",

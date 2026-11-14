@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const tk: TranslationTable = {
+  "storage.load_error": "Ýatda saklanan sanaw ýüklenmedi. Öňki ýazgy üýtgedilmedi. Gaýtadan synanyşyň.",
+  "storage.save_error": "Üýtgeşmeler bu enjamda ýatda saklanmady.",
   "common.ok": "Bolýar",
   "common.cancel": "Ýatyr",
   "common.confirm": "Tassykla",
@@ -22,10 +24,12 @@ const tk: TranslationTable = {
   "common.restart_title": "Gaýtadan başlatmak gerek",
   "common.restart_body": "Sagdan çepe ýerleşiş ähli ýerde ulanylar ýaly programmany ýapyp, täzeden açyň.",
   "common.restart_later": "Soňra",
-  "tabs.home": "Hasaplaýjy",
+  "tabs.home": "Sanaýjy",
   "tabs.my_dhikrs": "Zikirlerim",
-  "tabs.stats": "Statistika",
+  "tabs.stats": "Taryh",
   "tabs.settings": "Sazlamalar",
+  "home.focus": "Üns",
+  "home.tap_hint": "Sanamak üçin degiň",
   "home.brand": "ZIKIR HASAPLAÝJY",
   "home.today": "Şu gün: {{count}}",
   "home.laps_one": "{{count}} aýlaw",

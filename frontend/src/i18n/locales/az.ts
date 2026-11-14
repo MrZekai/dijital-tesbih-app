@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const az: TranslationTable = {
+  "storage.load_error": "Saxlanmış sayımlar yüklənmədi. Mövcud qeyd dəyişdirilmədi. Yenidən cəhd edin.",
+  "storage.save_error": "Dəyişikliklər bu cihazda saxlanılmadı.",
   "common.ok": "Tamam",
   "common.cancel": "Ləğv et",
   "common.confirm": "Təsdiqlə",
@@ -24,8 +26,10 @@ const az: TranslationTable = {
   "common.restart_later": "Sonra",
   "tabs.home": "Sayğac",
   "tabs.my_dhikrs": "Zikrlərim",
-  "tabs.stats": "Statistika",
+  "tabs.stats": "Tarixçə",
   "tabs.settings": "Ayarlar",
+  "home.focus": "Diqqət",
+  "home.tap_hint": "Saymaq üçün toxun",
   "home.brand": "ZİKR SAYĞACI",
   "home.today": "Bu gün: {{count}}",
   "home.laps_one": "{{count}} dövrə",

@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const fr: TranslationTable = {
+  "storage.load_error": "Impossible de charger les compteurs. Les données existantes n’ont pas été écrasées. Réessayez.",
+  "storage.save_error": "Impossible d’enregistrer les modifications sur cet appareil.",
   "common.ok": "OK",
   "common.cancel": "Annuler",
   "common.confirm": "Confirmer",
@@ -24,8 +26,10 @@ const fr: TranslationTable = {
   "common.restart_later": "Plus tard",
   "tabs.home": "Compteur",
   "tabs.my_dhikrs": "Mes dhikrs",
-  "tabs.stats": "Statistiques",
+  "tabs.stats": "Historique",
   "tabs.settings": "Réglages",
+  "home.focus": "Concentration",
+  "home.tap_hint": "Touchez pour compter",
   "home.brand": "COMPTEUR DE DHIKR",
   "home.today": "Aujourd’hui : {{count}}",
   "home.laps_one": "{{count}} tour",

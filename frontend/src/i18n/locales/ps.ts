@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ps: TranslationTable = {
+  "storage.load_error": "خوندي شوې شمېرنه را پورته نه شوه. پخوانی ریکارډ نه دی بدل شوی. بیا هڅه وکړئ.",
+  "storage.save_error": "بدلونونه په دې وسیله کې خوندي نه شول.",
   "common.ok": "سمه ده",
   "common.cancel": "لغوه",
   "common.confirm": "تایید",
@@ -24,8 +26,10 @@ const ps: TranslationTable = {
   "common.restart_later": "وروسته",
   "tabs.home": "شمېرونکی",
   "tabs.my_dhikrs": "زما ذکرونه",
-  "tabs.stats": "شمېرې",
+  "tabs.stats": "مخینه",
   "tabs.settings": "تنظیمات",
+  "home.focus": "پاملرنه",
+  "home.tap_hint": "د شمېرلو لپاره لمس کړئ",
   "home.brand": "د ذکر شمېرونکی",
   "home.today": "نن: {{count}}",
   "home.laps_one": "{{count}} پړاو",

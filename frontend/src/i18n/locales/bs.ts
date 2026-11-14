@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const bs: TranslationTable = {
+  "storage.load_error": "Sačuvano brojanje nije učitano. Postojeći zapis nije prepisan. Pokušajte ponovo.",
+  "storage.save_error": "Promjene nisu sačuvane na ovom uređaju.",
   "common.ok": "U redu",
   "common.cancel": "Otkaži",
   "common.confirm": "Potvrdi",
@@ -24,8 +26,10 @@ const bs: TranslationTable = {
   "common.restart_later": "Kasnije",
   "tabs.home": "Brojač",
   "tabs.my_dhikrs": "Moji zikri",
-  "tabs.stats": "Statistika",
+  "tabs.stats": "Historija",
   "tabs.settings": "Postavke",
+  "home.focus": "Fokus",
+  "home.tap_hint": "Dodirni za brojanje",
   "home.brand": "BROJAČ ZIKRA",
   "home.today": "Danas: {{count}}",
   "home.laps_one": "{{count}} krug",

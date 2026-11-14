@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const bn: TranslationTable = {
+  "storage.load_error": "সংরক্ষিত গণনা লোড করা যায়নি। আগের তথ্য বদলানো হয়নি। আবার চেষ্টা করুন।",
+  "storage.save_error": "এই ডিভাইসে পরিবর্তন সংরক্ষণ করা যায়নি।",
   "common.ok": "ঠিক আছে",
   "common.cancel": "বাতিল",
   "common.confirm": "নিশ্চিত করুন",
@@ -24,8 +26,10 @@ const bn: TranslationTable = {
   "common.restart_later": "পরে",
   "tabs.home": "কাউন্টার",
   "tabs.my_dhikrs": "আমার জিকির",
-  "tabs.stats": "পরিসংখ্যান",
+  "tabs.stats": "ইতিহাস",
   "tabs.settings": "সেটিংস",
+  "home.focus": "মনোযোগ",
+  "home.tap_hint": "গুনতে স্পর্শ করুন",
   "home.brand": "জিকির কাউন্টার",
   "home.today": "আজ: {{count}}",
   "home.laps_one": "{{count}} রাউন্ড",

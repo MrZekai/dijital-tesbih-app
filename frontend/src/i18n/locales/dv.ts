@@ -4,6 +4,9 @@
 import type { TranslationTable } from "./en";
 
 const dv: TranslationTable = {
+  // English fallback pending native review for these recovery messages.
+  "storage.load_error": "Saved counts could not be loaded. Your existing record has not been overwritten. Try again.",
+  "storage.save_error": "Changes could not be saved on this device.",
   "common.ok": "އާދެ",
   "common.cancel": "ކެންސަލް",
   "common.confirm": "ޔަޤީންކުރޭ",
@@ -22,10 +25,12 @@ const dv: TranslationTable = {
   "common.restart_title": "އަލުން ފަށަން ޖެހޭ",
   "common.restart_body": "ކަނާތުން ވާތަށް އަރާ ލޭއައުޓް ހުރިހާ ތަނެއްގައި ބޭނުންކުރުމަށް އެޕް ބަންދުކޮށް އަލުން ހުޅުވާ.",
   "common.restart_later": "ފަހުން",
-  "tabs.home": "ކައުންޓަރު",
+  "tabs.home": "ގުނާ އާލާތް",
   "tabs.my_dhikrs": "އަހަރެންގެ ޛިކުރު",
-  "tabs.stats": "ތަފާސްހިސާބު",
+  "tabs.stats": "ތާރީޚު",
   "tabs.settings": "ސެޓިންގްސް",
+  "home.focus": "ސަމާލުކަން",
+  "home.tap_hint": "ގުނަން ފިތާލާ",
   "home.brand": "ޛިކުރު ކައުންޓަރު",
   "home.today": "މިއަދު: {{count}}",
   "home.laps_one": "{{count}} ބުރު",

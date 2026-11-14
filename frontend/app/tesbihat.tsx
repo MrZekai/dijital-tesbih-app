@@ -4,10 +4,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 
 import { Text } from "@/src/components/AppText";
 import Animated, {
@@ -19,7 +18,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { TesbihRing } from "@/src/components/TesbihRing";
 import { useRespectfulInterstitial } from "@/src/ads/useRespectfulInterstitial";
 import { useTesbihSounds } from "@/src/lib/sounds";
 import { useI18n } from "@/src/i18n";
@@ -57,6 +55,8 @@ export default function Tesbihat() {
     clearTesbihatProgress,
   } = useStore();
   const insets = useSafeAreaInsets();
+  const { width, height } = useWindowDimensions();
+  const diameter = Math.min(244, width * 0.72, height * 0.34);
 
   // UX-3: Kaldigi yerden devam. Ilk render'da kalici ilerlemeyi okuyup
   // baslangic degeri olarak kullaniriz (useState lazy initializer) —
@@ -66,8 +66,10 @@ export default function Tesbihat() {
     !!saved &&
     saved.stepIdx >= 0 &&
     saved.stepIdx < STEPS.length &&
-    saved.count > 0 &&
+    saved.count >= 0 &&
+    (saved.stepIdx > 0 || saved.count > 0) &&
     saved.count < STEPS[saved.stepIdx].target &&
+    Date.now() >= saved.updatedAt &&
     Date.now() - saved.updatedAt < RESUME_MAX_AGE_MS;
 
   const [stepIdx, setStepIdx] = useState(() => (resumable ? saved!.stepIdx : 0));
@@ -202,17 +204,11 @@ export default function Tesbihat() {
     transform: [{ scale: scale.value }],
   }));
 
-  const progress = Math.min(1, count / step.target);
+
 
   if (done) {
     return (
       <View style={[styles.container, { backgroundColor: theme.bg }]}>
-        <LinearGradient
-          colors={[theme.emeraldDeep, theme.bg, theme.navy]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
         <View style={[styles.done, { paddingTop: insets.top }]}>
           <Animated.View
             entering={FadeIn.duration(500)}
@@ -260,12 +256,6 @@ export default function Tesbihat() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <LinearGradient
-        colors={[theme.emeraldDeep, theme.bg, theme.navy]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
 
       {/* Header */}
       <View
@@ -355,23 +345,20 @@ export default function Tesbihat() {
           </Text>
           <View
             style={{
-              width: 300,
-              height: 300,
+              width: diameter,
+              height: diameter,
+              borderRadius: diameter / 2,
+              backgroundColor: theme.bgCard,
+              borderColor: theme.border,
+              borderWidth: 1,
               alignItems: "center",
               justifyContent: "center",
               marginTop: 12,
             }}
           >
-            <TesbihRing
-              size={300}
-              beadCount={33}
-              color={theme.borderStrong}
-              progressColor={theme.gold}
-              progress={progress}
-            />
             <Animated.View style={anim}>
               <Text
-                style={[styles.counter, { color: theme.text, fontFamily: fonts.display }]}
+                style={[styles.counter, { color: theme.text, fontSize: diameter * 0.34, fontWeight: "300", fontVariant: ["tabular-nums"] }]}
                 allowFontScaling={false}
                 testID="tesbihat-count"
               >

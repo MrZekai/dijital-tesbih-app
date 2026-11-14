@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const pa_Arab: TranslationTable = {
+  "storage.load_error": "محفوظ گنتی لوڈ نہیں ہو سکی۔ پرانا ریکارڈ نہیں بدلیا گیا۔ دوبارہ کوشش کرو۔",
+  "storage.save_error": "تبدیلیاں ایس آلے تے محفوظ نہیں ہو سکیاں۔",
   "common.ok": "ٹھیک اے",
   "common.cancel": "منسوخ",
   "common.confirm": "تصدیق",
@@ -22,10 +24,12 @@ const pa_Arab: TranslationTable = {
   "common.restart_title": "دوبارہ چالو کرنا پوے گا",
   "common.restart_body": "سجّے توں کھبّے ترتیب ہر تھاں لاگو ہووے، ایس واسطے ایپ بند کر کے دوبارہ کھولو۔",
   "common.restart_later": "بعد وچ",
-  "tabs.home": "گِنتی",
+  "tabs.home": "گنتی",
   "tabs.my_dhikrs": "میرے ذکر",
-  "tabs.stats": "اعداد و شمار",
+  "tabs.stats": "ریکارڈ",
   "tabs.settings": "ترتیباں",
+  "home.focus": "توجہ",
+  "home.tap_hint": "گنتی لئی چھوہو",
   "home.brand": "ذکر گِنتی",
   "home.today": "اَج: {{count}}",
   "home.laps_one": "{{count}} گیڑا",

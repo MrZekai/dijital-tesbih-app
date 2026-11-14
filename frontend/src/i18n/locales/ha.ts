@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const ha: TranslationTable = {
+  "storage.load_error": "Ba a iya loda kirga da aka adana ba. Ba a canza tsohon rikodin ba. A sake gwadawa.",
+  "storage.save_error": "Ba a iya adana canje-canje a wannan na’urar ba.",
   "common.ok": "To",
   "common.cancel": "Soke",
   "common.confirm": "Tabbatar",
@@ -22,10 +24,12 @@ const ha: TranslationTable = {
   "common.restart_title": "Ana buƙatar sake farawa",
   "common.restart_body": "Rufe sannan ka sake buɗe manhajar don a yi amfani da tsarin dama-zuwa-hagu a ko'ina.",
   "common.restart_later": "Daga baya",
-  "tabs.home": "Ma'auni",
+  "tabs.home": "Mai ƙirgawa",
   "tabs.my_dhikrs": "Zikirina",
-  "tabs.stats": "Ƙididdiga",
+  "tabs.stats": "Tarihi",
   "tabs.settings": "Saituna",
+  "home.focus": "Mai da hankali",
+  "home.tap_hint": "Taɓa don ƙirgawa",
   "home.brand": "MA'AUNIN ZIKIRI",
   "home.today": "Yau: {{count}}",
   "home.laps_one": "Zagaye {{count}}",

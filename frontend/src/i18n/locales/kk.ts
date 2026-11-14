@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const kk: TranslationTable = {
+  "storage.load_error": "Сақталған санақ жүктелмеді. Бұрынғы жазба өзгертілген жоқ. Қайталап көріңіз.",
+  "storage.save_error": "Өзгерістер бұл құрылғыға сақталмады.",
   "common.ok": "Жарайды",
   "common.cancel": "Болдырмау",
   "common.confirm": "Растау",
@@ -22,10 +24,12 @@ const kk: TranslationTable = {
   "common.restart_title": "Қайта іске қосу қажет",
   "common.restart_body": "Оңнан солға орналасу барлық жерде қолданылуы үшін қолданбаны жауып, қайта ашыңыз.",
   "common.restart_later": "Кейінірек",
-  "tabs.home": "Санауыш",
+  "tabs.home": "Санағыш",
   "tabs.my_dhikrs": "Менің зікірлерім",
-  "tabs.stats": "Статистика",
+  "tabs.stats": "Тарих",
   "tabs.settings": "Параметрлер",
+  "home.focus": "Зейін",
+  "home.tap_hint": "Санау үшін түртіңіз",
   "home.brand": "ЗІКІР САНАУЫШЫ",
   "home.today": "Бүгін: {{count}}",
   "home.laps_one": "{{count}} айналым",

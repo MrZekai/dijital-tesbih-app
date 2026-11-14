@@ -5,6 +5,7 @@
 // hepsi `Intl` üzerinden gelir. `Intl` bulunmayan/eksik olduğu durumlarda
 // güvenli, çökmeyen yedeklere düşülür.
 
+const counterCache = new Map<string, Intl.NumberFormat | null>();
 const numberCache = new Map<string, Intl.NumberFormat | null>();
 const weekdayCache = new Map<string, Intl.DateTimeFormat | null>();
 const dateCache = new Map<string, Intl.DateTimeFormat | null>();
@@ -46,7 +47,11 @@ export function formatCounter(value: number, bcp47: string): string {
   if (!Number.isFinite(value)) return "0";
   try {
     if (typeof Intl !== "undefined" && typeof Intl.NumberFormat === "function") {
-      return new Intl.NumberFormat(bcp47, { useGrouping: false }).format(value);
+      if (!counterCache.has(bcp47)) {
+        try { counterCache.set(bcp47, new Intl.NumberFormat(bcp47, { useGrouping: false })); }
+        catch { counterCache.set(bcp47, null); }
+      }
+      return counterCache.get(bcp47)?.format(value) ?? String(value);
     }
   } catch {
     // düş

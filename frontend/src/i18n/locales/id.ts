@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const id: TranslationTable = {
+  "storage.load_error": "Hitungan tersimpan tidak dapat dimuat. Data lama Anda tidak ditimpa. Coba lagi.",
+  "storage.save_error": "Perubahan tidak dapat disimpan di perangkat ini.",
   "common.ok": "Oke",
   "common.cancel": "Batal",
   "common.confirm": "Konfirmasi",
@@ -24,8 +26,10 @@ const id: TranslationTable = {
   "common.restart_later": "Nanti",
   "tabs.home": "Penghitung",
   "tabs.my_dhikrs": "Zikir Saya",
-  "tabs.stats": "Statistik",
+  "tabs.stats": "Riwayat",
   "tabs.settings": "Pengaturan",
+  "home.focus": "Fokus",
+  "home.tap_hint": "Ketuk untuk menghitung",
   "home.brand": "PENGHITUNG ZIKIR",
   "home.today": "Hari ini: {{count}}",
   "home.laps_other": "{{count}} putaran",

@@ -4,6 +4,8 @@
 import type { TranslationTable } from "./en";
 
 const sw: TranslationTable = {
+  "storage.load_error": "Hesabu zilizohifadhiwa hazikupakiwa. Rekodi ya awali haijabadilishwa. Jaribu tena.",
+  "storage.save_error": "Mabadiliko hayakuweza kuhifadhiwa kwenye kifaa hiki.",
   "common.ok": "Sawa",
   "common.cancel": "Ghairi",
   "common.confirm": "Thibitisha",
@@ -24,8 +26,10 @@ const sw: TranslationTable = {
   "common.restart_later": "Baadaye",
   "tabs.home": "Kihesabu",
   "tabs.my_dhikrs": "Dhikri Zangu",
-  "tabs.stats": "Takwimu",
+  "tabs.stats": "Historia",
   "tabs.settings": "Mipangilio",
+  "home.focus": "Umakini",
+  "home.tap_hint": "Gusa ili kuhesabu",
   "home.brand": "KIHESABU CHA DHIKRI",
   "home.today": "Leo: {{count}}",
   "home.laps_one": "Mzunguko {{count}}",

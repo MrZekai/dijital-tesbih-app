@@ -1,3 +1,4 @@
+import { createContext, useContext } from "react";
 // Alt ekran "kroması" (sekme çubuğu + sabit reklam alanı) ölçüleri.
 //
 // Sekme çubuğu `position: "absolute"` olduğu için ekran içerikleri onun
@@ -16,6 +17,7 @@ import { useFontScale } from "./fontScale";
 
 /** Sekme çubuğunun güvenli alan hariç temel yüksekliği. */
 export const TAB_BAR_BASE_HEIGHT = 60;
+export const BannerHeightContext = createContext(BANNER_SLOT_HEIGHT);
 
 /** Sekme çubuğunun gerçek yüksekliği (Büyük Yazı Modu + güvenli alan dahil). */
 export function useTabBarHeight(): number {
@@ -31,5 +33,5 @@ export function useTabBarHeight(): number {
  * Sekme ekranları içeriğinin alt boşluğunu buna göre ayarlar.
  */
 export function useBottomChromeHeight(): number {
-  return useTabBarHeight() + BANNER_SLOT_HEIGHT;
+  return useTabBarHeight() + useContext(BannerHeightContext);
 }
