@@ -64,3 +64,19 @@ Alan adı Firebase'e bağlandıktan sonra `SITE_URL` değişkenini gerçek HTTPS
 Web sayacı ilk HTML geldikten sonra küçük bir JS dosyasıyla çalışır. Depolama bozuksa mevcut kayıt üzerine yazılmaz. Depolama reddinde kullanıcı uyarılır. Başka sekme kaydı değiştirirse sessizce üzerine yazmak yerine yeniden yükleme istenir. Reklam ve analiz SDK'sı bu web sitesine eklenmedi; Android reklamları korunur.
 
 Kaynaklar: https://developers.google.com/search/docs/specialty/international/localized-versions · https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics · https://developers.google.com/search/docs/appearance/structured-data/software-app
+
+## Asıl site: digitaltasbeehcounter.web.app
+
+Firebase proje kimliği `zikirmatik-mrzekai`, Hosting site kimliği `digitaltasbeehcounter`dır. İkisi farklıdır. Önce mevcut kodun ve Play bağlantılarının yayına uygunluğunu kontrol edin. Site kökünde:
+
+```powershell
+$env:SITE_URL = 'https://digitaltasbeehcounter.web.app/'
+node site/build.mjs --production
+if ($LASTEXITCODE -ne 0) { throw 'Site build failed' }
+node site/test.mjs
+if ($LASTEXITCODE -ne 0) { throw 'Site tests failed' }
+npx --yes --package firebase-tools@15.36.0 firebase deploy --config firebase.digitaltasbeehcounter.json --only hosting --project zikirmatik-mrzekai --non-interactive
+```
+
+Bu yapılandırma yalnızca yeni Hosting sitesine yayın yapar. Eski `zikirmatik-mrzekai.web.app` ve `digitaltasbih.web.app` sayacı farklı origin üzerinde tutulmuş sayımlara erişilebilmesi için otomatik yönlendirilmemiştir. Search Console doğrulamasını yeni URL öneki için ayrıca kontrol edin; yayın dosyasının etiketi içermesi tek başına hesap sahipliğini doğrulamaz.
+
