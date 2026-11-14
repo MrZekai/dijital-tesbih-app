@@ -258,14 +258,13 @@ export default function Ayarlar() {
               >
                 {t("settings.language_desc")}
               </Text>
+              <Text
+                style={{ color: theme.gold, fontSize: 14, fontWeight: "600", marginTop: 6, textAlign: dir.textAlign }}
+                testID="current-language"
+              >
+                {currentLanguageName}
+              </Text>
             </View>
-            <Text
-              style={{ color: theme.gold, fontSize: 14, fontWeight: "600" }}
-              numberOfLines={1}
-              testID="current-language"
-            >
-              {currentLanguageName}
-            </Text>
             <Ionicons name={dir.forwardIcon} size={18} color={theme.textSubtle} />
           </Pressable>
 
@@ -1266,3 +1265,4 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
 });
+
