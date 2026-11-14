@@ -21,7 +21,7 @@ const languages = Object.keys(pages);
 const route = (lang, guide) => `${lang}/${guide ? pages[lang].guideSlug + '/' : ''}`;
 const tags = (guide) => languages.map(lang => `<link rel="alternate" hreflang="${lang}" href="${url(route(lang, guide))}">`).join('\n') +
   `\n<link rel="alternate" hreflang="x-default" href="${url(guide ? route('en', true) : '')}">`;
-const verification = process.env.GOOGLE_SITE_VERIFICATION || '';
+const verification = process.env.GOOGLE_SITE_VERIFICATION || (base.origin === 'https://zikirmatik-mrzekai.web.app' ? 'MP71ZrLTfV_drlSMOiBc8508910obNgjs1UxC_9flGM' : '');
 
 function shell(lang, body, guide = false, noindex = false) {
   const p = pages[lang];
@@ -68,7 +68,7 @@ for (const lang of languages) {
 <section class="section"><h2>${p.featuresTitle}</h2><div class="features">${p.features.map(([h,b])=>`<article><h3>${h}</h3><p>${b}</p></article>`).join('')}</div></section>
 <section class="guide-link section"><div><h2>${p.guideTitle}</h2><p>${p.guideIntro}</p></div><a class="cta" href="${url(route(lang,true))}">${p.guideTitle} →</a></section>
 <section class="section faq"><h2>${p.faqTitle}</h2>${p.faq.map(([q,a])=>`<details><summary>${q}</summary><p>${a}</p></details>`).join('')}</section>`;
-  const guideBody = `<article class="reading"><a href="${url(route(lang,false))}">${p.back}</a><h1>${p.guideTitle}</h1><p class="lead">${p.guideIntro}</p>${p.guide.map(([h,b])=>`<section><h2>${h}</h2><p>${b}</p></section>`).join('')}<a class="cta" href="${download}">${p.cta}</a><p>${p.appNote}</p></article>`;
+  const guideBody = `<article class="reading"><a href="${url(route(lang,false))}">${p.back}</a><h1>${p.guideTitle}</h1><p class="lead">${p.guideIntro}</p><nav class="guide-toc" aria-label="${escape(p.tocTitle)}"><h2>${escape(p.tocTitle)}</h2><ol>${p.guide.map(([h],i)=>`<li><a href="#step-${i+1}">${escape(h)}</a></li>`).join('')}</ol></nav>${p.guide.map(([h,b],i)=>`<section id="step-${i+1}"><h2>${escape(h)}</h2><p>${escape(b)}</p></section>`).join('')}<a class="cta" href="${download}">${p.cta}</a><p>${p.appNote}</p></article>`;
   for (const [isGuide, content] of [[false,body],[true,guideBody]]) {
     const target = path.join(out,route(lang,isGuide));
     await mkdir(target,{recursive:true});
@@ -84,3 +84,4 @@ await writeFile(path.join(out,'robots.txt'),`User-agent: *\n${production?'Allow:
 await writeFile(path.join(out,'.nojekyll'),'');
 await writeFile(path.join(out,'build-info.json'),JSON.stringify({siteUrl:url(),production,pages:locations},null,2));
 console.log(`Built ${locations.length} indexable routes for ${url()} (${production?'production':'preview: noindex'}).`);
+
