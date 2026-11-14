@@ -116,10 +116,10 @@ ok("AdMob app ID korunuyor",
 
 // ── 7) Ana sayfa gercekten yenilendi ──────────────────────────────────
 const home = read("app/(tabs)/index.tsx");
-ok("ana sayfada marka isareti var", home.includes("BRAND_MARK"));
+ok("ana sayfada marka isareti var", home.includes('t("home.brand")'));
 ok("ana sayfada gunluk hedef seridi var", home.includes("home-goal-strip"));
-ok("ana sayfada seri rozeti var", home.includes("home-streak"));
-ok("ana sayfada hizli zikir gecisi var", home.includes("home-quick-switch"));
+ok("Odak basligi var", home.includes('t("home.focus")'));
+ok("favori ve son kullanilanlar secicide", home.includes("favorites.includes(id)") && home.includes("recents.indexOf(id)"));
 ok("sayac hala ana odak (MultiTouchTapArea)", home.includes("MultiTouchTapArea"));
 
 // ── 8) Uygulama adi 27 dilde yerellestirildi ──────────────────────────
@@ -172,32 +172,16 @@ ok("motifte Arapca yazi / mubarek isim yok",
   !/[\u0600-\u06FF]/.test(ring.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "")));
 ok("taneler tek tek doluyor", ring.includes("i < filled"));
 ok("Odak sayaci hafif yerel yuzey kullaniyor", !homeSrc.includes("TesbihRingSvg") && homeSrc.includes("backgroundColor: theme.bgCard"));
-ok("halka boyutu OLCULEN alandan geliyor (formul tahmini yok)",
-  homeSrc.includes("onHeroLayout") && homeSrc.includes("styles.heroBox")
-    && !homeSrc.includes("availableH"));
-ok("ilk kullanim karti var", homeSrc.includes("home-first-use-card"));
+ok("sayaç ve işlemler Odak sırasını izliyor", [
+  'testID="home-goal-strip"', 'testID="active-dhikr-selector"', 'testID="counter-tap-area"',
+  'testID="counter-value"', 't("home.tap_hint")}</Text>', 'testID="target-selector"',
+  'testID="undo-button"', 'testID="reset-button"', 'testID="home-toast"'
+].every((marker, i, ordered) => homeSrc.includes(marker) &&
+  (i === 0 || homeSrc.indexOf(marker) > homeSrc.indexOf(ordered[i - 1]))));
+ok("sayaç küçük ekranlarda kaydırılabilir ve banner için alan ayrılır",
+  homeSrc.includes("<ScrollView contentContainerStyle={styles.page}") && homeSrc.includes("paddingBottom: bottomChrome"));
 ok("hedef geri bildirimi korunuyor", homeSrc.includes("home.target_reached"));
-
-// ── 12) Layout A — kullanicinin sectigi ana sayfa duzeni ──────────────
-// QA'da uc sikayet vardi: (a) sayac alttaki satira biniyordu, (b) halka
-// koca ekranda kucucuk kaliyordu, (c) Geri Al/Sifirla ayar ikonu boyutuna
-// indirilmisti. Layout A bu ucunu de cozer; testler geri gelmesini engeller.
-ok("merkez yigini mutlak konumlu (cakisma imkansiz)",
-  /centerStack:\s*\{[^}]*position:\s*"absolute"/s.test(homeSrc));
-ok("halkanin icinde YALNIZCA sayi var (hedef hapi disarida)",
-  homeSrc.includes("styles.centerStack") && !/centerStack[\s\S]{0,600}lapBadge/.test(homeSrc));
-ok("hedef/tur bilgisi halkanin ALTINDA duz metin",
-  homeSrc.includes("styles.metaRow") && homeSrc.includes("metaLaps"));
-ok("eski hap/rozet stilleri kaldirildi",
-  !homeSrc.includes("metaPill:") && !homeSrc.includes("lapBadge:"));
-ok("Geri Al / Sifirla TAM BOY dugme",
-  /actionBtn:\s*\{[^}]*height:\s*46/s.test(homeSrc)
-    && homeSrc.includes('testID="undo-button"')
-    && homeSrc.includes('testID="reset-button"'));
-ok("aksiyonlar ayar ikonu satirinda degil",
-  !homeSrc.includes('icon="arrow-undo-outline"'));
-ok("Odak sayaci okunur boyutta", /bigText \? 360 : 320/.test(homeSrc));
-ok("sayac punto tabani genis (icerisi bos)", /ringSize \* 0\.34/.test(homeSrc));
+ok("Odak sayacı dairesel, geri alma geçmişe bağlı", homeSrc.includes("borderRadius: ringSize / 2") && homeSrc.includes("disabled={!canUndo}"));
 
 console.log("\n----------------------------------");
 if (failures > 0) { console.log(`${failures} TEST BAŞARISIZ`); process.exit(1); }

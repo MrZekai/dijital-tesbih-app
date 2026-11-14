@@ -123,6 +123,7 @@ interface StoreValue {
   activeDhikrState: DhikrState;
   increment: () => { justReachedTarget: boolean };
   incrementDhikrById: (id: string) => { justReachedTarget: boolean };
+  canUndo: boolean;
   undo: () => boolean;
   reset: () => void;
   setActiveDhikr: (id: string) => void;
@@ -580,6 +581,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     activeDhikrState,
     increment,
     incrementDhikrById,
+    canUndo: undoStack.current.length > 0,
     undo,
     reset,
     setActiveDhikr,

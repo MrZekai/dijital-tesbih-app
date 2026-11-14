@@ -38,10 +38,12 @@ const en = {
   // ── Sekmeler ─────────────────────────────────────────────────────────
   "tabs.home": "Counter",
   "tabs.my_dhikrs": "My Dhikrs",
-  "tabs.stats": "Statistics",
+  "tabs.stats": "History",
   "tabs.settings": "Settings",
 
   // ── Ana sayaç ekranı ─────────────────────────────────────────────────
+  "home.focus": "Focus",
+  "home.tap_hint": "Tap to count",
   "home.brand": "DHIKR COUNTER",
   "home.today": "Today: {{count}}",
   "home.laps_one": "{{count}} round",

@@ -6,7 +6,7 @@
 
 - Türkçe, İngilizce ve Arapça 7 statik sayfa; çalışan çevrimiçi sayaç ve kullanım rehberleri.
 - Ayrı canonical, karşılıklı hreflang, sitemap, robots, Open Graph, JSON-LD; Arapça RTL. Önizleme noindex, üretim gerçek HTTPS adresi gerektirir.
-- Firebase Hosting Spark için PowerShell kurulumu: `scripts/Publish-FreeHosting.ps1`. Kullanıcı seçimi `zikirmatik-mrzekai`; adın müsaitliği henüz doğrulanmadı.
+- Firebase Hosting Spark için PowerShell kurulumu: `scripts/Publish-FreeHosting.ps1`. Proje kimliği `zikirmatik-mrzekai`. [Canlı site](https://zikirmatik-mrzekai.web.app/tr/).
 - GitHub Pages için isteğe bağlı manuel iş akışı. Ana SEO adresi için bir hosting seçilmelidir.
 - Web sayacı Android kaydından bağımsızdır. Hesap/senkronizasyon ya da desteklenmeyen ses tuşu özelliği vaat edilmez.
 
@@ -29,7 +29,7 @@
 
 ## Yayından önce kalan kontroller
 
-Firebase hesabına giriş ve gerçek yayın yapılmadı. Yerel önizleme sunucusuna bu ortamın tarayıcısı erişemedi; görsel doğrulama tamamlanmadı. Android cihazda açılış, hızlı sayım, arka plan/geri dönüş, UMP ve farklı banner boyutları test edilmeli; imzalı AAB oluşturulmadı. Bu nedenle mobil değişiklikler taslak inceleme aşamasındadır.
+Firebase yayını ve web sayacının üç dilde açılması doğrulandı. Android cihazda açılış, hızlı sayım, arka plan/geri dönüş, UMP ve farklı banner boyutları test edilmeli; imzalı AAB oluşturulmadı. Mobil sürümün cihaz üzerindeki görsel ve performans kontrolleri Play yayını öncesinde yapılmalıdır.
 
 Yeni kayıt hata mesajları için ckb ve dv dillerinde İngilizce yedek metin bulunur; ana dil incelemesi gerekir. Diğer çeviriler ve Arapça site metinleri de dil incelemesinden geçirilmelidir.
 

@@ -1,7 +1,6 @@
 // Karşılama ekranı — 3 kısa tanıtım adımı.
 
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
@@ -59,12 +58,6 @@ export default function Onboarding() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.bg }]}>
-      <LinearGradient
-        colors={[theme.emeraldDeep, theme.bg, theme.navy]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
 
       <View style={[styles.topRow, { paddingTop: insets.top + spacing.md }]}>
         <Pressable onPress={skip} hitSlop={12} testID="onboarding-skip">

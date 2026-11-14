@@ -4,11 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { BANNER_SLOT_HEIGHT } from "@/src/ads/adConfig";
 import { BottomBanner } from "@/src/ads/BottomBanner";
 import { useRespectfulInterstitial } from "@/src/ads/useRespectfulInterstitial";
-import { BlurView } from "expo-blur";
 import { Tabs, usePathname } from "expo-router";
 import React, { useState } from "react";
 import {
-  Platform,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -31,7 +29,6 @@ export default function TabsLayout() {
   const [bannerHeight, setBannerHeight] = useState(BANNER_SLOT_HEIGHT);
   const t = useT();
   const insets = useSafeAreaInsets();
-  const isDark = theme.name === "dark";
   const { width: screenW } = useWindowDimensions();
   const pathname = usePathname();
   // Büyük Yazı Modu sekme etiketlerine ve ikonlarına da uygulanır.
@@ -68,35 +65,12 @@ export default function TabsLayout() {
           position: "absolute",
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: theme.border,
-          backgroundColor:
-            Platform.OS === "android"
-              ? isDark
-                ? "rgba(6,9,14,0.94)"
-                : "rgba(244,241,230,0.94)"
-              : "transparent",
+          backgroundColor: theme.bg,
           height: tabBarHeight,
           paddingTop: 8,
           paddingBottom: insets.bottom,
           elevation: 0,
         },
-        tabBarBackground: () =>
-          Platform.OS === "ios" ? (
-            <BlurView
-              intensity={40}
-              tint={isDark ? "dark" : "light"}
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: isDark ? "rgba(6,9,14,0.6)" : "rgba(244,241,230,0.6)" },
-              ]}
-            />
-          ) : (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: isDark ? "rgba(6,9,14,0.94)" : "rgba(244,241,230,0.94)" },
-              ]}
-            />
-          ),
       }}
     >
       <Tabs.Screen

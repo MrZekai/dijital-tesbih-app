@@ -25,12 +25,12 @@ Google hesabınıza tarayıcıda kendiniz giriş yapın. Şifre veya erişim ana
 Mevcut Firebase projesinde `-CreateProject` kullanmayın:
 
 ```powershell
-.\scripts\Publish-FreeHosting.ps1 -ProjectId 'sizin-proje-kimliginiz' -Login
+.\scripts\Publish-FreeHosting.ps1 -ProjectId 'zikirmatik-mrzekai' -Login
 ```
 
 Sonraki yayınlarda yalnız `-ProjectId` yeterlidir. Betik CLI 15.36.0'ı npx üzerinden kullanır, projeye erişimi doğrular, gerekirse Hosting sitesini açar, gerçek yayın adresiyle üretim dosyalarını oluşturur, testleri çalıştırır ve yalnız Hosting'i yayımlar. Hiçbir faturalandırma hesabı bağlamaz. Mevcut projeniz zaten Blaze planındaysa bu betik planı değiştirmez; ücretsiz kullanım isteğiniz için Console'da Spark durumunu kontrol edin.
 
-Firebase CLI hesabınız proje oluşturma veya Hosting API etkinleştirme iznine sahip değilse betik durur; erişim sorununu Firebase Console'dan çözün. Komutun başarıyla çalışması, gerçek Google hesabı ve proje erişimi gerektirir. Bu değişiklik paketinde canlı Firebase yayını henüz yapılmış değildir.
+Firebase CLI hesabınız proje oluşturma veya Hosting API etkinleştirme iznine sahip değilse betik durur; erişim sorununu Firebase Console'dan çözün. Komutun başarıyla çalışması, gerçek Google hesabı ve proje erişimi gerektirir. Canlı proje kimliği `zikirmatik-mrzekai`. [Yayımlanan site](https://zikirmatik-mrzekai.web.app/tr/)
 
 13 Kasım 2026 itibarıyla Hosting ücretsiz sınırları: 10 GB depolama ve ayda 10 GB aktarım. Spark'ta aktarım sınırı aşılırsa kısa ek süreden sonra site sonraki aya kadar durabilir; otomatik ücretli plan açılmaz. Güncel kaynak: https://firebase.google.com/docs/hosting/usage-quotas-pricing
 
