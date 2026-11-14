@@ -21,7 +21,7 @@ const languages = Object.keys(pages);
 const route = (lang, guide) => `${lang}/${guide ? pages[lang].guideSlug + '/' : ''}`;
 const tags = (guide) => languages.map(lang => `<link rel="alternate" hreflang="${lang}" href="${url(route(lang, guide))}">`).join('\n') +
   `\n<link rel="alternate" hreflang="x-default" href="${url(guide ? route('en', true) : '')}">`;
-const verification = process.env.GOOGLE_SITE_VERIFICATION || (base.origin === 'https://zikirmatik-mrzekai.web.app' ? 'MP71ZrLTfV_drlSMOiBc8508910obNgjs1UxC_9flGM' : '');
+const verification = process.env.GOOGLE_SITE_VERIFICATION || (['https://zikirmatik-mrzekai.web.app', 'https://digitaltasbeehcounter.web.app'].includes(base.origin) ? 'MP71ZrLTfV_drlSMOiBc8508910obNgjs1UxC_9flGM' : '');
 
 function shell(lang, body, guide = false, noindex = false) {
   const p = pages[lang];
@@ -84,4 +84,5 @@ await writeFile(path.join(out,'robots.txt'),`User-agent: *\n${production?'Allow:
 await writeFile(path.join(out,'.nojekyll'),'');
 await writeFile(path.join(out,'build-info.json'),JSON.stringify({siteUrl:url(),production,pages:locations},null,2));
 console.log(`Built ${locations.length} indexable routes for ${url()} (${production?'production':'preview: noindex'}).`);
+
 
