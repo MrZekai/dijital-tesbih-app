@@ -6,6 +6,7 @@ on:
     branches:
       - global-v1.1.0
       - global-v1.1.0-redesign
+      - release/1.2.0-android-qa
     paths:
       - "frontend/**"
       - ".github/workflows/android-qa-apk.yml"
