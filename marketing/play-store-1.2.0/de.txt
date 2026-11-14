@@ -1,0 +1,22 @@
+Dhikr Counter: Digital Tasbih
+
+Dhikr-Zähler mit Zielen, Statistiken und 99 Namen. Offline zählen; mit Werbung.
+
+Ein digitaler Tasbih zum Dhikr-Zählen auf einem ruhigen Bildschirm. Tippen Sie auf den großen Zählkreis, um zu zählen; Mehrfingereingaben werden unterstützt.
+
+FUNKTIONEN
+• Ziele von 33, 99, 100, 500 oder 1000 sowie ein eigenes Ziel
+• Verbleibende Zählungen und abgeschlossene Runden anzeigen
+• Zählung rückgängig machen; Ton und Vibration nach Wunsch einstellen
+• Eigene Dhikr mit arabischer Schreibweise hinzufügen; Favoriten und zuletzt verwendete Dhikr aufrufen
+• Schrittweise Anleitung für 33 + 33 + 33 Dhikr nach dem Gebet; Fortsetzen innerhalb von 12 Stunden seit der letzten Zählung
+• Die 99 Namen Allahs mit arabischer Schreibweise, Umschrift und eigenem Zähler
+• Tagesziel, Serien und Statistiken für Tag, Woche, Monat und Gesamtzeit
+• Optionale tägliche Erinnerung, helle/dunkle/Systemdarstellung, große Schrift und einfacher Modus
+
+SPRACHEN
+Die Benutzeroberfläche unterstützt 27 Sprachen, darunter Englisch, Arabisch und Türkisch. Deutsch gehört derzeit nicht zu den Sprachen der Benutzeroberfläche. Bedeutungen der 99 Namen sind auf Türkisch und Englisch verfügbar; in anderen Oberflächensprachen erscheinen englische Bedeutungen.
+
+DATENSCHUTZ UND WERBUNG
+Kein Konto erforderlich. Zähler, Dhikr und Verlauf werden auf Ihrem Gerät gespeichert; das Zählen funktioniert ohne Internetverbindung. Die App enthält Google AdMob Werbung, für die Geräte- und Nutzungsdaten verarbeitet werden können. Einzelheiten stehen im Google Play Bereich „Datensicherheit“ und in der Datenschutzerklärung. Eine Sicherungsdatei kann in den Einstellungen exportiert werden.
+
