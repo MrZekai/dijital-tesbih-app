@@ -1,6 +1,6 @@
 Tasbeeh Counter: Dhikr & Zikr
 
-Digital tasbih: tap to count your dhikr and feel a vibration at your target.
+Digital tasbih: tap to count your dhikr and feel a vibration at your target
 
 Tasbeeh Counter is a digital tasbih for counting dhikr on a calm screen. Tap the large counter circle to count, including with multiple fingers.
 
