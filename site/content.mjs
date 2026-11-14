@@ -2,7 +2,7 @@ export const pages = {
   tr: {
     label: 'Türkçe', appBenefits: 'Android uygulamasında günlük hedefini belirleyebilir, geçmişini görebilir ve çevrimdışı sayabilirsin.', dir: 'ltr', title: 'Zikirmatik — Online Zikir Sayacı ve Dijital Tesbih',
     description: 'Online zikirmatik ile hemen saymaya başla. Android için dijital tesbih, günlük hedefler, namaz sonrası tesbihat ve Esmaül Hüsna bir arada.',
-    eyebrow: 'SADE BİR ZİKİR DENEYİMİ', heading: 'Bir dokunuş. Bir zikir.',
+    eyebrow: 'SADE BİR ZİKİR DENEYİMİ', heading: 'Online zikirmatik ile kendi ritminde say.',
     intro: 'Zihnini sayıda değil, zikrinde tut. Online zikirmatiği burada kullan veya günlük hedeflerini ve geçmişini takip etmek için Android uygulamasını indir.',
     cta: 'Google Play’den indir', try: 'Online sayacı kullan', counter: 'Online zikirmatik', tap: 'Saymak için dokun', undo: 'Geri al', reset: 'Sıfırla', target: 'Hedef',
     select: 'Zikir seç', names: ['Sübhanallah', 'Elhamdülillah', 'Allahu Ekber'], confirm: 'Bu sayacı sıfırlamak istiyor musun?', complete: 'Hedef tamamlandı',
@@ -20,7 +20,7 @@ export const pages = {
   en: {
     label: 'English', appBenefits: 'Use the Android app to set a daily goal, see your history and count offline.', dir: 'ltr', title: 'Tasbeeh Counter — Online Dhikr and Digital Tasbih',
     description: 'Use an online tasbeeh counter or get the Android dhikr app. Count zikr, set daily goals, follow prayer tasbih and explore the names of Allah.',
-    eyebrow: 'A CALM SPACE FOR DHIKR', heading: 'One tap. One dhikr.',
+    eyebrow: 'A CALM SPACE FOR DHIKR', heading: 'Count dhikr at your own pace.',
     intro: 'Keep your attention on your dhikr. Use the online tasbeeh counter here, or get the Android app to track daily goals and your progress.',
     cta: 'Get it on Google Play', try: 'Use the online counter', counter: 'Online tasbeeh counter', tap: 'Tap to count', undo: 'Undo', reset: 'Reset', target: 'Target', select: 'Choose a dhikr',
     names: ['Subhanallah', 'Alhamdulillah', 'Allahu Akbar'], confirm: 'Reset this counter?', complete: 'Target completed',
@@ -38,7 +38,7 @@ export const pages = {
   ar: {
     label: 'العربية', appBenefits: 'حدّد هدفك اليومي وراجع سجلّك وعدّ دون إنترنت في تطبيق أندرويد.', dir: 'rtl', title: 'عداد التسبيح — مسبحة إلكترونية وعداد أذكار',
     description: 'استخدم عداد التسبيح على الإنترنت أو حمّل تطبيق أندرويد. عدّ الأذكار، وحدد هدفك اليومي، وتابع التسبيح بعد الصلاة وأسماء الله الحسنى.',
-    eyebrow: 'مساحة هادئة للذكر', heading: 'لمسة واحدة. ذكر واحد.',
+    eyebrow: 'مساحة هادئة للذكر', heading: 'عدّ تسبيحك بالوتيرة التي تناسبك.',
     intro: 'ركّز على ذكرك. استخدم عداد التسبيح هنا، أو حمّل تطبيق أندرويد لتحديد أهدافك اليومية ومتابعة تقدمك.',
     cta: 'حمّل من Google Play', try: 'استخدم عداد التسبيح', counter: 'عداد التسبيح على الإنترنت', tap: 'المس للعدّ', undo: 'تراجع', reset: 'تصفير', target: 'الهدف', select: 'اختر الذكر',
     names: ['سبحان الله', 'الحمد لله', 'الله أكبر'], confirm: 'هل تريد تصفير هذا العداد؟', complete: 'اكتمل الهدف',
@@ -54,3 +54,25 @@ export const pages = {
     back: 'العودة إلى العداد', privacy: 'سياسة خصوصية أندرويد', source: 'المشروع والدعم', footer: 'BANGI · عداد التسبيح', appNote: 'تطبيق أندرويد مجاني ويحتوي على إعلانات.', skip: 'انتقل إلى المحتوى', language: 'اللغة', notFound: 'الصفحة غير موجودة',
   },
 };
+
+// Practical information shared by the three equivalent guides.
+pages.tr.guide.push(
+  ['Hedefe ulaştığında ne olur?', 'Sayaç seçtiğin hedefe ulaştığında ekranda bir tamamlanma bildirimi gösterir. Saymaya devam edebilirsin; yeni bir zikir seçtiğinde onun sayacı açılır. Hedefi değiştirmek kaydedilmiş sayımı silmez.'],
+  ['Yanlışlıkla saydıysan veya yeniden başlamak istiyorsan', 'Geri al son dokunuşu bir azaltır. Sıfırla seçili zikir için onay ister; onayladığında yalnız o zikrin web sayacı temizlenir. Diğer zikirlerin sayıları korunur.'],
+  ['Web sayacıyla uygulama arasındaki fark', 'Bu sayfada üç hazır zikir arasından seçim yapabilirsin. Android uygulaması ayrıca özel zikirler, günlük hedef ve geçmiş sunar. Web ve uygulama ayrı kayıt tutar; birinde yaptığın sayım diğerine aktarılmaz.']
+);
+pages.en.guide.push(
+  ['What happens when you reach a target?', 'The counter displays a completion message when it reaches your selected target. You can keep counting; choosing another dhikr opens its own counter. Changing the target does not erase the saved count.'],
+  ['Correct a tap or start again', 'Undo removes the most recent count. Reset asks for confirmation and clears only the selected dhikr in this browser. Counts for your other dhikrs stay in place.'],
+  ['Web counter and Android app', 'On this page you can choose from three preset dhikrs. The Android app also offers custom dhikrs, a daily goal and history. Their records are separate; a count made here does not transfer to the app.']
+);
+pages.ar.guide.push(
+  ['ماذا يحدث عند بلوغ الهدف؟', 'يظهر العداد رسالة عند بلوغ الهدف الذي اخترته. يمكنك مواصلة العدّ؛ وعند اختيار ذكر آخر يظهر عداده الخاص. تغيير الهدف لا يمسح العدد المحفوظ.'],
+  ['تصحيح لمسة أو البدء من جديد', 'يُنقص زر التراجع آخر عدد. ويطلب التصفير تأكيدًا قبل مسح عداد الذكر المحدد في هذا المتصفح فقط، مع بقاء أعداد الأذكار الأخرى.'],
+  ['الفرق بين عداد الويب وتطبيق أندرويد', 'تتيح هذه الصفحة الاختيار من ثلاثة أذكار جاهزة. ويقدم تطبيق أندرويد أيضًا أذكارًا مخصصة وهدفًا يوميًا وسجلًا. سجلات الويب والتطبيق منفصلة، ولا ينتقل العدد من أحدهما إلى الآخر.']
+);
+
+pages.tr.tocTitle = 'Bu rehberde';
+pages.en.tocTitle = 'In this guide';
+pages.ar.tocTitle = 'في هذا الدليل';
+
