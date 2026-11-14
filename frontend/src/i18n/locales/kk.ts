@@ -47,6 +47,8 @@ const kk: TranslationTable = {
   "home.screen_on": "Санау кезінде экран сөнбейді",
   "home.screen_off": "Экран әдеттегідей сөнеді",
   "home.target_reached": "Мақсатқа жеттіңіз — {{count}} × {{name}}.",
+  "home.share_goal": "Нәтижені бөлісу",
+  "home.share_failed": "Бөлісу ашылмады. Қайталап көріңіз.",
   "home.reset_title": "Санауышты нөлдеу керек пе?",
   "home.reset_message": "{{name}} үшін ағымдағы санауыш нөлденеді. Жалпы саны мен статистика сақталады.",
   "home.choose_target": "Мақсатты таңдаңыз",

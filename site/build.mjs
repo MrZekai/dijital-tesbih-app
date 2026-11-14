@@ -64,7 +64,7 @@ for (const lang of languages) {
 <button id="tap" type="button" disabled><span id="count">0</span><span>${p.tap}</span></button>
 <label for="target">${p.target}</label><select id="target"><option>33</option><option>99</option><option>100</option></select>
 <div class="actions"><button id="undo" type="button" disabled>${p.undo}</button><button id="reset" type="button" disabled>${p.reset}</button></div>
-<p id="feedback" role="status" aria-live="polite"></p><p class="fine">${p.local}</p><noscript><p>${p.nojs}</p></noscript></section></section>
+<p id="feedback" role="status" aria-live="polite"></p><p class="fine">${p.local}</p><a class="cta" href="${play}&amp;referrer=utm_source%3Dweb_counter">${p.cta}</a><p>${p.appBenefits}</p><noscript><p>${p.nojs}</p></noscript></section></section>
 <section class="section"><h2>${p.featuresTitle}</h2><div class="features">${p.features.map(([h,b])=>`<article><h3>${h}</h3><p>${b}</p></article>`).join('')}</div></section>
 <section class="guide-link section"><div><h2>${p.guideTitle}</h2><p>${p.guideIntro}</p></div><a class="cta" href="${url(route(lang,true))}">${p.guideTitle} →</a></section>
 <section class="section faq"><h2>${p.faqTitle}</h2>${p.faq.map(([q,a])=>`<details><summary>${q}</summary><p>${a}</p></details>`).join('')}</section>`;

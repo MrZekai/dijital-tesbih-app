@@ -47,6 +47,8 @@ const uz: TranslationTable = {
   "home.screen_on": "Sanash paytida ekran yoniq qoladi",
   "home.screen_off": "Ekran odatdagidek o‘chadi",
   "home.target_reached": "Maqsadga yetdingiz — {{count}} × {{name}}.",
+  "home.share_goal": "Natijani ulashish",
+  "home.share_failed": "Ulashish ochilmadi. Qayta urinib ko‘ring.",
   "home.reset_title": "Hisoblagich nolga qaytarilsinmi?",
   "home.reset_message": "{{name}} uchun joriy hisoblagich nolga qaytariladi. Jami va statistika saqlanadi.",
   "home.choose_target": "Maqsadni tanlang",

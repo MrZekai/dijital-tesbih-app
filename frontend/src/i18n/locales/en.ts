@@ -61,6 +61,8 @@ const en = {
   "home.screen_on": "Screen will stay on while you count",
   "home.screen_off": "Screen will dim normally",
   "home.target_reached": "Target reached — {{count}} × {{name}}.",
+  "home.share_goal": "Share result",
+  "home.share_failed": "Couldn't open sharing. Try again.",
   "home.reset_title": "Reset the counter?",
   "home.reset_message":
     "The current counter for {{name}} will be set to zero. Your totals and statistics are kept.",

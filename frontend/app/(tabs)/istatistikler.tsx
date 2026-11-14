@@ -4,7 +4,10 @@
 // listesi kaldırıldı), sayılar locale biçiminde gösterilir, seri kartı
 // eklendi ve tüm metinler çeviri anahtarlarına taşındı.
 
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { useAds } from "@/src/ads/AdsProvider";
+import { maybeReviewAtBreak } from "@/src/lib/goalActions";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { Text } from "@/src/components/AppText";
@@ -17,7 +20,7 @@ import { formatWeekdayShort } from "@/src/i18n/format";
 import { dhikrName } from "@/src/lib/dhikrs";
 import { useBottomChromeHeight } from "@/src/lib/layout";
 import { useDirection } from "@/src/lib/rtl";
-import { useStore } from "@/src/lib/store";
+import { useStore, useStoreStatus } from "@/src/lib/store";
 import type { ThemeTokens } from "@/src/lib/theme";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
@@ -37,6 +40,20 @@ export default function Istatistikler() {
   const dir = useDirection();
   const bottomChrome = useBottomChromeHeight();
   const [confirmReset, setConfirmReset] = useState(false);
+
+  const { consentReady, fullScreenAdActive } = useAds();
+  const { loaded, saveError, loadError } = useStoreStatus();
+  const eligible = loaded && !confirmReset && !saveError && !loadError && consentReady && !fullScreenAdActive;
+  const eligibleRef = useRef(false);
+  eligibleRef.current = eligible;
+  // History is an explicit pause in counting. Wait past the goal toast and cancel on blur.
+  useFocusEffect(useCallback(() => {
+    let focused = true;
+    const timer = setTimeout(() => {
+      if (eligible) void maybeReviewAtBreak(() => focused && eligibleRef.current);
+    }, 5000);
+    return () => { focused = false; clearTimeout(timer); };
+  }, [eligible]));
 
   const today = todayTotal();
   const week = weeklyTotals();

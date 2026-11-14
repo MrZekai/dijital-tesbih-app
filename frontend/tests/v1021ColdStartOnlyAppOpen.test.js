@@ -21,8 +21,8 @@ function ok(label, condition) {
 console.log("\n== v1.0.21 policy-aligned App Open lifecycle + banner ==");
 
 const app = JSON.parse(read("app.json"));
-ok("versionName 1.1.1", app.expo.version === "1.1.1");
-ok("source versionCode 1030 (Play 1029 > uzerinde)", app.expo.android.versionCode === 1030);
+ok("versionName 1.2.0", app.expo.version === "1.2.0");
+ok("release candidate versionCode 1031", app.expo.android.versionCode === 1031);
 
 const rootLayout = read("app/_layout.tsx");
 const tabsLayout = read("app/(tabs)/_layout.tsx");

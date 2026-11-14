@@ -24,6 +24,7 @@ import { useI18n } from "@/src/i18n";
 import { BUILTIN_DHIKRS, dhikrName } from "@/src/lib/dhikrs";
 import { useDirection } from "@/src/lib/rtl";
 import { useStore } from "@/src/lib/store";
+import { recordCompletedGoal } from "@/src/lib/goalActions";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
 // BUG-002: bu id'ler `dhikrs.ts` icindeki BUILTIN_DHIKRS ile eslesir —
@@ -173,6 +174,7 @@ export default function Tesbihat() {
       withTiming(1, { duration: 160 })
     );
 
+    if (reachedTarget) recordCompletedGoal();
     doHaptic(reachedTarget);
     // Ana Sayfa'da olan tesbih tanesi SESI burada hic calmiyordu — eklendi.
     playSound(reachedTarget ? "target" : "tap");

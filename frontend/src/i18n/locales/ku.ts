@@ -47,6 +47,8 @@ const ku: TranslationTable = {
   "home.screen_on": "Dema hejmartinê ekran vekirî dimîne",
   "home.screen_off": "Ekran mîna berê vedimire",
   "home.target_reached": "Hûn gihîştin armancê — {{count}} × {{name}}.",
+  "home.share_goal": "Encamê parve bike",
+  "home.share_failed": "Parvekirin venebû. Dîsa biceribîne.",
   "home.reset_title": "Jimêr ji nû ve were sazkirin?",
   "home.reset_message": "Jimêra niha ya {{name}} dê bibe sifir. Kombûn û statîstîk diparêzin.",
   "home.choose_target": "Armancekê hilbijêre",

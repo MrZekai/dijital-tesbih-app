@@ -47,6 +47,8 @@ const ky: TranslationTable = {
   "home.screen_on": "Эсептөө учурунда экран өчпөйт",
   "home.screen_off": "Экран адаттагыдай өчөт",
   "home.target_reached": "Максатка жеттиңиз — {{count}} × {{name}}.",
+  "home.share_goal": "Жыйынтыкты бөлүшүү",
+  "home.share_failed": "Бөлүшүү ачылган жок. Кайра аракет кылыңыз.",
   "home.reset_title": "Эсептегич нөлдөнсүнбү?",
   "home.reset_message": "{{name}} үчүн учурдагы эсептегич нөлдөнөт. Жалпы сан жана статистика сакталат.",
   "home.choose_target": "Максатты тандаңыз",

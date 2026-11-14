@@ -1,4 +1,5 @@
-import { Stack } from "expo-router";
+import { startGoalSession } from "@/src/lib/goalActions";
+import { Stack, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -51,11 +52,14 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
+  useEffect(() => { startGoalSession(); }, []);
   const { theme } = usePreferences();
   const { t, ready } = useI18n();
   const { loaded, loadError, saveError, retryLoad, retrySave } = useStoreStatus();
+  const pathname = usePathname();
   const { coldStartSettled, resumeGateVisible } = useAppOpenAd({
     gateColdStart: true,
+    protectCounting: pathname === "/" || pathname === "/tesbihat",
     contentReady: ready && (loaded || loadError),
   });
 

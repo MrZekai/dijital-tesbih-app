@@ -46,6 +46,8 @@ const ms: TranslationTable = {
   "home.screen_on": "Skrin kekal menyala semasa mengira",
   "home.screen_off": "Skrin akan malap seperti biasa",
   "home.target_reached": "Sasaran dicapai — {{count}} × {{name}}.",
+  "home.share_goal": "Kongsi hasil",
+  "home.share_failed": "Perkongsian tidak dapat dibuka. Cuba lagi.",
   "home.reset_title": "Set semula pembilang?",
   "home.reset_message": "Pembilang semasa bagi {{name}} akan dikosongkan. Jumlah dan statistik dikekalkan.",
   "home.choose_target": "Pilih sasaran",

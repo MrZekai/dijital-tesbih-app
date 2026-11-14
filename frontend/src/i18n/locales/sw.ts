@@ -47,6 +47,8 @@ const sw: TranslationTable = {
   "home.screen_on": "Skrini itabaki imewaka unapohesabu",
   "home.screen_off": "Skrini itazimika kama kawaida",
   "home.target_reached": "Lengo limefikiwa — {{count}} × {{name}}.",
+  "home.share_goal": "Shiriki matokeo",
+  "home.share_failed": "Imeshindikana kufungua kushiriki. Jaribu tena.",
   "home.reset_title": "Weka upya kihesabu?",
   "home.reset_message": "Kihesabu cha sasa cha {{name}} kitawekwa sifuri. Jumla na takwimu zitabaki.",
   "home.choose_target": "Chagua lengo",

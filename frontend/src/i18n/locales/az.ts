@@ -47,6 +47,8 @@ const az: TranslationTable = {
   "home.screen_on": "Sayma zamanı ekran yanılı qalacaq",
   "home.screen_off": "Ekran adi qaydada sönəcək",
   "home.target_reached": "Hədəfə çatdınız — {{count}} × {{name}}.",
+  "home.share_goal": "Nəticəni paylaş",
+  "home.share_failed": "Paylaşım açıla bilmədi. Yenidən cəhd edin.",
   "home.reset_title": "Sayğac sıfırlansın?",
   "home.reset_message": "{{name}} üçün cari sayğac sıfırlanacaq. Ümumi say və statistika saxlanılır.",
   "home.choose_target": "Hədəf seçin",

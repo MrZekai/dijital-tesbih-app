@@ -47,6 +47,8 @@ const ur: TranslationTable = {
   "home.screen_on": "شمار کے دوران اسکرین روشن رہے گی",
   "home.screen_off": "اسکرین معمول کے مطابق بند ہوگی",
   "home.target_reached": "ہدف مکمل — {{count}} × {{name}}۔",
+  "home.share_goal": "نتیجہ شیئر کریں",
+  "home.share_failed": "شیئرنگ نہیں کھل سکی۔ دوبارہ کوشش کریں۔",
   "home.reset_title": "شمار کنندہ صفر کریں؟",
   "home.reset_message": "{{name}} کا موجودہ شمار صفر ہو جائے گا۔ کل تعداد اور اعداد و شمار محفوظ رہیں گے۔",
   "home.choose_target": "ہدف منتخب کریں",

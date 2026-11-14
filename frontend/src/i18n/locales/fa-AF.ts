@@ -47,6 +47,8 @@ const fa_AF: TranslationTable = {
   "home.screen_on": "هنگام شمارش صفحه روشن می‌ماند",
   "home.screen_off": "صفحه مانند معمول خاموش می‌شود",
   "home.target_reached": "به هدف رسیدید — {{count}} × {{name}}.",
+  "home.share_goal": "شریک‌سازی نتیجه",
+  "home.share_failed": "شریک‌سازی باز نشد. دوباره کوشش کنید.",
   "home.reset_title": "شمارنده صفر شود؟",
   "home.reset_message": "شمارنده فعلی {{name}} صفر می‌شود. مجموع‌ها و آمار حفظ می‌شوند.",
   "home.choose_target": "انتخاب هدف",

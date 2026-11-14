@@ -47,6 +47,8 @@ const tk: TranslationTable = {
   "home.screen_on": "Hasaplanda ekran ýanyk galar",
   "home.screen_off": "Ekran adaty ýaly söner",
   "home.target_reached": "Maksada ýetdiňiz — {{count}} × {{name}}.",
+  "home.share_goal": "Netijäni paýlaş",
+  "home.share_failed": "Paýlaşmak açylmady. Täzeden synanyşyň.",
   "home.reset_title": "Hasaplaýjy nola getirilsinmi?",
   "home.reset_message": "{{name}} üçin häzirki hasaplaýjy nola getiriler. Jemi we statistika saklanar.",
   "home.choose_target": "Maksady saýlaň",

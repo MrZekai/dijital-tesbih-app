@@ -91,16 +91,23 @@ jobs:
             exit 1
           fi
           "$APKSIGNER" verify --verbose --print-certs "$APK_PATH"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          BADGING="$("$AAPT" dump badging "$APK_PATH")"
+          BADGING="${BADGING%%$'\n'*}"
+          echo "$BADGING"
+          echo "$BADGING" | grep -F "name='com.zikirhane.tesbih'"
+          echo "$BADGING" | grep -F "versionCode='1031'"
+          echo "$BADGING" | grep -F "versionName='1.2.0'"
           mkdir -p artifacts
-          cp "$APK_PATH" artifacts/Zikirmatik-Global-v1.1.0-QA.apk
-          sha256sum artifacts/Zikirmatik-Global-v1.1.0-QA.apk | tee artifacts/SHA256SUMS.txt
+          cp "$APK_PATH" artifacts/Zikirmatik-v1.2.0-QA.apk
+          sha256sum artifacts/Zikirmatik-v1.2.0-QA.apk | tee artifacts/SHA256SUMS.txt
 
       - name: Upload QA APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: zikirmatik-global-v1.1.0-qa-apk
+          name: zikirmatik-v1.2.0-qa-apk
           path: |
-            frontend/artifacts/Zikirmatik-Global-v1.1.0-QA.apk
+            frontend/artifacts/Zikirmatik-v1.2.0-QA.apk
             frontend/artifacts/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 14

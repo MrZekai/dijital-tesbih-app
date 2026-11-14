@@ -47,6 +47,8 @@ const ps: TranslationTable = {
   "home.screen_on": "د شمېرلو پر مهال به پرده روښانه پاتې شي",
   "home.screen_off": "پرده به لکه تل مړه شي",
   "home.target_reached": "موخې ته ورسېدئ — {{count}} × {{name}}.",
+  "home.share_goal": "پایله شریکه کړئ",
+  "home.share_failed": "شریکول پرانیستل نه شول. بیا هڅه وکړئ.",
   "home.reset_title": "شمېرونکی صفر شي؟",
   "home.reset_message": "د {{name}} اوسنی شمېرونکی صفر کېږي. ټولې شمېرې او شمېرې خوندي پاتې کېږي.",
   "home.choose_target": "موخه وټاکئ",

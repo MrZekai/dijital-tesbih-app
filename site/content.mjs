@@ -1,6 +1,6 @@
 export const pages = {
   tr: {
-    label: 'Türkçe', dir: 'ltr', title: 'Zikirmatik — Online Zikir Sayacı ve Dijital Tesbih',
+    label: 'Türkçe', appBenefits: 'Android uygulamasında günlük hedefini belirleyebilir, geçmişini görebilir ve çevrimdışı sayabilirsin.', dir: 'ltr', title: 'Zikirmatik — Online Zikir Sayacı ve Dijital Tesbih',
     description: 'Online zikirmatik ile hemen saymaya başla. Android için dijital tesbih, günlük hedefler, namaz sonrası tesbihat ve Esmaül Hüsna bir arada.',
     eyebrow: 'SADE BİR ZİKİR DENEYİMİ', heading: 'Bir dokunuş. Bir zikir.',
     intro: 'Zihnini sayıda değil, zikrinde tut. Online zikirmatiği burada kullan veya günlük hedeflerini ve geçmişini takip etmek için Android uygulamasını indir.',
@@ -18,7 +18,7 @@ export const pages = {
     back: 'Sayaca dön', privacy: 'Android gizlilik politikası', source: 'Proje ve destek', footer: 'BANGI · Zikirmatik', appNote: 'Android uygulaması ücretsizdir ve reklam içerir.', skip: 'İçeriğe geç', language: 'Dil', notFound: 'Sayfa bulunamadı',
   },
   en: {
-    label: 'English', dir: 'ltr', title: 'Dhikr Counter — Online Tasbeeh & Digital Tasbih',
+    label: 'English', appBenefits: 'Use the Android app to set a daily goal, see your history and count offline.', dir: 'ltr', title: 'Tasbeeh Counter — Online Dhikr and Digital Tasbih',
     description: 'Use an online tasbeeh counter or get the Android dhikr app. Count zikr, set daily goals, follow prayer tasbih and explore the names of Allah.',
     eyebrow: 'A CALM SPACE FOR DHIKR', heading: 'One tap. One dhikr.',
     intro: 'Keep your attention on your dhikr. Use the online tasbeeh counter here, or get the Android app to track daily goals and your progress.',
@@ -36,7 +36,7 @@ export const pages = {
     back: 'Back to the counter', privacy: 'Android privacy policy', source: 'Project and support', footer: 'BANGI · Dhikr Counter', appNote: 'The Android app is free and contains ads.', skip: 'Skip to content', language: 'Language', notFound: 'Page not found',
   },
   ar: {
-    label: 'العربية', dir: 'rtl', title: 'عداد التسبيح — مسبحة إلكترونية وعداد أذكار',
+    label: 'العربية', appBenefits: 'حدّد هدفك اليومي وراجع سجلّك وعدّ دون إنترنت في تطبيق أندرويد.', dir: 'rtl', title: 'عداد التسبيح — مسبحة إلكترونية وعداد أذكار',
     description: 'استخدم عداد التسبيح على الإنترنت أو حمّل تطبيق أندرويد. عدّ الأذكار، وحدد هدفك اليومي، وتابع التسبيح بعد الصلاة وأسماء الله الحسنى.',
     eyebrow: 'مساحة هادئة للذكر', heading: 'لمسة واحدة. ذكر واحد.',
     intro: 'ركّز على ذكرك. استخدم عداد التسبيح هنا، أو حمّل تطبيق أندرويد لتحديد أهدافك اليومية ومتابعة تقدمك.',

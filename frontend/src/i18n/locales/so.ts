@@ -47,6 +47,8 @@ const so: TranslationTable = {
   "home.screen_on": "Shaashaddu way shidnaan doontaa inta aad tirinayso",
   "home.screen_off": "Shaashaddu si caadi ah ayey u demi doontaa",
   "home.target_reached": "Bartilmaameedka waad gaartay — {{count}} × {{name}}.",
+  "home.share_goal": "La wadaag natiijada",
+  "home.share_failed": "Wadaagista lama furi karin. Isku day mar kale.",
   "home.reset_title": "Ma dib u dejinaysaa tiriyaha?",
   "home.reset_message": "Tiriyaha hadda ee {{name}} eber ayuu noqonayaa. Wadarta iyo tirakoobka way sii jiraan.",
   "home.choose_target": "Dooro bartilmaameed",

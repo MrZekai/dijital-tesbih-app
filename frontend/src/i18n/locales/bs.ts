@@ -48,6 +48,8 @@ const bs: TranslationTable = {
   "home.screen_on": "Ekran će ostati upaljen dok brojite",
   "home.screen_off": "Ekran će se ugasiti kao i obično",
   "home.target_reached": "Cilj dostignut — {{count}} × {{name}}.",
+  "home.share_goal": "Podijeli rezultat",
+  "home.share_failed": "Dijeljenje nije otvoreno. Pokušajte ponovo.",
   "home.reset_title": "Resetovati brojač?",
   "home.reset_message": "Trenutni brojač za {{name}} bit će postavljen na nulu. Ukupni zbirovi i statistika ostaju.",
   "home.choose_target": "Odaberite cilj",

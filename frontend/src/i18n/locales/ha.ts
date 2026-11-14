@@ -47,6 +47,8 @@ const ha: TranslationTable = {
   "home.screen_on": "Allo zai ci gaba da haske yayin ƙidaya",
   "home.screen_off": "Allo zai mutu kamar yadda aka saba",
   "home.target_reached": "An cimma buri — {{count}} × {{name}}.",
+  "home.share_goal": "Raba sakamakon",
+  "home.share_failed": "An kasa buɗe rabawa. Sake gwadawa.",
   "home.reset_title": "A sake saita ma'auni?",
   "home.reset_message": "Ma'aunin yanzu na {{name}} zai koma sifili. Jimillolinku da ƙididdiga za su kasance.",
   "home.choose_target": "Zaɓi buri",

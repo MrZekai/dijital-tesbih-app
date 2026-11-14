@@ -47,6 +47,8 @@ const sq: TranslationTable = {
   "home.screen_on": "Ekrani do të mbetet ndezur gjatë numërimit",
   "home.screen_off": "Ekrani do të fiket normalisht",
   "home.target_reached": "Objektivi u arrit — {{count}} × {{name}}.",
+  "home.share_goal": "Ndaj rezultatin",
+  "home.share_failed": "Ndarja nuk u hap. Provo përsëri.",
   "home.reset_title": "Të rivendoset numëruesi?",
   "home.reset_message": "Numëruesi aktual për {{name}} do të bëhet zero. Totalet dhe statistikat ruhen.",
   "home.choose_target": "Zgjidh një objektiv",

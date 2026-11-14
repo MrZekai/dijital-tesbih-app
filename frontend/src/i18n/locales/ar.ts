@@ -51,6 +51,8 @@ const ar: TranslationTable = {
   "home.screen_on": "ستبقى الشاشة مضاءة أثناء العدّ",
   "home.screen_off": "ستنطفئ الشاشة كالمعتاد",
   "home.target_reached": "بلغتَ الهدف — {{count}} × {{name}}.",
+  "home.share_goal": "مشاركة النتيجة",
+  "home.share_failed": "تعذّر فتح المشاركة. حاول مرة أخرى.",
   "home.reset_title": "تصفير العدّاد؟",
   "home.reset_message": "سيُصفَّر العدّاد الحالي لـ {{name}}. تبقى المجاميع والإحصائيات كما هي.",
   "home.choose_target": "اختر الهدف",

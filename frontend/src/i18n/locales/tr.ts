@@ -47,6 +47,8 @@ const tr: TranslationTable = {
   "home.screen_on": "Ekran açık kalacak (zikir sırasında sönmez)",
   "home.screen_off": "Ekran normal süresinde sönecek",
   "home.target_reached": "Hedefe ulaştınız — {{count}} × {{name}}.",
+  "home.share_goal": "Hedefi paylaş",
+  "home.share_failed": "Paylaşım açılamadı. Tekrar deneyin.",
   "home.reset_title": "Sayacı sıfırla?",
   "home.reset_message": "{{name}} için mevcut sayaç sıfırlanacak. Toplam ve istatistikler korunur.",
   "home.choose_target": "Hedef Seç",

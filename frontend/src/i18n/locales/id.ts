@@ -46,6 +46,8 @@ const id: TranslationTable = {
   "home.screen_on": "Layar tetap menyala selama menghitung",
   "home.screen_off": "Layar akan meredup seperti biasa",
   "home.target_reached": "Target tercapai — {{count}} × {{name}}.",
+  "home.share_goal": "Bagikan hasil",
+  "home.share_failed": "Gagal membuka menu berbagi. Coba lagi.",
   "home.reset_title": "Setel ulang penghitung?",
   "home.reset_message": "Penghitung {{name}} akan dinolkan. Total dan statistik tetap tersimpan.",
   "home.choose_target": "Pilih target",

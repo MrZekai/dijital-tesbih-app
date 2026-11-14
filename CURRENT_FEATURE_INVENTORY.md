@@ -1,5 +1,25 @@
 # CURRENT_FEATURE_INVENTORY.md
 
+## 14 Kasım 2026 — mağaza metinleri için main denetimi
+
+Kaynak sürümü `6bcce8b`. Aşağıdaki sonuçlar uygulama koduna aittir. Play’de etkin AAB ayrıca Play Console’dan kontrol edilir.
+
+| Özellik | Doğrulanan davranış | Kaynak |
+|---|---|---|
+| Tur takibi | Hedefin her tam katında tur sayısı artar. Normal görünümde tur sayısı hedefin altında görünür. | `frontend/app/(tabs)/index.tsx` (`laps`, `lap-badge`) |
+| Sade mod | Ayarlar’dan seçilir. Ana sayaçta günlük ilerleme ve tur rozeti gizlenir. Sayım, zikir seçimi ve hedef seçimi kullanılabilir. Dokunma alanı büyük sayaç dairesidir. | `frontend/app/(tabs)/index.tsx`, `frontend/app/(tabs)/ayarlar.tsx` |
+| Türkçe günlük hedef ve seri | Ana ekranda günlük toplam ve hedef, Geçmiş’te günlük ilerleme, güncel ve en uzun seri bulunur. Seriler günlük kayıtlardan hesaplanır. | `frontend/app/(tabs)/istatistikler.tsx`, `frontend/src/lib/store.tsx`, `frontend/src/i18n/locales/tr.ts` |
+| Esma anlamları | 99 ismin Arapça yazılışı ve Latin harfli okunuşu vardır. Anlamlar Türkçe ve İngilizcedir. Diğer 25 arayüz dili İngilizce anlamı ve çeviri durumunu gösterir. | `frontend/src/lib/esma.ts` (`esmaMeaning`), `frontend/app/esma.tsx` |
+| Yedek | Ayarlar JSON dosyasını önbellekte oluşturur ve sistem paylaşım ekranına verir. Dosyanın hedefini kullanıcı seçer. Paylaşım desteklenmiyorsa veya hata oluşursa işlem başarısız döner. Uygulamada dosyadan geri yükleme ekranı yoktur. | `frontend/src/lib/backup.ts`, `frontend/app/(tabs)/ayarlar.tsx` |
+| Tesbihata devam | Devam için son güncelleme 12 saatten yeni olmalıdır. Tam 33. ve 66. dokunuştan sonraki aşama başlangıcı main’de korunur. | `frontend/app/tesbihat.tsx` |
+| Titreşim ve sıfırlama | Titreşim ve sıfırlama onayı ayrı tercihlerdir. Kullanıcı ikisini de kapatabilir. | `frontend/app/(tabs)/index.tsx`, `frontend/app/(tabs)/ayarlar.tsx` |
+
+`frontend/src/i18n/languages.ts` dil kodları, `TRANSLATION_MATRIX.md` tablosundaki 27 satırla birebir eşleşir:
+
+en, tr, ar, id, ms, ur, fa, bn, fr, ru, az, uz, kk, ky, tg, tk, ps, sq, bs, so, ha, sw, ku, ckb, dv, fa-AF, pa-Arab. Almanca arayüz kaydı bulunmuyor.
+
+## Önceki sürümlerin karşılaştırması
+
 Sol sütun 1.0.21 (Play 1028) durumu, sağ sütun v1.1.0 sonrası.
 
 | Alan | 1.0.21 | v1.1.0 |

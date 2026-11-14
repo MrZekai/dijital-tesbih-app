@@ -18,7 +18,7 @@ console.log("\n== v1.1.0 global i18n + migration ==");
 const app = JSON.parse(read("app.json"));
 ok("package com.zikirhane.tesbih (DEGISMEDI)", app.expo.android.package === "com.zikirhane.tesbih");
 ok("versionCode Play'deki 1028'den buyuk", app.expo.android.versionCode > 1028);
-ok("versionName 1.1.1", app.expo.version === "1.1.1");
+ok("versionName 1.2.0", app.expo.version === "1.2.0");
 ok("AdMob app id korunuyor", JSON.stringify(app.expo.plugins).includes("ca-app-pub-1380972808968213~2930057843"));
 
 // ── 2) Dil kayitlari ───────────────────────────────────────────────────

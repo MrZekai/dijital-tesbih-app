@@ -34,3 +34,17 @@ export function markUserInteracted(): void {
 export function hasUserInteracted(): boolean {
   return interacted;
 }
+
+// Reserve native UI from request preparation through system activity completion.
+let goalSurface = false;
+let consentSurface = false;
+let adSurface = false;
+export function beginGoalSurface() {
+  if (goalSurface || consentSurface || adSurface) return false;
+  goalSurface = true;
+  return true;
+}
+export function endGoalSurface() { goalSurface = false; }
+export function isGoalSurfaceActive() { return goalSurface; }
+export function setConsentSurface(active: boolean) { consentSurface = active; }
+export function setAdSurface(active: boolean) { adSurface = active; }

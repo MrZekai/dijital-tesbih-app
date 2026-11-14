@@ -23,6 +23,7 @@ import React, {
 import { AppState } from "react-native";
 
 import { adsEnabled, adTestDeviceIds } from "./adConfig";
+import { isGoalSurfaceActive, setAdSurface, setConsentSurface } from "./userActivity";
 import { getAdsSdk } from "./sdk";
 
 type AdsSdk = NonNullable<ReturnType<typeof getAdsSdk>>;
@@ -73,6 +74,7 @@ export function AdsProvider({ children }: PropsWithChildren) {
   }, []);
 
   const setFullScreenAdActive = useCallback((active: boolean) => {
+    setAdSurface(active);
     if (aliveRef.current) setFullScreenAdActiveState(active);
   }, []);
 
@@ -161,8 +163,9 @@ export function AdsProvider({ children }: PropsWithChildren) {
       if (aliveRef.current) setConsentReady(true);
       return;
     }
-    if (running.current) return;
+    if (running.current || isGoalSurfaceActive()) return;
     running.current = true;
+    setConsentSurface(true);
 
     try {
       const sdk = getAdsSdk();
@@ -183,6 +186,7 @@ export function AdsProvider({ children }: PropsWithChildren) {
       await syncConsentAndSdk(sdk);
     } finally {
       running.current = false;
+      setConsentSurface(false);
       if (aliveRef.current) setConsentReady(true);
     }
   }, [setAdsAllowed, syncConsentAndSdk]);
@@ -210,7 +214,9 @@ export function AdsProvider({ children }: PropsWithChildren) {
 
   const showPrivacyOptions = useCallback(async () => {
     const sdk = getAdsSdk();
-    if (!sdk?.AdsConsent?.showPrivacyOptionsForm) return;
+    if (!sdk?.AdsConsent?.showPrivacyOptionsForm || running.current || isGoalSurfaceActive()) return;
+    running.current = true;
+    setConsentSurface(true);
 
     try {
       const info = await sdk.AdsConsent.showPrivacyOptionsForm();
@@ -220,6 +226,9 @@ export function AdsProvider({ children }: PropsWithChildren) {
       await syncConsentAndSdk(sdk);
     } catch (e) {
       console.warn("[ads] showPrivacyOptionsForm failed", e);
+    } finally {
+      running.current = false;
+      setConsentSurface(false);
     }
   }, [syncConsentAndSdk, updatePrivacyRequirement]);
 

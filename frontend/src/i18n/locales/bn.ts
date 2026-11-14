@@ -47,6 +47,8 @@ const bn: TranslationTable = {
   "home.screen_on": "গণনার সময় স্ক্রিন জ্বলে থাকবে",
   "home.screen_off": "স্ক্রিন স্বাভাবিকভাবে বন্ধ হবে",
   "home.target_reached": "লক্ষ্য পূর্ণ — {{count}} × {{name}}।",
+  "home.share_goal": "ফলাফল শেয়ার করুন",
+  "home.share_failed": "শেয়ারিং খোলা যায়নি। আবার চেষ্টা করুন।",
   "home.reset_title": "কাউন্টার রিসেট করবেন?",
   "home.reset_message": "{{name}}-এর বর্তমান কাউন্টার শূন্য হবে। মোট ও পরিসংখ্যান অক্ষত থাকবে।",
   "home.choose_target": "লক্ষ্য বেছে নিন",

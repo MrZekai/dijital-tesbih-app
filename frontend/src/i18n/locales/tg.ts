@@ -47,6 +47,8 @@ const tg: TranslationTable = {
   "home.screen_on": "Ҳангоми ҳисоб экран фаъол мемонад",
   "home.screen_off": "Экран мисли ҳамеша хомӯш мешавад",
   "home.target_reached": "Ба ҳадаф расидед — {{count}} × {{name}}.",
+  "home.share_goal": "Мубодилаи натиҷа",
+  "home.share_failed": "Мубодила кушода нашуд. Боз кӯшиш кунед.",
   "home.reset_title": "Ҳисобкунак сифр карда шавад?",
   "home.reset_message": "Ҳисобкунаки ҷории {{name}} сифр мешавад. Ҷамъ ва омор нигоҳ дошта мешавад.",
   "home.choose_target": "Ҳадафро интихоб кунед",

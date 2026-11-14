@@ -47,6 +47,8 @@ const pa_Arab: TranslationTable = {
   "home.screen_on": "گِنتی ویلے سکرین جگدی رہوے گی",
   "home.screen_off": "سکرین عام وانگوں بند ہو جاوے گی",
   "home.target_reached": "نشانہ پورا ہو گیا — {{count}} × {{name}}۔",
+  "home.share_goal": "نتیجہ شیئر کرو",
+  "home.share_failed": "شیئرنگ نئیں کھل سکی۔ دوبارہ کوشش کرو۔",
   "home.reset_title": "گِنتی صفر کریے؟",
   "home.reset_message": "{{name}} دی موجودہ گِنتی صفر ہو جاوے گی۔ کُل تے اعداد و شمار محفوظ رہن گے۔",
   "home.choose_target": "نشانہ چُنو",

@@ -49,6 +49,8 @@ const ru: TranslationTable = {
   "home.screen_on": "Экран останется включённым во время счёта",
   "home.screen_off": "Экран будет гаснуть как обычно",
   "home.target_reached": "Цель достигнута — {{count}} × {{name}}.",
+  "home.share_goal": "Поделиться результатом",
+  "home.share_failed": "Не удалось открыть меню отправки. Повторите попытку.",
   "home.reset_title": "Сбросить счётчик?",
   "home.reset_message": "Текущий счётчик для {{name}} будет обнулён. Итоги и статистика сохранятся.",
   "home.choose_target": "Выберите цель",

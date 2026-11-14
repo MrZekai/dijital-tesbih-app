@@ -33,6 +33,7 @@ import {
 import { useBottomChromeHeight } from "@/src/lib/layout";
 import { useDirection } from "@/src/lib/rtl";
 import { useTesbihSounds } from "@/src/lib/sounds";
+import { recordCompletedGoal, shareGoalCard } from "@/src/lib/goalActions";
 import { useStore } from "@/src/lib/store";
 import { fonts, radius, spacing } from "@/src/lib/theme";
 
@@ -77,6 +78,7 @@ export default function Home() {
   const [showTargets, setShowTargets] = useState(false);
   const [showDhikrPicker, setShowDhikrPicker] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((msg: string) => {
@@ -136,6 +138,7 @@ export default function Home() {
       withTiming(1, { duration: 160 })
     );
     if (justReachedTarget) {
+      recordCompletedGoal();
       showToast(
         t("home.target_reached", {
           count: activeDhikrState.target,
@@ -236,6 +239,24 @@ export default function Home() {
             <Text style={{ color: theme.textMuted }}>{t("home.reset")}</Text>
           </Pressable>
         </View>
+        {count > 0 && remaining === 0 && (
+          <Pressable testID="share-goal-button" accessibilityRole="button" disabled={sharing}
+            accessibilityState={{ disabled: sharing }}
+            onPress={async () => {
+              setSharing(true);
+              try {
+                await shareGoalCard(activeName, fmtNumber(count), t("home.brand"), t("home.share_goal"));
+              } catch {
+                showToast(t("home.share_failed"));
+              } finally {
+                setSharing(false);
+              }
+            }}
+            style={({ pressed }) => [styles.actionBtn, { alignSelf: "center", backgroundColor: theme.bgCard,
+              borderColor: theme.gold, opacity: pressed || sharing ? 0.55 : 1 }]}>
+            <Text style={{ color: theme.gold }}>{t("home.share_goal")}</Text>
+          </Pressable>
+        )}
         <Text accessibilityLiveRegion="polite" testID="home-toast" style={[styles.feedback, { color: theme.gold }]}>{toast ?? " "}</Text>
       </ScrollView>
 

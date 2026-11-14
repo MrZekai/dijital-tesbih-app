@@ -48,6 +48,8 @@ const fr: TranslationTable = {
   "home.screen_on": "L’écran restera allumé pendant le comptage",
   "home.screen_off": "L’écran s’éteindra normalement",
   "home.target_reached": "Objectif atteint — {{count}} × {{name}}.",
+  "home.share_goal": "Partager le résultat",
+  "home.share_failed": "Impossible d’ouvrir le partage. Réessayez.",
   "home.reset_title": "Réinitialiser le compteur ?",
   "home.reset_message": "Le compteur actuel de {{name}} sera remis à zéro. Vos totaux et statistiques sont conservés.",
   "home.choose_target": "Choisir un objectif",

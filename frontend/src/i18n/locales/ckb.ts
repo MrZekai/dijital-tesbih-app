@@ -48,6 +48,8 @@ const ckb: TranslationTable = {
   "home.screen_on": "لە کاتی ژماردندا شاشە داناکوژێتەوە",
   "home.screen_off": "شاشە وەک هەمیشە دەکوژێتەوە",
   "home.target_reached": "گەیشتیت بە ئامانج — {{count}} × {{name}}.",
+  "home.share_goal": "ئەنجامەکە هاوبەش بکە",
+  "home.share_failed": "هاوبەشکردن نەکرایەوە. دووبارە هەوڵ بدە.",
   "home.reset_title": "ژمێرەر سفر بکرێتەوە؟",
   "home.reset_message": "ژمێرەری ئێستای {{name}} سفر دەکرێتەوە. کۆی گشتی و ئامارەکان دەمێننەوە.",
   "home.choose_target": "ئامانجێک هەڵبژێرە",

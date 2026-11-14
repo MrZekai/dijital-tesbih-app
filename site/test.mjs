@@ -18,6 +18,11 @@ for (const lang of Object.keys(pages)) {
     const route = lang+'/'+suffix;
     const html = await read(route+'index.html');
     assert(html.includes(`<html lang="${lang}" dir="${pages[lang].dir}">`));
+    if (!suffix) {
+      const counter = html.split('id="counter"')[1].split('</section>')[0];
+      assert(counter.includes('referrer=utm_source%3Dweb_counter'));
+      assert(counter.includes(pages[lang].appBenefits));
+    }
     const canonical = new URL(route,base).href;
     assert(html.includes(`<link rel="canonical" href="${canonical}">`));
     assert(locations.includes(canonical));

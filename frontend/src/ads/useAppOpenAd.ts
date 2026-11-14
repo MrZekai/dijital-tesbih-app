@@ -30,7 +30,7 @@ import {
 } from "./adConfig";
 import { useAds } from "./AdsProvider";
 import { getAdsSdk } from "./sdk";
-import { hasUserInteracted } from "./userActivity";
+import { hasUserInteracted, isGoalSurfaceActive } from "./userActivity";
 
 const LAST_SHOWN_KEY = "@zikirhane/app-open-last-shown-v1";
 const APP_OPEN_ACTIVITY_GUARD_MS = 1500;
@@ -53,10 +53,11 @@ type ShowPurpose = "cold-start" | "resume";
 interface UseAppOpenAdOptions {
   gateColdStart?: boolean;
   contentReady?: boolean;
+  protectCounting?: boolean;
 }
 
 export function useAppOpenAd(
-  { gateColdStart = false, contentReady = false }: UseAppOpenAdOptions = {}
+  { gateColdStart = false, contentReady = false, protectCounting = false }: UseAppOpenAdOptions = {}
 ) {
   const {
     canRequestAds,
@@ -71,6 +72,8 @@ export function useAppOpenAd(
   const [lastShownReady, setLastShownReady] = useState(false);
 
   const coldStartSettledRef = useRef(!gateColdStart || !adsEnabled);
+  const protectCountingRef = useRef(protectCounting);
+  protectCountingRef.current = protectCounting;
   const contentReadyRef = useRef(contentReady);
   contentReadyRef.current = contentReady;
   const coldStartDeadlineRef = useRef(Date.now() + APP_OPEN_COLD_START_MAX_WAIT_MS);
@@ -182,7 +185,8 @@ export function useAppOpenAd(
     (purpose: ShowPurpose) => {
       const ad = adRef.current;
       if (
-        !ad ||
+        !ad || isGoalSurfaceActive() ||
+        (purpose === "resume" && protectCountingRef.current) ||
         (purpose === "cold-start" && (contentReadyRef.current || coldStartSettledRef.current || Date.now() >= coldStartDeadlineRef.current || hasUserInteracted())) ||
         !isAdUsable() ||
         isShowingRef.current ||
@@ -430,7 +434,8 @@ export function useAppOpenAd(
 
       // App Open full-screen Activity'sinin veya reklam tıklamasının kendi
       // AppState değişikliklerini gerçek kullanıcı app-switch'i sanma.
-      if (isShowingRef.current || now < ignoreAppStateUntilRef.current) {
+      if (isGoalSurfaceActive() || isShowingRef.current || now < ignoreAppStateUntilRef.current) {
+        backgroundAtRef.current = 0;
         return;
       }
 
@@ -457,6 +462,7 @@ export function useAppOpenAd(
       if (
         !coldStartSettledRef.current ||
         !canRequestAds ||
+        protectCountingRef.current ||
         awayFor < APP_OPEN_RESUME_MIN_BACKGROUND_MS ||
         !hasLocalCooldown()
       ) {
